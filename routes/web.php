@@ -1,14 +1,25 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Laravel\Fortify\Features;
+use Inertia\Inertia;
 
-Route::inertia('/', 'Welcome', [
-    'canRegister' => Features::enabled(Features::registration()),
-])->name('home');
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+Route::get('/', function () {
+    return redirect('/dashboard');
 });
 
-require __DIR__.'/settings.php';
+    Route::get('/dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->name('dashboard');
+
+    Route::get('/backlog', function () {
+        return Inertia::render('Backlog/Index');
+    })->name('backlog.index');
+
+    Route::get('/wishlist', function () {
+        return Inertia::render('Wishlist/Index');
+    })->name('wishlist.index');
+
+    Route::get('/recommendations', function () {
+        return Inertia::render('Recommendations/Index');
+    })->name('recommendations.index');
+
