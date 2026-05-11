@@ -2,7 +2,7 @@
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
 
-import RecommendationCard from '@/components/Game/RecommendationCard.vue'
+import RecommendationCard from '@/components/game/RecommendationCard.vue'
 
 const recommendations = [
     {
