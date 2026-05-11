@@ -3,6 +3,8 @@
 use App\Http\Controllers\Auth\SteamAuthController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Services\SteamService;
+use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
     return redirect('/dashboard');
@@ -36,6 +38,25 @@ Route::get('/auth/steam', [SteamAuthController::class, 'redirect'])
 Route::get('/auth/steam/callback', [SteamAuthController::class, 'callback'])
     ->name('steam.callback');
 
-Route::get('/wip', function () {
-    return Inertia::render('wip');
+Route::get('/wip', function (SteamService $steam) {
+    $user = Auth::user();
+
+    $games = [];
+
+    if ($user->steam_id) {
+        $games = $steam->getOwnedGames($user->steam_id);
+    }
+
+    return Inertia::render('wip', [
+        'user' => [
+            'name' => $user->name,
+            'steam_id' => $user->steam_id,
+            'avatar' => $user->steam_avatar_url,
+        ],
+        'games' => collect($games)
+            ->sortByDesc('playtime_forever')
+            ->values()
+            ->take(50)
+            ->toArray(),
+    ]);
 })->name('wip');
