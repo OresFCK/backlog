@@ -1,5 +1,5 @@
 <script setup>
-import GameCard from './GameCard.vue'
+import GameCard from './gameCard.vue'
 
 defineProps({
     games: {
