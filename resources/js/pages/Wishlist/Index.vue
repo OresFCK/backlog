@@ -1,8 +1,8 @@
 <script setup>
-import Sidebar from '@/Components/layout/Sidebar.vue'
-import Topbar from '@/Components/layout/Topbar.vue'
+import Sidebar from '@/components/layout/Sidebar.vue'
+import Topbar from '@/components/layout/Topbar.vue'
 
-import GameGrid from '@/Components/game/GameGrid.vue'
+import GameGrid from '@/components/game/GameGrid.vue'
 
 const games = [
     {

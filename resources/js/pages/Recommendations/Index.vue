@@ -1,8 +1,8 @@
 <script setup>
-import Sidebar from '@/Components/layout/Sidebar.vue'
-import Topbar from '@/Components/layout/Topbar.vue'
+import Sidebar from '@/components/layout/Sidebar.vue'
+import Topbar from '@/components/layout/Topbar.vue'
 
-import RecommendationCard from '@/Components/Game/RecommendationCard.vue'
+import RecommendationCard from '@/components/Game/RecommendationCard.vue'
 
 const recommendations = [
     {
