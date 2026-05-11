@@ -6,10 +6,6 @@ use Illuminate\Support\Facades\Http;
 
 class SteamService
 {
-    public function __construct(
-        private readonly ?string $apiKey = null,
-    ) {}
-
     public function getOwnedGames(string $steamId): array
     {
         $response = Http::get('https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/', [
@@ -19,10 +15,6 @@ class SteamService
             'include_played_free_games' => true,
             'format' => 'json',
         ]);
-
-        if ($response->failed()) {
-            throw new \Exception('Steam API request failed.');
-        }
 
         return $response->json('response.games') ?? [];
     }
@@ -34,10 +26,6 @@ class SteamService
             'steamids' => $steamId,
             'format' => 'json',
         ]);
-
-        if ($response->failed()) {
-            throw new \Exception('Steam API request failed.');
-        }
 
         return $response->json('response.players.0');
     }
