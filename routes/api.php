@@ -15,4 +15,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/user-games/{userGame}', [UserGameController::class, 'destroy']);
 
     Route::get('/recommendations/now', [RecommendationController::class, 'now']);
+
+    Route::get('/steam-test/{steamId}', function (string $steamId, SteamService $steam) {
+    return response()->json([
+        'profile' => $steam->getPlayerSummary($steamId),
+        'games' => $steam->getOwnedGames($steamId),
+    ]);
+});
 });
