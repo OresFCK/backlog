@@ -1,5 +1,5 @@
 <script setup>
-import StatusBadge from './statusBadge.vue'
+import StatusBadge from './StatusBadge.vue'
 //xd
 const props = defineProps({
     game: {

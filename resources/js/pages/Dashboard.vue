@@ -1,9 +1,9 @@
 <script setup>
-import Sidebar from '@/components/layout/sidebar.vue'
-import Topbar from '@/components/layout/topbar.vue'
+import Sidebar from '@/components/layout/Sidebar.vue'
+import Topbar from '@/components/layout/Topbar.vue'
 
-import GameGrid from '@/components/game/gameGrid.vue'
-import RecommendationCard from '@/components/game/recommendationCard.vue'
+import GameGrid from '@/components/game/GameGrid.vue'
+import RecommendationCard from '@/components/game/RecommendationCard.vue'
 
 const recommended = {
     game: {
