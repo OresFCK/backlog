@@ -41,11 +41,15 @@ Route::get('/auth/steam/callback', [SteamAuthController::class, 'callback'])
 Route::get('/wip', function (SteamService $steam) {
     $user = Auth::user();
 
-    $games = [];
-
-    if ($user->steam_id) {
-        $games = $steam->getOwnedGames($user->steam_id);
+    if (! $user) {
+        return Inertia::render('wip', [
+            'user' => null,
+            'games' => [],
+            'steam_error' => 'Not logged in.',
+        ]);
     }
+
+    $games = $steam->getOwnedGames($user->steam_id);
 
     return Inertia::render('wip', [
         'user' => [
@@ -53,10 +57,7 @@ Route::get('/wip', function (SteamService $steam) {
             'steam_id' => $user->steam_id,
             'avatar' => $user->steam_avatar_url,
         ],
-        'games' => collect($games)
-            ->sortByDesc('playtime_forever')
-            ->values()
-            ->take(50)
-            ->toArray(),
+        'games' => $games,
+        'steam_error' => null,
     ]);
 })->name('wip');

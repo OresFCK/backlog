@@ -13,10 +13,18 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
+
             $table->string('password');
+
+            // Steam
+            $table->string('steam_id')->nullable()->unique();
+            $table->string('steam_persona_name')->nullable();
+            $table->text('steam_avatar_url')->nullable();
+
             $table->rememberToken();
             $table->timestamps();
         });

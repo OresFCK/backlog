@@ -12,16 +12,13 @@ use Illuminate\Support\Str;
 
 class SteamAuthController extends Controller
 {
-    public function redirect(Request $request)
+    public function redirect()
     {
-        $appUrl = rtrim(config('app.url'), '/');
-        $returnTo = $appUrl . '/auth/steam/callback';
-
         $params = [
             'openid.ns' => 'http://specs.openid.net/auth/2.0',
             'openid.mode' => 'checkid_setup',
-            'openid.return_to' => $returnTo,
-            'openid.realm' => $appUrl,
+            'openid.return_to' => route('steam.callback'),
+            'openid.realm' => config('app.url'),
             'openid.identity' => 'http://specs.openid.net/auth/2.0/identifier_select',
             'openid.claimed_id' => 'http://specs.openid.net/auth/2.0/identifier_select',
         ];
@@ -33,16 +30,10 @@ class SteamAuthController extends Controller
 
     public function callback(Request $request, SteamService $steamService)
     {
-        if ($request->query('openid_mode') !== 'id_res') {
-            dd('Invalid openid mode', $request->query());
+        if ($request->input('openid_mode') !== 'id_res') {
+            return redirect('/login');
         }
 
-        /**
-         * Laravel zamienia:
-         * openid.mode -> openid_mode
-         *
-         * Steam wymaga kropek przy walidacji.
-         */
         $params = [];
 
         foreach ($request->query() as $key => $value) {
@@ -57,34 +48,28 @@ class SteamAuthController extends Controller
         );
 
         if (! str_contains($response->body(), 'is_valid:true')) {
-            dd(
-                'Steam validation failed',
-                $response->body(),
-                $params
-            );
+            return redirect('/login');
         }
 
-        $claimedId = $request->query('openid_claimed_id');
+        $claimedId = $request->input('openid_claimed_id');
 
-        preg_match('/\/id\/(\d+)$/', $claimedId ?? '', $matches);
+        preg_match('/\/id\/(\d+)$/', $claimedId, $matches);
 
         $steamId = $matches[1] ?? null;
 
         if (! $steamId) {
-            dd('Steam ID not found', $claimedId);
+            return redirect('/login');
         }
 
         $profile = $steamService->getPlayerSummary($steamId);
 
-        if (! $profile) {
-            dd('Steam profile not found');
-        }
-
         $user = User::updateOrCreate(
-            ['steam_id' => $steamId],
             [
-                'name' => $profile['personaname'] ?? 'Steam User',
                 'email' => 'steam_' . $steamId . '@steam.local',
+            ],
+            [
+                'steam_id' => $steamId,
+                'name' => $profile['personaname'] ?? 'Steam User',
                 'password' => bcrypt(Str::random(40)),
                 'steam_persona_name' => $profile['personaname'] ?? null,
                 'steam_avatar_url' => $profile['avatarfull'] ?? null,
