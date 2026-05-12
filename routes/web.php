@@ -8,60 +8,37 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-if (! function_exists('inertiaUser')) {
-    function inertiaUser(): array
-    {
-        $user = Auth::user();
+$userPayload = fn () => [
+    'name' => Auth::user()->name,
+    'steam_id' => Auth::user()->steam_id,
+    'avatar' => Auth::user()->steam_avatar_url,
+];
 
-        return [
-            'name' => $user->name,
-            'steam_id' => $user->steam_id,
-            'avatar' => $user->steam_avatar_url,
-        ];
-    }
-}
+$ownedGames = fn (SteamService $steam) =>
+    Auth::user()->steam_id
+        ? $steam->getOwnedGames(Auth::user()->steam_id)
+        : [];
 
-if (! function_exists('ownedGames')) {
-    function ownedGames(SteamService $steam): array
-    {
-        $user = Auth::user();
+$wishlistGames = fn (SteamService $steam) =>
+    Auth::user()->steam_id
+        ? $steam->getWishlist(Auth::user()->steam_id)
+        : [];
 
-        return $user->steam_id
-            ? $steam->getOwnedGames($user->steam_id)
-            : [];
-    }
-}
-
-if (! function_exists('wishlistGames')) {
-    function wishlistGames(SteamService $steam): array
-    {
-        $user = Auth::user();
-
-        return $user->steam_id
-            ? $steam->getWishlist($user->steam_id)
-            : [];
-    }
-}
-
-if (! function_exists('customGames')) {
-    function customGames(): array
-    {
-        return Auth::user()
-            ->customGames()
-            ->get()
-            ->map(fn ($game) => [
-                'id' => 'custom-' . $game->id,
-                'appid' => null,
-                'name' => $game->title,
-                'title' => $game->title,
-                'publisher' => $game->publisher,
-                'cover_url' => $game->cover_url,
-                'playtime_forever' => 0,
-                'is_custom' => true,
-            ])
-            ->toArray();
-    }
-}
+$customGames = fn () =>
+    Auth::user()
+        ->customGames()
+        ->get()
+        ->map(fn ($game) => [
+            'id' => 'custom-' . $game->id,
+            'appid' => null,
+            'name' => $game->title,
+            'title' => $game->title,
+            'publisher' => $game->publisher,
+            'cover_url' => $game->cover_url,
+            'playtime_forever' => 0,
+            'is_custom' => true,
+        ])
+        ->toArray();
 
 Route::get('/', fn () => redirect('/home'));
 
@@ -77,71 +54,80 @@ Route::get('/auth/steam', [SteamAuthController::class, 'redirect'])
 Route::get('/auth/steam/callback', [SteamAuthController::class, 'callback'])
     ->name('steam.callback');
 
-Route::middleware('auth')->group(function () {
-
+Route::middleware('auth')->group(function () use (
+    $userPayload,
+    $ownedGames,
+    $wishlistGames,
+    $customGames
+) {
     Route::get('/dashboard', fn (SteamService $steam) => Inertia::render('dashboard', [
-        'user' => inertiaUser(),
+        'user' => $userPayload(),
         'games' => [
-            ...ownedGames($steam),
-            ...customGames(),
+            ...$ownedGames($steam),
+            ...$customGames(),
         ],
     ]))->name('dashboard');
 
     Route::get('/backlog', fn (SteamService $steam) => Inertia::render('backlog/index', [
-        'user' => inertiaUser(),
-        'games' => ownedGames($steam),
+        'user' => $userPayload(),
+        'games' => [
+            ...$ownedGames($steam),
+            ...$customGames(),
+        ],
     ]))->name('backlog.index');
 
     Route::get('/wishlist', fn (SteamService $steam) => Inertia::render('wishlist/index', [
-        'user' => inertiaUser(),
-        'games' => wishlistGames($steam),
+        'user' => $userPayload(),
+        'games' => $wishlistGames($steam),
     ]))->name('wishlist.index');
 
     Route::get('/recommendations', fn (SteamService $steam) => Inertia::render('recommendations/index', [
-        'user' => inertiaUser(),
-        'games' => ownedGames($steam),
+        'user' => $userPayload(),
+        'games' => [
+            ...$ownedGames($steam),
+            ...$customGames(),
+        ],
     ]))->name('recommendations.index');
 
     Route::get('/games/create', fn (SteamService $steam) => Inertia::render('games/create', [
-        'user' => inertiaUser(),
-        'games' => ownedGames($steam),
+        'user' => $userPayload(),
+        'games' => [
+            ...$ownedGames($steam),
+            ...$customGames(),
+        ],
     ]))->name('games.create');
 
     Route::post('/games', function (Request $request) {
-
-        $user = Auth::user();
-
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'publisher' => ['nullable', 'string', 'max:255'],
-            'cover_url' => ['nullable', 'string'],
+            'cover_url' => ['nullable', 'string', 'max:2000'],
         ]);
 
         CustomGame::create([
-            'user_id' => $user->id,
+            'user_id' => Auth::id(),
             'title' => $validated['title'],
             'publisher' => $validated['publisher'] ?? null,
             'cover_url' => $validated['cover_url'] ?? null,
         ]);
 
         return redirect('/dashboard');
-
     })->name('games.store');
 
     Route::get('/steam/search', function (SteamService $steam) {
-
         $query = request('q');
 
         return response()->json(
             $query ? $steam->searchStore($query) : []
         );
-
     })->name('steam.search');
 
     Route::get('/wip', fn (SteamService $steam) => Inertia::render('wip', [
-        'user' => inertiaUser(),
-        'games' => ownedGames($steam),
+        'user' => $userPayload(),
+        'games' => [
+            ...$ownedGames($steam),
+            ...$customGames(),
+        ],
         'steam_error' => null,
     ]))->name('wip');
-
 });
