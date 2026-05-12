@@ -7,6 +7,7 @@ import {
     CheckCircle2,
     Heart,
     Sparkles,
+    PlusCircle,
 } from 'lucide-vue-next'
 
 const page = usePage()
@@ -42,6 +43,11 @@ const items = [
         href: '/recommendations',
         icon: Sparkles,
     },
+    {
+        label: 'Add Game',
+        href: '/games/create',
+        icon: PlusCircle,
+    }
 ]
 </script>
 
