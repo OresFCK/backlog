@@ -80,6 +80,6 @@ class SteamAuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect('/wip');
+        return redirect('/dashboard');
     }
 }

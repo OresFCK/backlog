@@ -1,5 +1,12 @@
 <script setup>
-import { Search, Bell } from 'lucide-vue-next'
+import { Bell, Search } from 'lucide-vue-next'
+
+const props = defineProps({
+    user: {
+        type: Object,
+        default: null,
+    },
+})
 </script>
 
 <template>
@@ -26,8 +33,30 @@ import { Search, Bell } from 'lucide-vue-next'
             </button>
 
             <div
-                class="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500"
-            />
+                class="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-3 py-2"
+            >
+                <img
+                    v-if="user?.avatar"
+                    :src="user.avatar"
+                    :alt="user.name"
+                    class="h-10 w-10 rounded-full object-cover"
+                />
+
+                <div
+                    v-else
+                    class="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500"
+                />
+
+                <div class="hidden text-left md:block">
+                    <p class="text-sm font-semibold text-white">
+                        {{ user?.name ?? 'Guest' }}
+                    </p>
+
+                    <p class="text-xs text-zinc-500">
+                        Steam account
+                    </p>
+                </div>
+            </div>
         </div>
     </header>
 </template>
