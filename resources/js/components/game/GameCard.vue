@@ -48,11 +48,6 @@ const props = defineProps({
                     {{ game.platform ?? 'Steam' }}
                 </div>
 
-                <div
-                    class="rounded-lg bg-zinc-800 px-2 py-1 text-xs font-medium text-zinc-300"
-                >
-                    {{ game.rating ?? 'N/A' }}
-                </div>
             </div>
         </div>
     </div>
