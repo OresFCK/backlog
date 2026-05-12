@@ -35,8 +35,15 @@ const recommended = computed(() => {
     return {
         game: {
             id: randomGame.appid,
-            title: randomGame.name,
-            header_image_url: `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${randomGame.appid}/header.jpg`,
+
+            title:
+                randomGame.name ??
+                randomGame.title ??
+                'Unknown game',
+
+            header_image_url:
+                randomGame.cover_url ??
+                `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${randomGame.appid}/header.jpg`,
         },
 
         reason:
@@ -48,23 +55,38 @@ const mappedGames = computed(() => {
     let games = props.games.map((game) => ({
         id: game.appid,
 
-        title: game.name,
+        title:
+            game.name ??
+            game.title ??
+            'Unknown game',
 
-        cover_url: `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appid}/library_600x900.jpg`,
+        cover_url:
+            game.cover_url ??
+            `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appid}/library_600x900.jpg`,
 
         status: 'backlog',
 
         average_playtime_minutes:
             game.playtime_forever ?? 0,
 
-        platform: 'Steam',
+        platform: game.is_custom
+            ? 'Custom'
+            : 'Steam',
 
-        rating: Math.floor(Math.random() * 20) + 80,
+        rating: game.review_score
+            ? Math.min(
+                  100,
+                  Math.max(
+                      70,
+                      Math.floor(game.review_score / 10)
+                  )
+              )
+            : Math.floor(Math.random() * 20) + 80,
     }))
 
     if (searchQuery.value.trim()) {
         games = games.filter((game) =>
-            game.title
+            String(game.title)
                 .toLowerCase()
                 .includes(
                     searchQuery.value.toLowerCase()
@@ -88,7 +110,9 @@ const mappedGames = computed(() => {
         case 'name':
         default:
             return games.sort((a, b) =>
-                a.title.localeCompare(b.title)
+                String(a.title).localeCompare(
+                    String(b.title)
+                )
             )
     }
 })
@@ -115,12 +139,12 @@ const mappedGames = computed(() => {
                             <h2
                                 class="text-2xl font-bold text-white"
                             >
-                                Your Steam library
+                                Your game library
                             </h2>
 
                             <p class="mt-1 text-zinc-400">
                                 {{ mappedGames.length }}
-                                games imported from Steam
+                                games available
                             </p>
                         </div>
 
@@ -134,7 +158,7 @@ const mappedGames = computed(() => {
 
                             <select
                                 v-model="sortBy"
-                                class="appearance-none rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 pr-1 text-sm text-white outline-none transition focus:border-zinc-500"
+                                class="appearance-none rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-zinc-500"
                             >
                                 <option value="name">
                                     Sort by name
@@ -172,8 +196,8 @@ const mappedGames = computed(() => {
                         </h3>
 
                         <p class="mt-3 text-zinc-400">
-                            Try changing your search query or
-                            sorting settings.
+                            Try changing your search query
+                            or sorting settings.
                         </p>
                     </div>
                 </section>

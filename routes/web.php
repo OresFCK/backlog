@@ -37,6 +37,24 @@ function wishlistGames(SteamService $steam): array
         : [];
 }
 
+function customGames(): array
+{
+    return Auth::user()
+        ->customGames()
+        ->get()
+        ->map(fn ($game) => [
+            'id' => 'custom-' . $game->id,
+            'appid' => null,
+            'name' => $game->title,
+            'title' => $game->title,
+            'publisher' => $game->publisher,
+            'cover_url' => $game->cover_url,
+            'playtime_forever' => 0,
+            'is_custom' => true,
+        ])
+        ->toArray();
+}
+
 Route::get('/', fn () => redirect('/home'));
 
 Route::get('/home', fn () => Inertia::render('home'))
@@ -54,7 +72,10 @@ Route::get('/auth/steam/callback', [SteamAuthController::class, 'callback'])
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', fn (SteamService $steam) => Inertia::render('dashboard', [
         'user' => inertiaUser(),
-        'games' => ownedGames($steam),
+        'games' => [
+            ...ownedGames($steam),
+            ...customGames(),
+        ],
     ]))->name('dashboard');
 
     Route::get('/backlog', fn (SteamService $steam) => Inertia::render('backlog/index', [
@@ -83,7 +104,7 @@ Route::middleware('auth')->group(function () {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'publisher' => ['nullable', 'string', 'max:255'],
-            'cover_url' => ['nullable', 'string', 'max:2000'],
+            'cover_url' => ['nullable', 'string'],
         ]);
 
         CustomGame::create([
