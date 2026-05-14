@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\SteamAuthController;
 use App\Models\CustomGame;
+use App\Models\UserGameMeta;
 use App\Services\SteamService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -122,6 +123,29 @@ Route::middleware('auth')->group(function () use (
 
     })->name('games.store');
 
+    Route::post('/games/{game}/meta', function (
+        string $game,
+        Request $request
+    ) {
+
+        $validated = $request->validate([
+            'note' => ['nullable', 'string'],
+            'rating' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'recommended' => ['boolean'],
+        ]);
+
+        UserGameMeta::updateOrCreate(
+            [
+                'user_id' => Auth::id(),
+                'game_id' => $game,
+            ],
+            $validated
+        );
+
+        return back();
+
+    })->name('games.meta');
+
     Route::get('/steam/search', function (SteamService $steam) {
 
         $query = request('q');
@@ -140,6 +164,10 @@ Route::middleware('auth')->group(function () use (
     ) use ($userPayload) {
 
         $user = Auth::user();
+
+        $meta = UserGameMeta::where('user_id', Auth::id())
+            ->where('game_id', $game)
+            ->first();
 
         if (str_starts_with($game, 'custom-')) {
 
@@ -172,6 +200,10 @@ Route::middleware('auth')->group(function () use (
                     'release_date' => null,
                     'steam_url' => null,
                     'is_custom' => true,
+
+                    'note' => $meta?->note,
+                    'rating' => $meta?->rating,
+                    'recommended' => $meta?->recommended ?? false,
                 ],
             ]);
         }
@@ -179,6 +211,15 @@ Route::middleware('auth')->group(function () use (
         $details = $steam->getAppDetails($game);
 
         abort_if(! $details, 404);
+
+        $playtime = collect(
+            $steam->getOwnedGames($user->steam_id)
+        )->firstWhere('appid', (int) $game);
+
+        $achievements = $steam->getPlayerAchievements(
+            $user->steam_id,
+            $game
+        );
 
         return Inertia::render('games/show', [
 
@@ -248,6 +289,20 @@ Route::middleware('auth')->group(function () use (
 
                 'steam_url' =>
                     "https://store.steampowered.com/app/{$game}",
+
+                'playtime_hours' => isset($playtime['playtime_forever'])
+                    ? round($playtime['playtime_forever'] / 60, 1)
+                    : null,
+
+                'achievements_unlocked' =>
+                    $achievements['unlocked'] ?? null,
+
+                'achievements_total' =>
+                    $achievements['total'] ?? null,
+
+                'note' => $meta?->note,
+                'rating' => $meta?->rating,
+                'recommended' => $meta?->recommended ?? false,
 
                 'is_custom' => false,
             ],

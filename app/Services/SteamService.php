@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 
 class SteamService
@@ -22,6 +23,54 @@ class SteamService
         return $response->json('response.games') ?? [];
     }
 
+    public function getOwnedGame(
+        string $steamId,
+        int|string $appId
+    ): ?array {
+
+        return collect(
+            $this->getOwnedGames($steamId)
+        )->first(
+            fn ($game) =>
+                (string) $game['appid'] === (string) $appId
+        );
+    }
+
+    public function getPlayerAchievements(
+        string $steamId,
+        int|string $appId
+    ): array {
+
+        $response = Http::get(
+            'https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/',
+            [
+                'key' => config('services.steam.key'),
+                'steamid' => $steamId,
+                'appid' => $appId,
+                'l' => 'english',
+            ]
+        );
+
+        if (! $response->successful()) {
+            return [
+                'unlocked' => null,
+                'total' => null,
+            ];
+        }
+
+        $achievements =
+            $response->json('playerstats.achievements')
+            ?? [];
+
+        return [
+            'unlocked' => collect($achievements)
+                ->where('achieved', 1)
+                ->count(),
+
+            'total' => count($achievements),
+        ];
+    }
+
     public function getWishlist(string $steamId): array
     {
         $url = "https://store.steampowered.com/wishlist/profiles/{$steamId}/wishlistdata/?p=0";
@@ -39,7 +88,11 @@ class SteamService
             ],
         ]);
 
-        $response = file_get_contents($url, false, $context);
+        $response = file_get_contents(
+            $url,
+            false,
+            $context
+        );
 
         if (! $response) {
             return [];
@@ -53,16 +106,23 @@ class SteamService
 
         return collect($data)
             ->map(function ($game, $appid) {
+
                 return [
                     'appid' => (int) $appid,
 
-                    'name' => $game['name'] ?? 'Unknown game',
+                    'name' =>
+                        $game['name']
+                        ?? 'Unknown game',
 
                     'playtime_forever' => null,
 
-                    'capsule' => $game['capsule'] ?? null,
+                    'capsule' =>
+                        $game['capsule']
+                        ?? null,
 
-                    'review_score' => $game['review_score'] ?? null,
+                    'review_score' =>
+                        $game['review_score']
+                        ?? null,
                 ];
             })
             ->values()
@@ -86,11 +146,19 @@ class SteamService
             return [];
         }
 
-        return collect($response->json('items') ?? [])
+        return collect(
+            $response->json('items') ?? []
+        )
             ->map(fn ($game) => [
-                'appid' => $game['id'] ?? null,
-                'title' => $game['name'] ?? null,
-                'cover_url' => $game['tiny_image'] ?? null,
+                'appid' =>
+                    $game['id'] ?? null,
+
+                'title' =>
+                    $game['name'] ?? null,
+
+                'cover_url' =>
+                    $game['tiny_image']
+                    ?? null,
             ])
             ->filter(fn ($game) =>
                 $game['appid'] &&
@@ -100,8 +168,10 @@ class SteamService
             ->all();
     }
 
-    public function getPlayerSummary(string $steamId): ?array
-    {
+    public function getPlayerSummary(
+        string $steamId
+    ): ?array {
+
         $response = Http::get(
             'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/',
             [
@@ -111,24 +181,33 @@ class SteamService
             ]
         );
 
-        return $response->json('response.players.0');
+        return $response->json(
+            'response.players.0'
+        );
     }
 
-    public function getAppDetails(int|string $appId): ?array
-    {
+    public function getAppDetails(
+        int|string $appId
+    ): ?array {
+
         $response = Http::withHeaders([
             'User-Agent' => 'Mozilla/5.0',
-        ])->get('https://store.steampowered.com/api/appdetails', [
-            'appids' => $appId,
-            'l' => 'english',
-            'cc' => 'US',
-        ]);
+        ])->get(
+            'https://store.steampowered.com/api/appdetails',
+            [
+                'appids' => $appId,
+                'l' => 'english',
+                'cc' => 'US',
+            ]
+        );
 
         if (! $response->successful()) {
             return null;
         }
 
-        $data = $response->json("{$appId}.data");
+        $data = $response->json(
+            "{$appId}.data"
+        );
 
         if (! is_array($data)) {
             return null;
