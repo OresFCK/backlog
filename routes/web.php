@@ -60,8 +60,10 @@ Route::middleware('auth')->group(function () use (
     $wishlistGames,
     $customGames
 ) {
+
     Route::get('/dashboard', fn (SteamService $steam) => Inertia::render('dashboard', [
         'user' => $userPayload(),
+
         'games' => [
             ...$ownedGames($steam),
             ...$customGames(),
@@ -70,6 +72,7 @@ Route::middleware('auth')->group(function () use (
 
     Route::get('/backlog', fn (SteamService $steam) => Inertia::render('backlog/index', [
         'user' => $userPayload(),
+
         'games' => [
             ...$ownedGames($steam),
             ...$customGames(),
@@ -78,11 +81,13 @@ Route::middleware('auth')->group(function () use (
 
     Route::get('/wishlist', fn (SteamService $steam) => Inertia::render('wishlist/index', [
         'user' => $userPayload(),
+
         'games' => $wishlistGames($steam),
     ]))->name('wishlist.index');
 
     Route::get('/recommendations', fn (SteamService $steam) => Inertia::render('recommendations/index', [
         'user' => $userPayload(),
+
         'games' => [
             ...$ownedGames($steam),
             ...$customGames(),
@@ -91,6 +96,7 @@ Route::middleware('auth')->group(function () use (
 
     Route::get('/games/create', fn (SteamService $steam) => Inertia::render('games/create', [
         'user' => $userPayload(),
+
         'games' => [
             ...$ownedGames($steam),
             ...$customGames(),
@@ -98,6 +104,7 @@ Route::middleware('auth')->group(function () use (
     ]))->name('games.create');
 
     Route::post('/games', function (Request $request) {
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'publisher' => ['nullable', 'string', 'max:255'],
@@ -112,22 +119,139 @@ Route::middleware('auth')->group(function () use (
         ]);
 
         return redirect('/dashboard');
+
     })->name('games.store');
 
     Route::get('/steam/search', function (SteamService $steam) {
+
         $query = request('q');
 
         return response()->json(
-            $query ? $steam->searchStore($query) : []
+            $query
+                ? $steam->searchStore($query)
+                : []
         );
+
     })->name('steam.search');
 
-    Route::get('/wip', fn (SteamService $steam) => Inertia::render('wip', [
-        'user' => $userPayload(),
-        'games' => [
-            ...$ownedGames($steam),
-            ...$customGames(),
-        ],
-        'steam_error' => null,
-    ]))->name('wip');
+    Route::get('/games/{game}', function (
+        string $game,
+        SteamService $steam
+    ) use ($userPayload) {
+
+        $user = Auth::user();
+
+        if (str_starts_with($game, 'custom-')) {
+
+            $customId = str_replace('custom-', '', $game);
+
+            $customGame = $user
+                ->customGames()
+                ->findOrFail($customId);
+
+            return Inertia::render('games/show', [
+
+                'user' => $userPayload(),
+
+                'game' => [
+                    'id' => 'custom-' . $customGame->id,
+                    'appid' => null,
+                    'title' => $customGame->title,
+                    'publisher' => $customGame->publisher,
+                    'cover_url' => $customGame->cover_url,
+                    'header_image' => $customGame->cover_url,
+                    'description' => null,
+                    'about' => null,
+                    'developers' => [],
+                    'publishers' => $customGame->publisher
+                        ? [$customGame->publisher]
+                        : [],
+                    'genres' => [],
+                    'screenshots' => [],
+                    'platforms' => [],
+                    'release_date' => null,
+                    'steam_url' => null,
+                    'is_custom' => true,
+                ],
+            ]);
+        }
+
+        $details = $steam->getAppDetails($game);
+
+        abort_if(! $details, 404);
+
+        return Inertia::render('games/show', [
+
+            'user' => $userPayload(),
+
+            'game' => [
+                'id' => $game,
+                'appid' => $game,
+
+                'title' => $details['name']
+                    ?? 'Unknown game',
+
+                'publisher' => $details['publishers'][0]
+                    ?? null,
+
+                'cover_url' =>
+                    $details['capsule_imagev5']
+                    ?? $details['header_image']
+                    ?? null,
+
+                'header_image' =>
+                    $details['header_image']
+                    ?? null,
+
+                'description' => strip_tags(
+                    $details['short_description']
+                    ?? ''
+                ),
+
+                'about' => strip_tags(
+                    $details['about_the_game']
+                    ?? ''
+                ),
+
+                'developers' =>
+                    $details['developers']
+                    ?? [],
+
+                'publishers' =>
+                    $details['publishers']
+                    ?? [],
+
+                'genres' => collect(
+                    $details['genres']
+                    ?? []
+                )
+                    ->pluck('description')
+                    ->values()
+                    ->all(),
+
+                'screenshots' => collect(
+                    $details['screenshots']
+                    ?? []
+                )
+                    ->pluck('path_full')
+                    ->values()
+                    ->take(6)
+                    ->all(),
+
+                'platforms' =>
+                    $details['platforms']
+                    ?? [],
+
+                'release_date' =>
+                    $details['release_date']['date']
+                    ?? null,
+
+                'steam_url' =>
+                    "https://store.steampowered.com/app/{$game}",
+
+                'is_custom' => false,
+            ],
+        ]);
+
+    })->name('games.show');
 });

@@ -113,4 +113,27 @@ class SteamService
 
         return $response->json('response.players.0');
     }
+
+    public function getAppDetails(int|string $appId): ?array
+    {
+        $response = Http::withHeaders([
+            'User-Agent' => 'Mozilla/5.0',
+        ])->get('https://store.steampowered.com/api/appdetails', [
+            'appids' => $appId,
+            'l' => 'english',
+            'cc' => 'US',
+        ]);
+
+        if (! $response->successful()) {
+            return null;
+        }
+
+        $data = $response->json("{$appId}.data");
+
+        if (! is_array($data)) {
+            return null;
+        }
+
+        return $data;
+    }
 }
