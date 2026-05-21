@@ -1,102 +1,68 @@
 <script setup>
 import { Link } from '@inertiajs/vue3'
 
+import StatusBadge from '@/components/game/StatusBadge.vue'
+
 defineProps({
     game: {
         type: Object,
         required: true,
     },
 })
-
-const statusColors = {
-    backlog:
-        'bg-zinc-700/70 text-zinc-200 border border-zinc-600',
-
-    playing:
-        'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
-
-    finished:
-        'bg-blue-500/20 text-blue-300 border border-blue-500/30',
-
-    wishlist:
-        'bg-pink-500/20 text-pink-300 border border-pink-500/30',
-}
 </script>
 
 <template>
     <Link
-        :href="`/games/${game.id}`"
-        class="group block overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/70 transition-all hover:-translate-y-1 hover:border-zinc-700 hover:bg-zinc-900"
+        :href="`/games/${game.id ?? game.appid}`"
+        class="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition hover:border-zinc-700 hover:bg-zinc-800"
     >
-        <div class="relative aspect-[3/4] overflow-hidden">
-            <img
-                :src="
-                    game.cover_url ||
-                    'https://placehold.co/600x900/18181b/ffffff?text=No+Cover'
-                "
-                :alt="game.title"
-                class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-            />
+        <img
+            :src="
+                game.cover_url ||
+                game.capsule ||
+                'https://placehold.co/600x900?text=No+Image'
+            "
+            class="aspect-[3/4] w-full object-cover transition duration-300 group-hover:scale-105"
+        />
+
+        <div class="space-y-3 p-4">
 
             <div
-                class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"
-            />
+                class="flex items-start justify-between gap-3"
+            >
 
-            <div class="absolute left-4 top-4">
-                <span
-                    class="rounded-full px-3 py-1 text-xs font-semibold backdrop-blur-sm"
-                    :class="
-                        statusColors[game.status] ||
-                        statusColors.backlog
-                    "
-                >
-                    {{ game.status }}
-                </span>
-            </div>
-        </div>
-
-        <div class="space-y-3 p-5">
-            <div>
                 <h3
-                    class="line-clamp-1 text-lg font-bold text-white"
+                    class="line-clamp-2 text-sm font-bold text-white"
                 >
-                    {{ game.title }}
+                    {{ game.title || game.name }}
                 </h3>
 
-                <p class="mt-1 text-sm text-zinc-400">
-                    <template
-                        v-if="
-                            game.average_playtime_minutes
-                        "
-                    >
-                        {{
-                            Math.round(
-                                game.average_playtime_minutes /
-                                    60
-                            )
-                        }}h played
-                    </template>
+                <StatusBadge
+                    v-if="game.status"
+                    :status="game.status"
+                    :color="
+                        game.status_color
+                    "
+                />
 
-                    <template v-else>
-                        Unknown length
-                    </template>
-                </p>
             </div>
 
-            <div
-                class="flex items-center justify-between"
+            <p
+                v-if="game.publisher"
+                class="text-xs text-zinc-500"
             >
-                <span
-                    class="text-sm font-medium text-zinc-500"
-                >
-                    {{ game.platform || 'Custom' }}
-                </span>
+                {{ game.publisher }}
+            </p>
 
-                <div
-                    class="rounded-lg bg-zinc-800 px-2 py-1 text-sm font-bold text-zinc-200"
-                >
-                    {{ game.rating || '--' }}
-                </div>
+            <div
+                v-if="game.playtime_forever"
+                class="text-xs font-semibold text-zinc-400"
+            >
+                {{
+                    (
+                        game.playtime_forever / 60
+                    ).toFixed(1)
+                }}h played
             </div>
         </div>
     </Link>

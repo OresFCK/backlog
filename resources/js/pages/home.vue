@@ -17,12 +17,6 @@
                     Login with Steam
                 </a>
 
-                <a
-                    href="/wip"
-                    class="rounded-2xl border border-zinc-800 px-6 py-3 text-sm font-semibold text-white transition hover:border-zinc-700 hover:bg-zinc-900"
-                >
-                    Open app
-                </a>
             </div>
         </div>
     </div>

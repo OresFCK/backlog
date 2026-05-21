@@ -14,6 +14,7 @@ class UserGameMeta extends Model
         'note',
         'rating',
         'recommended',
+        'status',
     ];
 
     protected $casts = [

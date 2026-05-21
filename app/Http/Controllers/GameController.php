@@ -2,46 +2,42 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SearchGameRequest;
+use App\Http\Requests\StoreGameRequest;
 use App\Models\Game;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class GameController extends Controller
 {
-    public function search(Request $request)
+    public function search(SearchGameRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'q' => ['required', 'string', 'min:2', 'max:100'],
-        ]);
+        $query = $request->validated('q');
 
         $games = Game::query()
-            ->where('title', 'ilike', '%' . $validated['q'] . '%') // PostgreSQL
+            ->where('title', 'ilike', "%{$query}%")
             ->limit(10)
             ->get();
 
         return response()->json($games);
     }
 
-    public function store(Request $request)
+    public function store(StoreGameRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'steam_app_id' => ['nullable', 'integer'],
-            'cover_url' => ['nullable', 'url'],
-            'header_image_url' => ['nullable', 'url'],
-            'release_date' => ['nullable', 'date'],
-            'metacritic_score' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'steam_rating_percent' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'average_playtime_minutes' => ['nullable', 'integer', 'min:0'],
-        ]);
+        $data = $request->validated();
 
         $game = Game::firstOrCreate(
-            [
-                'steam_app_id' => $validated['steam_app_id'] ?? null,
-                'title' => $validated['title'],
-            ],
-            $validated
+            $this->uniqueGameData($data),
+            $data
         );
 
         return response()->json($game, 201);
+    }
+
+    private function uniqueGameData(array $data): array
+    {
+        return [
+            'steam_app_id' => $data['steam_app_id'] ?? null,
+            'title' => $data['title'],
+        ];
     }
 }

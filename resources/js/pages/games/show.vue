@@ -1,12 +1,14 @@
 <script setup>
-import { ref } from 'vue'
+import {
+    ref,
+    watch,
+} from 'vue'
+
 import { router } from '@inertiajs/vue3'
 
 import {
     Trophy,
     Calendar,
-    Check,
-    X,
     ThumbsUp,
 } from 'lucide-vue-next'
 
@@ -23,9 +25,16 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+
+    statuses: {
+        type: Array,
+        default: () => [],
+    },
 })
 
-const note = ref(props.game.note ?? '')
+const note = ref(
+    props.game.note ?? ''
+)
 
 const rating = ref(
     props.game.rating
@@ -35,6 +44,26 @@ const rating = ref(
 
 const recommended = ref(
     props.game.recommended ?? false
+)
+
+const status = ref('')
+
+watch(
+    () => props.statuses,
+    (statuses) => {
+
+        if (!statuses.length) {
+            return
+        }
+
+        status.value =
+            props.game.has_meta
+                ? props.game.status
+                : statuses[0].name
+    },
+    {
+        immediate: true,
+    }
 )
 
 const saveMeta = () => {
@@ -48,7 +77,10 @@ const saveMeta = () => {
                 ? Number(rating.value)
                 : null,
 
-            recommended: recommended.value,
+            recommended:
+                recommended.value,
+
+            status: status.value,
         },
         {
             preserveScroll: true,
@@ -56,19 +88,9 @@ const saveMeta = () => {
     )
 }
 
-const resetMeta = () => {
-
-    note.value = props.game.note ?? ''
-
-    rating.value = props.game.rating
-        ? String(props.game.rating)
-        : ''
-
-    recommended.value =
-        props.game.recommended ?? false
-}
-
-const blockInvalidKeys = (event) => {
+const blockInvalidKeys = (
+    event
+) => {
 
     const allowedKeys = [
         'Backspace',
@@ -79,32 +101,45 @@ const blockInvalidKeys = (event) => {
     ]
 
     if (
-        allowedKeys.includes(event.key)
+        allowedKeys.includes(
+            event.key
+        )
     ) {
         return
     }
 
-    if (!/^\d$/.test(event.key)) {
+    if (
+        !/^\d$/.test(event.key)
+    ) {
         event.preventDefault()
     }
 }
 
-const handleRatingInput = (event) => {
+const handleRatingInput = (
+    event
+) => {
 
-    let value = event.target.value
-        .replace(/\D/g, '')
-        .slice(0, 2)
+    let value =
+        event.target.value
+            .replace(/\D/g, '')
+            .slice(0, 2)
 
     if (value === '') {
+
         rating.value = ''
+
         return
     }
 
-    if (Number(value) > 10) {
+    if (
+        Number(value) > 10
+    ) {
         value = '10'
     }
 
-    if (Number(value) < 1) {
+    if (
+        Number(value) < 1
+    ) {
         value = '1'
     }
 
@@ -113,10 +148,14 @@ const handleRatingInput = (event) => {
 </script>
 
 <template>
-    <div class="flex min-h-screen bg-zinc-950">
+    <div
+        class="flex min-h-screen bg-zinc-950"
+    >
         <Sidebar />
 
-        <div class="flex flex-1 flex-col">
+        <div
+            class="flex flex-1 flex-col"
+        >
             <Topbar :user="user" />
 
             <main class="flex-1 p-8">
@@ -126,13 +165,16 @@ const handleRatingInput = (event) => {
                     <div
                         class="relative min-h-[360px] bg-cover bg-center"
                         :style="{
-                            backgroundImage: game.header_image
-                                ? `linear-gradient(to right, rgba(9,9,11,.95), rgba(9,9,11,.55)), url(${game.header_image})`
-                                : null,
+                            backgroundImage:
+                                game.header_image
+                                    ? `linear-gradient(to right, rgba(9,9,11,.95), rgba(9,9,11,.55)), url(${game.header_image})`
+                                    : null,
                         }"
                     >
                         <div class="p-10">
-                            <div class="mb-4 flex flex-wrap gap-2">
+                            <div
+                                class="mb-4 flex flex-wrap gap-2"
+                            >
                                 <span
                                     v-for="genre in game.genres"
                                     :key="genre"
@@ -156,73 +198,35 @@ const handleRatingInput = (event) => {
                                     'No description available.'
                                 }}
                             </p>
-
-                            <div class="mt-8 flex gap-4">
-                                <a
-                                    v-if="game.steam_url"
-                                    :href="game.steam_url"
-                                    target="_blank"
-                                    class="rounded-xl bg-white px-6 py-3 text-sm font-bold text-black hover:bg-zinc-200"
-                                >
-                                    Open Steam page
-                                </a>
-
-                                <button
-                                    class="rounded-xl border border-zinc-700 bg-zinc-950 px-6 py-3 text-sm font-bold text-white hover:bg-zinc-800"
-                                >
-                                    Mark as playing
-                                </button>
-                            </div>
                         </div>
                     </div>
 
                     <div
                         class="grid gap-8 p-10 lg:grid-cols-[1fr_360px]"
                     >
-                        <section class="space-y-8">
-
-                            <div class="space-y-5">
-
+                        <section
+                            class="space-y-8"
+                        >
+                            <div
+                                class="space-y-5"
+                            >
                                 <div
                                     class="grid gap-5 lg:grid-cols-[1fr_260px]"
                                 >
                                     <div
                                         class="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
                                     >
-                                        <div
-                                            class="flex items-center justify-between"
+                                        <h2
+                                            class="text-2xl font-bold text-white"
                                         >
-                                            <h2
-                                                class="text-2xl font-bold text-white"
-                                            >
-                                                Your notes
-                                            </h2>
-
-                                            <div
-                                                class="flex items-center gap-2"
-                                            >
-                                                <button
-                                                    type="button"
-                                                    @click="resetMeta"
-                                                    class="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-red-500 hover:text-red-400"
-                                                >
-                                                    <X class="h-4 w-4" />
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    @click="saveMeta"
-                                                    class="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-400 transition hover:border-emerald-500 hover:text-emerald-400"
-                                                >
-                                                    <Check class="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </div>
+                                            Your notes
+                                        </h2>
 
                                         <textarea
                                             v-model="note"
                                             placeholder="Write your thoughts about this game..."
                                             class="mt-5 min-h-40 w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-sm text-zinc-200 outline-none placeholder:text-zinc-500 focus:border-zinc-600"
+                                            @blur="saveMeta"
                                         />
                                     </div>
 
@@ -247,9 +251,10 @@ const handleRatingInput = (event) => {
                                                     inputmode="numeric"
                                                     maxlength="2"
                                                     placeholder="—"
+                                                    class="w-14 bg-transparent text-center text-4xl font-black text-white outline-none"
                                                     @keydown="blockInvalidKeys"
                                                     @input="handleRatingInput"
-                                                    class="w-14 bg-transparent text-center text-4xl font-black text-white outline-none"
+                                                    @blur="saveMeta"
                                                 />
 
                                                 <span
@@ -268,7 +273,7 @@ const handleRatingInput = (event) => {
                                                     ? 'text-emerald-300'
                                                     : 'text-zinc-300 hover:text-white'
                                             "
-                                            @click="recommended = !recommended"
+                                            @click="recommended = !recommended; saveMeta()"
                                         >
                                             <ThumbsUp
                                                 class="h-4 w-4"
@@ -280,6 +285,20 @@ const handleRatingInput = (event) => {
                                                     : 'Recommend'
                                             }}
                                         </button>
+
+                                        <select
+                                            v-model="status"
+                                            class="mt-5 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-semibold text-white outline-none focus:border-zinc-600"
+                                            @change="saveMeta"
+                                        >
+                                            <option
+                                                v-for="item in statuses"
+                                                :key="item.id"
+                                                :value="item.name"
+                                            >
+                                                {{ item.name }}
+                                            </option>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -299,7 +318,8 @@ const handleRatingInput = (event) => {
                                             class="mt-3 text-3xl font-black text-white"
                                         >
                                             {{
-                                                game.playtime_hours ?? '—'
+                                                game.playtime_hours ??
+                                                '—'
                                             }}h
                                         </p>
 
@@ -321,7 +341,8 @@ const handleRatingInput = (event) => {
                                             class="mt-3 text-3xl font-black text-white"
                                         >
                                             {{
-                                                game.achievements_unlocked ?? '—'
+                                                game.achievements_unlocked ??
+                                                '—'
                                             }}/{{ game.achievements_total ?? '—' }}
                                         </p>
 
@@ -343,7 +364,8 @@ const handleRatingInput = (event) => {
                                             class="mt-3 text-2xl font-black text-white"
                                         >
                                             {{
-                                                game.release_date || '—'
+                                                game.release_date ||
+                                                '—'
                                             }}
                                         </p>
 
@@ -396,7 +418,9 @@ const handleRatingInput = (event) => {
                             </div>
                         </section>
 
-                        <aside class="space-y-4">
+                        <aside
+                            class="space-y-4"
+                        >
                             <img
                                 v-if="game.cover_url"
                                 :src="game.cover_url"
@@ -426,8 +450,8 @@ const handleRatingInput = (event) => {
                                             class="text-zinc-200"
                                         >
                                             {{
-                                                game.developers?.join(', ')
-                                                || 'Unknown'
+                                                game.developers?.join(', ') ||
+                                                'Unknown'
                                             }}
                                         </dd>
                                     </div>
@@ -443,9 +467,9 @@ const handleRatingInput = (event) => {
                                             class="text-zinc-200"
                                         >
                                             {{
-                                                game.publishers?.join(', ')
-                                                || game.publisher
-                                                || 'Unknown'
+                                                game.publishers?.join(', ') ||
+                                                game.publisher ||
+                                                'Unknown'
                                             }}
                                         </dd>
                                     </div>

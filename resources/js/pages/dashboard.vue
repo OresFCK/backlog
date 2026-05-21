@@ -8,12 +8,14 @@ import GameGrid from '@/components/game/GameGrid.vue'
 import RecommendationCard from '@/components/game/RecommendationCard.vue'
 
 const props = defineProps({
-    user: {
-        type: Object,
-        required: true,
-    },
+    user: Object,
 
     games: {
+        type: Array,
+        default: () => [],
+    },
+
+    statuses: {
         type: Array,
         default: () => [],
     },
@@ -21,6 +23,7 @@ const props = defineProps({
 
 const sortBy = ref('name')
 const searchQuery = ref('')
+const selectedStatus = ref('all')
 
 const recommended = computed(() => {
     if (!props.games.length) {
@@ -29,12 +32,15 @@ const recommended = computed(() => {
 
     const randomGame =
         props.games[
-            Math.floor(Math.random() * props.games.length)
+            Math.floor(
+                Math.random() *
+                    props.games.length
+            )
         ]
 
     return {
         game: {
-            id: randomGame.appid,
+            id: randomGame.id,
 
             title:
                 randomGame.name ??
@@ -47,42 +53,49 @@ const recommended = computed(() => {
         },
 
         reason:
-            'Recommended from your Steam library based on your owned games.',
+            'Recommended from your library.',
     }
 })
 
 const mappedGames = computed(() => {
-    let games = props.games.map((game) => ({
-        id: game.appid,
+    let games = props.games.map((game) => {
 
-        title:
-            game.name ??
-            game.title ??
-            'Unknown game',
+        const status =
+            props.statuses.find(
+                (item) =>
+                    item.name === game.status
+            ) ?? null
 
-        cover_url:
-            game.cover_url ??
-            `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appid}/library_600x900.jpg`,
+        return {
+            id: game.id,
 
-        status: 'backlog',
+            title:
+                game.name ??
+                game.title ??
+                'Unknown game',
 
-        average_playtime_minutes:
-            game.playtime_forever ?? 0,
+            cover_url:
+                game.cover_url ??
+                `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appid}/library_600x900.jpg`,
 
-        platform: game.is_custom
-            ? 'Custom'
-            : 'Steam',
+            status:
+                game.status ??
+                'Backlog',
 
-        rating: game.review_score
-            ? Math.min(
-                  100,
-                  Math.max(
-                      70,
-                      Math.floor(game.review_score / 10)
-                  )
-              )
-            : Math.floor(Math.random() * 20) + 80,
-    }))
+            status_color:
+                status?.color ??
+                '#71717a',
+
+            average_playtime_minutes:
+                game.playtime_forever ?? 0,
+
+            platform: game.is_custom
+                ? 'Custom'
+                : 'Steam',
+
+            rating: game.rating ?? null,
+        }
+    })
 
     if (searchQuery.value.trim()) {
         games = games.filter((game) =>
@@ -91,6 +104,16 @@ const mappedGames = computed(() => {
                 .includes(
                     searchQuery.value.toLowerCase()
                 )
+        )
+    }
+
+    if (
+        selectedStatus.value !== 'all'
+    ) {
+        games = games.filter(
+            (game) =>
+                game.status ===
+                selectedStatus.value
         )
     }
 
@@ -104,10 +127,11 @@ const mappedGames = computed(() => {
 
         case 'rating':
             return games.sort(
-                (a, b) => b.rating - a.rating
+                (a, b) =>
+                    (b.rating ?? 0) -
+                    (a.rating ?? 0)
             )
 
-        case 'name':
         default:
             return games.sort((a, b) =>
                 String(a.title).localeCompare(
@@ -128,12 +152,14 @@ const mappedGames = computed(() => {
             <main class="flex-1 space-y-10 p-8">
                 <RecommendationCard
                     v-if="recommended"
-                    :recommendation="recommended"
+                    :recommendation="
+                        recommended
+                    "
                 />
 
                 <section>
                     <div
-                        class="mb-6 flex items-center justify-between"
+                        class="mb-6 flex flex-wrap items-center justify-between gap-4"
                     >
                         <div>
                             <h2
@@ -142,23 +168,31 @@ const mappedGames = computed(() => {
                                 Your game library
                             </h2>
 
-                            <p class="mt-1 text-zinc-400">
-                                {{ mappedGames.length }}
+                            <p
+                                class="mt-1 text-zinc-400"
+                            >
+                                {{
+                                    mappedGames.length
+                                }}
                                 games available
                             </p>
                         </div>
 
-                        <div class="flex items-center gap-4">
+                        <div
+                            class="flex flex-wrap items-center gap-4"
+                        >
                             <input
-                                v-model="searchQuery"
+                                v-model="
+                                    searchQuery
+                                "
                                 type="text"
                                 placeholder="Search games..."
-                                class="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-zinc-500"
+                                class="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-500"
                             />
 
                             <select
                                 v-model="sortBy"
-                                class="appearance-none rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-zinc-500"
+                                class="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
                             >
                                 <option value="name">
                                     Sort by name
@@ -173,33 +207,36 @@ const mappedGames = computed(() => {
                                 </option>
                             </select>
 
-                            <a
-                                href="https://steamcommunity.com"
-                                target="_blank"
-                                class="rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-zinc-800"
+                            <select
+                                v-model="
+                                    selectedStatus
+                                "
+                                class="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
                             >
-                                Open Steam
-                            </a>
+                                <option value="all">
+                                    All statuses
+                                </option>
+
+                                <option
+                                    v-for="status in statuses"
+                                    :key="
+                                        status.id
+                                    "
+                                    :value="
+                                        status.name
+                                    "
+                                >
+                                    {{
+                                        status.name
+                                    }}
+                                </option>
+                            </select>
                         </div>
                     </div>
 
-                    <GameGrid :games="mappedGames" />
-
-                    <div
-                        v-if="!mappedGames.length"
-                        class="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-10 text-center"
-                    >
-                        <h3
-                            class="text-2xl font-bold text-white"
-                        >
-                            No games found
-                        </h3>
-
-                        <p class="mt-3 text-zinc-400">
-                            Try changing your search query
-                            or sorting settings.
-                        </p>
-                    </div>
+                    <GameGrid
+                        :games="mappedGames"
+                    />
                 </section>
             </main>
         </div>
