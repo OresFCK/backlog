@@ -92,7 +92,7 @@ const settingsItems = [
             <h1
                 class="text-2xl font-bold tracking-tight text-white"
             >
-                backlog.gg
+                Curator.gg
             </h1>
 
             <p
