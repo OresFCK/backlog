@@ -22,10 +22,21 @@ const color = ref('#3b82f6')
 
 const bannedWords = [
     'hitler',
+    'nazi',
+    '1488',
+    'heilhitler',
     'nigger',
     'nigga',
-    'n1gger',
-    'n1gga',
+    'nigg',
+    'kike',
+    'chink',
+    'spic',
+    'faggot',
+    'tranny',
+    'isis',
+    'alqaeda',
+    'pedo',
+    'pedophile',
 ]
 
 const normalizedTitle = computed(() =>
