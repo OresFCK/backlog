@@ -42,16 +42,30 @@ const normalizeStatus = (status) => {
         return 'Backlog'
     }
 
-    if (status.toLowerCase() === 'backlog') {
-        return 'Backlog'
+    const normalized =
+        status.toLowerCase()
+
+    const mappedStatuses = {
+        backlog: 'Backlog',
+        playing: 'Playing',
+        finished: 'Finished',
+        completed: 'Completed',
+        wishlist: 'Wishlist',
+        dropped: 'Dropped',
     }
 
-    return status
+    return (
+        mappedStatuses[normalized] ??
+        status
+    )
 }
 
 const groupedGames = computed(() => {
     return props.games.reduce((groups, game) => {
-        const status = normalizeStatus(game.status)
+        const status =
+            normalizeStatus(
+                game.status
+            )
 
         if (!groups[status]) {
             groups[status] = []
@@ -69,66 +83,105 @@ const stats = computed(() => {
         'Completed',
     ]
 
-    const finished = props.games.filter(game =>
-        finishedStatuses.includes(game.status)
+    const finished = props.games.filter(
+        game =>
+            finishedStatuses.includes(
+                normalizeStatus(
+                    game.status
+                )
+            )
     ).length
 
     return {
         played: props.games.filter(
-            game => game.playtime_forever > 0
+            game =>
+                game.playtime_forever > 0
         ).length,
 
         playing: props.games.filter(
-            game => game.status === 'Playing'
+            game =>
+                normalizeStatus(
+                    game.status
+                ) === 'Playing'
         ).length,
 
         reviews: props.games.filter(
-            game => game.rating || game.note
+            game =>
+                game.rating ||
+                game.note
         ).length,
 
         backlog: props.games.filter(
-            game => game.status === 'Backlog'
+            game =>
+                normalizeStatus(
+                    game.status
+                ) === 'Backlog'
         ).length,
 
         wishlist: props.games.filter(
-            game => game.status === 'Wishlist'
+            game =>
+                normalizeStatus(
+                    game.status
+                ) === 'Wishlist'
         ).length,
 
-        lists: Object.keys(groupedGames.value).length,
+        lists: Object.keys(
+            groupedGames.value
+        ).length,
 
         finished,
 
-        completionRate: props.games.length
-            ? Math.round((finished / props.games.length) * 1000) / 10
-            : 0,
+        completionRate:
+            props.games.length
+                ? Math.round(
+                    (
+                        finished /
+                        props.games.length
+                    ) * 1000
+                ) / 10
+                : 0,
     }
 })
 
 const statusColor = (item) => {
-    return item.status_color ?? '#71717a'
+    return (
+        item.status_color ??
+        '#71717a'
+    )
 }
 
 const toggleStatus = (status) => {
-    openStatuses.value[status] = !openStatuses.value[status]
+    openStatuses.value[status] =
+        !openStatuses.value[status]
 }
 </script>
 
 <template>
-    <div class="flex min-h-screen bg-zinc-950 text-white">
+    <div
+        class="flex min-h-screen bg-zinc-950 text-white"
+    >
         <Sidebar />
 
-        <div class="flex min-h-screen flex-1 flex-col">
+        <div
+            class="flex min-h-screen flex-1 flex-col"
+        >
             <Topbar :user="user" />
 
-            <main class="flex-1 px-8 py-10">
-                <div class="mx-auto max-w-7xl space-y-8">
+            <main
+                class="flex-1 px-8 py-10"
+            >
+                <div
+                    class="mx-auto max-w-7xl space-y-8"
+                >
 
                     <div
                         class="group relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
                     >
                         <img
                             v-if="user?.banner_url"
-                            :src="user.banner_url"
+                            :src="
+                                user.banner_url
+                            "
                             class="absolute inset-0 h-full w-full object-cover"
                         />
 
@@ -148,7 +201,9 @@ const toggleStatus = (status) => {
                                 type="file"
                                 accept="image/*"
                                 class="hidden"
-                                @change="uploadBanner"
+                                @change="
+                                    uploadBanner
+                                "
                             />
                         </label>
 
@@ -162,9 +217,15 @@ const toggleStatus = (status) => {
                             class="relative z-10 flex flex-col gap-6 p-8 pt-44 lg:flex-row lg:items-end"
                         >
                             <img
-                                v-if="user?.avatar"
-                                :src="user.avatar"
-                                :alt="user.name"
+                                v-if="
+                                    user?.avatar
+                                "
+                                :src="
+                                    user.avatar
+                                "
+                                :alt="
+                                    user.name
+                                "
                                 class="h-32 w-32 rounded-3xl border-4 border-zinc-900 object-cover shadow-2xl"
                             />
 
@@ -173,14 +234,24 @@ const toggleStatus = (status) => {
                                 class="h-32 w-32 rounded-3xl border-4 border-zinc-900 bg-gradient-to-br from-indigo-500 to-purple-500"
                             />
 
-                            <div class="flex-1">
-                                <h1 class="text-5xl font-bold tracking-tight">
-                                    {{ user?.name }}
+                            <div
+                                class="flex-1"
+                            >
+                                <h1
+                                    class="text-5xl font-bold tracking-tight"
+                                >
+                                    {{
+                                        user?.name
+                                    }}
                                 </h1>
 
-                                <p class="mt-2 text-zinc-300">
+                                <p
+                                    class="mt-2 text-zinc-300"
+                                >
                                     Steam ID:
-                                    {{ user?.steam_id }}
+                                    {{
+                                        user?.steam_id
+                                    }}
                                 </p>
 
                                 <a
@@ -188,13 +259,17 @@ const toggleStatus = (status) => {
                                     target="_blank"
                                     class="mt-6 inline-flex rounded-xl border border-zinc-700 bg-zinc-900/80 px-5 py-3 text-sm font-medium text-white backdrop-blur transition hover:border-zinc-500 hover:bg-zinc-800"
                                 >
-                                    Open Steam Profile
+                                    Open
+                                    Steam
+                                    Profile
                                 </a>
                             </div>
                         </div>
                     </div>
 
-                    <div class="grid gap-4 md:grid-cols-3">
+                    <div
+                        class="grid gap-4 md:grid-cols-3"
+                    >
                         <div
                             class="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 p-6"
                         >
@@ -207,7 +282,8 @@ const toggleStatus = (status) => {
                             <p
                                 class="text-xs font-semibold uppercase tracking-widest text-zinc-500"
                             >
-                                Total Library
+                                Total
+                                Library
                             </p>
 
                             <div
@@ -216,7 +292,9 @@ const toggleStatus = (status) => {
                                 <p
                                     class="text-5xl font-bold"
                                 >
-                                    {{ games.length }}
+                                    {{
+                                        games.length
+                                    }}
                                 </p>
 
                                 <p
@@ -229,7 +307,9 @@ const toggleStatus = (status) => {
                             <p
                                 class="mt-6 text-xs text-zinc-500"
                             >
-                                Steam + custom games
+                                Steam +
+                                custom
+                                games
                             </p>
                         </div>
 
@@ -245,7 +325,8 @@ const toggleStatus = (status) => {
                             <p
                                 class="text-xs font-semibold uppercase tracking-widest text-zinc-500"
                             >
-                                Completed Games
+                                Completed
+                                Games
                             </p>
 
                             <div
@@ -254,7 +335,9 @@ const toggleStatus = (status) => {
                                 <p
                                     class="text-5xl font-bold"
                                 >
-                                    {{ stats.finished }}
+                                    {{
+                                        stats.finished
+                                    }}
                                 </p>
 
                                 <p
@@ -267,8 +350,11 @@ const toggleStatus = (status) => {
                             <p
                                 class="mt-6 text-xs text-zinc-500"
                             >
-                                {{ stats.played }}
-                                played titles
+                                {{
+                                    stats.played
+                                }}
+                                played
+                                titles
                             </p>
                         </div>
 
@@ -278,7 +364,8 @@ const toggleStatus = (status) => {
                             <p
                                 class="text-xs font-semibold uppercase tracking-widest text-zinc-500"
                             >
-                                Completion Rate
+                                Completion
+                                Rate
                             </p>
 
                             <div
@@ -295,15 +382,21 @@ const toggleStatus = (status) => {
                             <p
                                 class="mt-6 text-5xl font-bold"
                             >
-                                {{ stats.completionRate }}%
+                                {{
+                                    stats.completionRate
+                                }}%
                             </p>
 
                             <p
                                 class="mt-6 text-xs text-zinc-500"
                             >
-                                {{ stats.finished }}
+                                {{
+                                    stats.finished
+                                }}
                                 out of
-                                {{ games.length }}
+                                {{
+                                    games.length
+                                }}
                                 games
                             </p>
                         </div>
@@ -318,20 +411,27 @@ const toggleStatus = (status) => {
                             <button
                                 type="button"
                                 class="flex w-full items-center justify-between p-6 text-left transition hover:bg-zinc-800/60"
-                                @click="openActivity = !openActivity"
+                                @click="
+                                    openActivity =
+                                        !openActivity
+                                "
                             >
                                 <div>
                                     <h2
                                         class="text-xl font-semibold"
                                     >
-                                        Recent Activity
+                                        Recent
+                                        Activity
                                     </h2>
 
                                     <p
                                         class="mt-1 text-sm text-zinc-500"
                                     >
-                                        {{ activity.length }}
-                                        recent updates
+                                        {{
+                                            activity.length
+                                        }}
+                                        recent
+                                        updates
                                     </p>
                                 </div>
 
@@ -347,7 +447,9 @@ const toggleStatus = (status) => {
                             </button>
 
                             <div
-                                v-if="openActivity"
+                                v-if="
+                                    openActivity
+                                "
                                 class="space-y-4 border-t border-zinc-800 p-6"
                             >
                                 <div
@@ -356,8 +458,12 @@ const toggleStatus = (status) => {
                                     class="flex gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4"
                                 >
                                     <img
-                                        v-if="item.cover_url"
-                                        :src="item.cover_url"
+                                        v-if="
+                                            item.cover_url
+                                        "
+                                        :src="
+                                            item.cover_url
+                                        "
                                         class="h-20 w-14 rounded-lg object-cover"
                                     />
 
@@ -367,7 +473,9 @@ const toggleStatus = (status) => {
                                         <h3
                                             class="truncate font-semibold"
                                         >
-                                            {{ item.title }}
+                                            {{
+                                                item.title
+                                            }}
                                         </h3>
 
                                         <div
@@ -377,14 +485,22 @@ const toggleStatus = (status) => {
                                                 class="rounded-lg px-2 py-1 text-xs text-white"
                                                 :style="{
                                                     backgroundColor:
-                                                        statusColor(item),
+                                                        statusColor(
+                                                            item
+                                                        ),
                                                 }"
                                             >
-                                                {{ item.status }}
+                                                {{
+                                                    normalizeStatus(
+                                                        item.status
+                                                    )
+                                                }}
                                             </span>
 
                                             <span
-                                                v-if="item.rating"
+                                                v-if="
+                                                    item.rating
+                                                "
                                                 class="rounded-lg bg-yellow-500/10 px-2 py-1 text-xs text-yellow-400"
                                             >
                                                 {{
@@ -395,7 +511,9 @@ const toggleStatus = (status) => {
                                             </span>
 
                                             <span
-                                                v-if="item.recommended"
+                                                v-if="
+                                                    item.recommended
+                                                "
                                                 class="rounded-lg bg-green-500/10 px-2 py-1 text-xs text-green-400"
                                             >
                                                 Recommended
@@ -403,16 +521,22 @@ const toggleStatus = (status) => {
                                         </div>
 
                                         <p
-                                            v-if="item.note"
+                                            v-if="
+                                                item.note
+                                            "
                                             class="mt-3 line-clamp-2 text-sm text-zinc-400"
                                         >
-                                            {{ item.note }}
+                                            {{
+                                                item.note
+                                            }}
                                         </p>
 
                                         <p
                                             class="mt-3 text-xs text-zinc-600"
                                         >
-                                            {{ item.updated_at }}
+                                            {{
+                                                item.updated_at
+                                            }}
                                         </p>
                                     </div>
                                 </div>
@@ -428,27 +552,39 @@ const toggleStatus = (status) => {
                                 <h2
                                     class="text-xl font-semibold"
                                 >
-                                    Games Library
+                                    Games
+                                    Library
                                 </h2>
 
                                 <p
                                     class="text-sm text-zinc-500"
                                 >
-                                    {{ games.length }}
+                                    {{
+                                        games.length
+                                    }}
                                     games
                                 </p>
                             </div>
 
-                            <div class="space-y-4">
+                            <div
+                                class="space-y-4"
+                            >
                                 <div
-                                    v-for="(statusGames, status) in groupedGames"
+                                    v-for="(
+                                        statusGames,
+                                        status
+                                    ) in groupedGames"
                                     :key="status"
                                     class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950"
                                 >
                                     <button
                                         type="button"
                                         class="flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-zinc-900"
-                                        @click="toggleStatus(status)"
+                                        @click="
+                                            toggleStatus(
+                                                status
+                                            )
+                                        "
                                     >
                                         <div
                                             class="flex items-center gap-3"
@@ -467,7 +603,9 @@ const toggleStatus = (status) => {
                                                 <h3
                                                     class="font-semibold text-white"
                                                 >
-                                                    {{ status }}
+                                                    {{
+                                                        status
+                                                    }}
                                                 </h3>
 
                                                 <p
@@ -495,7 +633,11 @@ const toggleStatus = (status) => {
                                     </button>
 
                                     <div
-                                        v-if="openStatuses[status]"
+                                        v-if="
+                                            openStatuses[
+                                                status
+                                            ]
+                                        "
                                         class="grid gap-4 border-t border-zinc-800 p-4 md:grid-cols-2 2xl:grid-cols-3"
                                     >
                                         <div
@@ -504,18 +646,25 @@ const toggleStatus = (status) => {
                                             class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900"
                                         >
                                             <img
-                                                v-if="game.cover_url"
-                                                :src="game.cover_url"
+                                                v-if="
+                                                    game.cover_url
+                                                "
+                                                :src="
+                                                    game.cover_url
+                                                "
                                                 class="h-48 w-full object-cover"
                                             />
 
-                                            <div class="p-4">
+                                            <div
+                                                class="p-4"
+                                            >
                                                 <h3
                                                     class="truncate font-semibold"
                                                 >
                                                     {{
                                                         game.title
-                                                            ?? game.name
+                                                            ??
+                                                        game.name
                                                     }}
                                                 </h3>
 
@@ -532,12 +681,16 @@ const toggleStatus = (status) => {
                                                         }"
                                                     >
                                                         {{
-                                                            game.status
+                                                            normalizeStatus(
+                                                                game.status
+                                                            )
                                                         }}
                                                     </span>
 
                                                     <span
-                                                        v-if="game.rating"
+                                                        v-if="
+                                                            game.rating
+                                                        "
                                                         class="rounded-lg bg-yellow-500/10 px-2 py-1 text-xs text-yellow-400"
                                                     >
                                                         {{
@@ -549,20 +702,26 @@ const toggleStatus = (status) => {
                                                 </div>
 
                                                 <p
-                                                    v-if="game.note"
+                                                    v-if="
+                                                        game.note
+                                                    "
                                                     class="mt-3 line-clamp-3 text-sm text-zinc-400"
                                                 >
-                                                    {{ game.note }}
+                                                    {{
+                                                        game.note
+                                                    }}
                                                 </p>
 
                                                 <p
                                                     class="mt-4 text-xs text-zinc-600"
                                                 >
-                                                    Last activity:
+                                                    Last
+                                                    activity:
 
                                                     {{
                                                         game.updated_at
-                                                            ?? 'No updates'
+                                                            ??
+                                                        'No updates'
                                                     }}
                                                 </p>
                                             </div>

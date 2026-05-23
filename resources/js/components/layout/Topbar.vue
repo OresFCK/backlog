@@ -1,8 +1,8 @@
 <script setup>
-import { Bell, Search } from 'lucide-vue-next'
+import { Search } from 'lucide-vue-next'
 import { Link } from '@inertiajs/vue3'
 
-const props = defineProps({
+defineProps({
     user: {
         type: Object,
         default: null,
@@ -12,7 +12,7 @@ const props = defineProps({
 
 <template>
     <header
-        class="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-8 py-4"
+        class="flex h-[89px] items-center justify-between border-b border-zinc-800 bg-zinc-950 px-8"
     >
         <div class="relative w-full max-w-md">
             <Search
@@ -27,12 +27,6 @@ const props = defineProps({
         </div>
 
         <div class="flex items-center gap-4">
-            <button
-                class="rounded-xl border border-zinc-800 bg-zinc-900 p-3 text-zinc-400 transition hover:text-white"
-            >
-                <Bell class="h-5 w-5" />
-            </button>
-
             <Link
                 href="/profile"
                 class="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-3 py-2 transition hover:border-zinc-700"

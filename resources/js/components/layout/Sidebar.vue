@@ -17,12 +17,15 @@ import {
     ChevronDown,
     Settings,
     Tags,
+    Users,
+    Trophy,
+    UserPlus,
 } from 'lucide-vue-next'
 
 const page = usePage()
 
 const isCollectionOpen = ref(true)
-
+const isCommunityOpen = ref(true)
 const isSettingsOpen = ref(true)
 
 const mainItems = [
@@ -65,6 +68,26 @@ const collectionItems = [
     },
 ]
 
+const communityItems = [
+    {
+        label: 'Friends',
+        href: '/friends',
+        icon: Users,
+    },
+
+    {
+        label: 'Challenges',
+        href: '/challenges',
+        icon: Trophy,
+    },
+
+    {
+        label: 'Followed',
+        href: '/followed',
+        icon: UserPlus,
+    },
+]
+
 const toolItems = [
     {
         label: 'Add Game',
@@ -84,10 +107,10 @@ const settingsItems = [
 
 <template>
     <aside
-        class="flex h-screen w-64 flex-col border-r border-zinc-800 bg-zinc-950"
+        class="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-zinc-800 bg-zinc-950"
     >
         <div
-            class="border-b border-zinc-800 px-6 py-5"
+            class="flex h-[89px] flex-col justify-center border-b border-zinc-800 px-6"
         >
             <h1
                 class="text-2xl font-bold tracking-tight text-white"
@@ -103,16 +126,14 @@ const settingsItems = [
         </div>
 
         <nav
-            class="flex flex-1 flex-col p-4"
+            class="flex-1 overflow-y-auto px-4 py-5"
         >
-            <!-- Main -->
-
             <div class="space-y-2">
                 <Link
                     v-for="item in mainItems"
                     :key="item.href"
                     :href="item.href"
-                    class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all"
+                    class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all"
                     :class="
                         page.url.startsWith(item.href)
                             ? 'bg-zinc-800 text-white'
@@ -128,33 +149,24 @@ const settingsItems = [
                 </Link>
             </div>
 
-            <!-- Collection -->
-
-            <div class="mt-3">
+            <div class="mt-8">
                 <button
                     type="button"
-                    class="mb-2 flex w-full items-center justify-between rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
-                    @click="
-                        isCollectionOpen =
-                            !isCollectionOpen
-                    "
+                    class="mb-3 flex w-full items-center justify-between px-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
+                    @click="isCollectionOpen = !isCollectionOpen"
                 >
                     <span>
                         Collection
                     </span>
 
-                    <span
-                        class="flex h-7 w-7 items-center justify-center rounded-md text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
-                    >
-                        <ChevronDown
-                            class="h-4 w-4 transition-transform"
-                            :class="
-                                isCollectionOpen
-                                    ? 'rotate-180'
-                                    : ''
-                            "
-                        />
-                    </span>
+                    <ChevronDown
+                        class="h-4 w-4 transition-transform"
+                        :class="
+                            isCollectionOpen
+                                ? 'rotate-180'
+                                : ''
+                        "
+                    />
                 </button>
 
                 <div
@@ -165,7 +177,7 @@ const settingsItems = [
                         v-for="item in collectionItems"
                         :key="item.href"
                         :href="item.href"
-                        class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all"
+                        class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all"
                         :class="
                             page.url.startsWith(item.href)
                                 ? 'bg-zinc-800 text-white'
@@ -182,11 +194,54 @@ const settingsItems = [
                 </div>
             </div>
 
-            <!-- Tools -->
+            <div class="mt-8">
+                <button
+                    type="button"
+                    class="mb-3 flex w-full items-center justify-between px-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
+                    @click="isCommunityOpen = !isCommunityOpen"
+                >
+                    <span>
+                        Community
+                    </span>
 
-            <div class="mt-3">
+                    <ChevronDown
+                        class="h-4 w-4 transition-transform"
+                        :class="
+                            isCommunityOpen
+                                ? 'rotate-180'
+                                : ''
+                        "
+                    />
+                </button>
+
+                <div
+                    v-if="isCommunityOpen"
+                    class="space-y-2"
+                >
+                    <Link
+                        v-for="item in communityItems"
+                        :key="item.href"
+                        :href="item.href"
+                        class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all"
+                        :class="
+                            page.url.startsWith(item.href)
+                                ? 'bg-zinc-800 text-white'
+                                : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                        "
+                    >
+                        <component
+                            :is="item.icon"
+                            class="h-5 w-5"
+                        />
+
+                        {{ item.label }}
+                    </Link>
+                </div>
+            </div>
+
+            <div class="mt-8">
                 <p
-                    class="mb-2 px-4 text-xs font-semibold uppercase tracking-wider text-zinc-500"
+                    class="mb-3 px-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
                 >
                     Tools
                 </p>
@@ -196,7 +251,7 @@ const settingsItems = [
                         v-for="item in toolItems"
                         :key="item.href"
                         :href="item.href"
-                        class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all"
+                        class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all"
                         :class="
                             page.url.startsWith(item.href)
                                 ? 'bg-zinc-800 text-white'
@@ -213,16 +268,11 @@ const settingsItems = [
                 </div>
             </div>
 
-            <!-- Settings -->
-
-            <div class="mt-3">
+            <div class="mt-8 pb-6">
                 <button
                     type="button"
-                    class="mb-2 flex w-full items-center justify-between rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
-                    @click="
-                        isSettingsOpen =
-                            !isSettingsOpen
-                    "
+                    class="mb-3 flex w-full items-center justify-between px-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
+                    @click="isSettingsOpen = !isSettingsOpen"
                 >
                     <div
                         class="flex items-center gap-2"
@@ -236,18 +286,14 @@ const settingsItems = [
                         </span>
                     </div>
 
-                    <span
-                        class="flex h-7 w-7 items-center justify-center rounded-md text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
-                    >
-                        <ChevronDown
-                            class="h-4 w-4 transition-transform"
-                            :class="
-                                isSettingsOpen
-                                    ? 'rotate-180'
-                                    : ''
-                            "
-                        />
-                    </span>
+                    <ChevronDown
+                        class="h-4 w-4 transition-transform"
+                        :class="
+                            isSettingsOpen
+                                ? 'rotate-180'
+                                : ''
+                        "
+                    />
                 </button>
 
                 <div
@@ -258,7 +304,7 @@ const settingsItems = [
                         v-for="item in settingsItems"
                         :key="item.href"
                         :href="item.href"
-                        class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all"
+                        class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all"
                         :class="
                             page.url.startsWith(item.href)
                                 ? 'bg-zinc-800 text-white'
