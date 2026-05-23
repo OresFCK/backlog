@@ -21,6 +21,6 @@ defineProps({
             color,
         }"
     >
-        {{ status }}
+        {{ status }} 
     </span>
 </template>

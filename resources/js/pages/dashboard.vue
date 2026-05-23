@@ -63,7 +63,8 @@ const mappedGames = computed(() => {
         const status =
             props.statuses.find(
                 (item) =>
-                    item.name === game.status
+                    item.name?.toLowerCase() ===
+                    game.status?.toLowerCase()
             ) ?? null
 
         return {
@@ -79,7 +80,7 @@ const mappedGames = computed(() => {
                 `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appid}/library_600x900.jpg`,
 
             status:
-                game.status ??
+                status?.name ??
                 'Backlog',
 
             status_color:

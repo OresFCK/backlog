@@ -22,6 +22,7 @@ class User extends Authenticatable
         'steam_id',
         'steam_persona_name',
         'steam_avatar_url',
+        'banner_url',
     ];
 
     protected $hidden = [

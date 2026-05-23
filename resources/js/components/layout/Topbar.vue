@@ -1,5 +1,6 @@
 <script setup>
 import { Bell, Search } from 'lucide-vue-next'
+import { Link } from '@inertiajs/vue3'
 
 const props = defineProps({
     user: {
@@ -32,8 +33,9 @@ const props = defineProps({
                 <Bell class="h-5 w-5" />
             </button>
 
-            <div
-                class="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-3 py-2"
+            <Link
+                href="/profile"
+                class="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-3 py-2 transition hover:border-zinc-700"
             >
                 <img
                     v-if="user?.avatar"
@@ -56,7 +58,7 @@ const props = defineProps({
                         Steam account
                     </p>
                 </div>
-            </div>
+            </Link>
         </div>
     </header>
 </template>

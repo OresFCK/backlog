@@ -75,7 +75,7 @@ const toolItems = [
 
 const settingsItems = [
     {
-        label: 'Custom Labels',
+        label: 'Custom Statuses',
         href: '/settings/labels',
         icon: Tags,
     },

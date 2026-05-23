@@ -10,7 +10,7 @@ const games = [
         title: 'Hades',
         cover_url:
             'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1145360/library_600x900.jpg',
-        status: 'backlog',
+        status: 'Backlog',
         average_playtime_minutes: 1200,
         platform: 'Steam',
         rating: 95,

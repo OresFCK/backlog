@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCustomGameRequest;
 use App\Http\Requests\StoreCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
+use App\Http\Requests\UpdateProfileBannerRequest;
 use App\Services\SteamService;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -109,4 +110,33 @@ Route::middleware('auth')->group(function () {
         'games/show',
         Payload::gamePageData($game, $steam)
     ))->name('games.show');
+
+    Route::get('/profile', fn (
+        SteamService $steam
+    ) => Inertia::render(
+        'profile/show',
+        Payload::profilePageData($steam)
+    ))->name('profile.show');
+
+    Route::post('/profile/banner', function (
+        UpdateProfileBannerRequest $request
+    ) {
+        $user = $request->user();
+
+        if ($user->banner_url) {
+            Storage::disk('public')->delete(
+                str_replace('/storage/', '', $user->banner_url)
+            );
+        }
+
+        $path = $request
+            ->file('banner')
+            ->store('banners', 'public');
+
+        $user->update([
+            'banner_url' => "/storage/{$path}",
+        ]);
+
+        return back();
+    })->name('profile.banner.update');
 });
