@@ -1,21 +1,6 @@
 <script setup>
-import {
-    computed,
-    ref,
-} from 'vue'
-
-import {
-    router,
-} from '@inertiajs/vue3'
-
-import {
-    UserPlus,
-    Eye,
-    Trash2,
-    Search,
-    Check,
-    X,
-} from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { X } from 'lucide-vue-next'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
@@ -26,99 +11,36 @@ const props = defineProps({
         required: true,
     },
 
-    connections: {
-        type: Array,
-        default: () => [],
-    },
-
-    incomingRequests: {
+    reviews: {
         type: Array,
         default: () => [],
     },
 })
 
-const query = ref('')
-const results = ref([])
-const loading = ref(false)
-const searched = ref(false)
+const selectedReview = ref(null)
 
-const friends = computed(() =>
-    props.connections.filter(
-        (connection) =>
-            connection.type === 'friend' &&
-            connection.status === 'accepted'
-    )
-)
+const isReviewModalOpen = computed(() => selectedReview.value !== null)
 
-const followed = computed(() =>
-    props.connections.filter(
-        (connection) =>
-            connection.type === 'follow' &&
-            connection.status === 'accepted'
-    )
-)
-
-let searchTimeout = null
-
-const search = async () => {
-    clearTimeout(searchTimeout)
-
-    searchTimeout = setTimeout(async () => {
-        if (!query.value.trim()) {
-            results.value = []
-            searched.value = false
-
-            return
-        }
-
-        loading.value = true
-        searched.value = true
-
-        try {
-            const response = await fetch(
-                `/people/search?q=${encodeURIComponent(query.value)}`
-            )
-
-            results.value = await response.json()
-        } finally {
-            loading.value = false
-        }
-    }, 300)
+const openReviewModal = (review) => {
+    selectedReview.value = review
 }
 
-const addConnection = (
-    userId,
-    type
-) => {
-    router.post(
-        '/people',
-        {
-            user_id: userId,
-            type,
-        },
-        {
-            preserveScroll: true,
-        }
-    )
+const closeReviewModal = () => {
+    selectedReview.value = null
 }
 
-const acceptRequest = (request) => {
-    router.patch(
-        `/people/${request.id}/accept`,
-        {},
-        {
-            preserveScroll: true,
-        }
-    )
+const shouldTruncate = (body) => {
+    return String(body ?? '').length > 420
 }
 
-const removeConnection = (connection) => {
-    router.delete(
-        `/people/${connection.id}`,
-        {
-            preserveScroll: true,
-        }
-    )
+const truncatedBody = (body) => {
+    const text = String(body ?? '')
+
+    if (text.length <= 420) {
+        return text
+    }
+
+    return `${text.slice(0, 420)}...`
 }
 </script>
 
@@ -132,248 +54,148 @@ const removeConnection = (connection) => {
             <main class="flex-1 p-8">
                 <div class="mb-8">
                     <h1 class="text-4xl font-black text-white">
-                        People
+                        Reviews
                     </h1>
 
                     <p class="mt-2 text-zinc-400">
-                        Find users by nickname or Steam ID.
+                        Public reviews from your community.
                     </p>
                 </div>
 
-                <section
-                    v-if="incomingRequests.length"
-                    class="mb-8 rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
-                >
-                    <h2 class="mb-4 text-2xl font-black text-white">
-                        Friend requests
-                    </h2>
-
-                    <div class="space-y-3">
-                        <article
-                            v-for="request in incomingRequests"
-                            :key="request.id"
-                            class="flex items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-950 p-4"
-                        >
-                            <div class="flex items-center gap-4">
-                                <img
-                                    v-if="request.user.avatar"
-                                    :src="request.user.avatar"
-                                    class="h-12 w-12 rounded-2xl object-cover"
-                                />
-
-                                <div>
-                                    <p class="font-bold text-white">
-                                        {{ request.user.name }}
-                                    </p>
-
-                                    <p class="text-sm text-zinc-500">
-                                        {{ request.user.steam_id }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="flex gap-3">
-                                <button
-                                    type="button"
-                                    class="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
-                                    @click="acceptRequest(request)"
-                                >
-                                    <Check class="h-4 w-4" />
-
-                                    Accept
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="flex items-center gap-2 rounded-xl border border-zinc-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-zinc-800"
-                                    @click="removeConnection(request)"
-                                >
-                                    <X class="h-4 w-4" />
-
-                                    Decline
-                                </button>
-                            </div>
-                        </article>
-                    </div>
-                </section>
-
-                <section class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
-                    <div class="relative">
-                        <Search
-                            class="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500"
-                        />
-
-                        <input
-                            v-model="query"
-                            type="text"
-                            placeholder="Search by nickname or Steam ID"
-                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 py-4 pl-12 pr-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-500"
-                            @input="search"
-                        />
-                    </div>
-
-                    <div
-                        v-if="loading"
-                        class="mt-5 text-sm text-zinc-500"
+                <div class="space-y-6">
+                    <article
+                        v-for="review in reviews"
+                        :key="review.id"
+                        class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
                     >
-                        Searching users...
-                    </div>
+                        <div class="flex items-start gap-4">
+                            <img
+                                v-if="review.user?.avatar"
+                                :src="review.user.avatar"
+                                class="h-14 w-14 rounded-2xl object-cover"
+                            />
 
-                    <div
-                        v-if="!loading && searched && !results.length"
-                        class="mt-5 rounded-2xl border border-dashed border-zinc-800 p-6 text-sm text-zinc-500"
-                    >
-                        No users found.
-                    </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <h2 class="text-lg font-bold text-white">
+                                        {{
+                                            review.user?.name ??
+                                            'Unknown user'
+                                        }}
+                                    </h2>
 
-                    <div
-                        v-if="results.length"
-                        class="mt-5 space-y-3"
-                    >
-                        <article
-                            v-for="result in results"
-                            :key="result.id"
-                            class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4"
-                        >
-                            <div class="flex items-center gap-4">
-                                <img
-                                    v-if="result.avatar"
-                                    :src="result.avatar"
-                                    class="h-14 w-14 rounded-2xl object-cover"
-                                />
+                                    <span class="text-sm text-zinc-500">
+                                        {{ review.created_at }}
+                                    </span>
 
-                                <div>
-                                    <p class="font-bold text-white">
-                                        {{ result.name }}
-                                    </p>
+                                    <span
+                                        v-if="review.rating"
+                                        class="rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-1 text-sm font-bold text-white"
+                                    >
+                                        {{ review.rating }}/10
+                                    </span>
 
-                                    <p class="mt-1 text-sm text-zinc-500">
-                                        {{ result.steam_id }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center gap-3">
-                                <button
-                                    type="button"
-                                    class="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
-                                    @click="addConnection(result.id, 'friend')"
-                                >
-                                    <UserPlus class="h-4 w-4" />
-
-                                    Add friend
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="flex items-center gap-2 rounded-xl border border-zinc-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-zinc-800"
-                                    @click="addConnection(result.id, 'follow')"
-                                >
-                                    <Eye class="h-4 w-4" />
-
-                                    Follow
-                                </button>
-                            </div>
-                        </article>
-                    </div>
-                </section>
-
-                <div class="mt-10 grid gap-8 lg:grid-cols-2">
-                    <section>
-                        <h2 class="mb-4 text-2xl font-black text-white">
-                            Friends
-                        </h2>
-
-                        <div class="space-y-4">
-                            <article
-                                v-for="connection in friends"
-                                :key="connection.id"
-                                class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-900 p-5"
-                            >
-                                <div class="flex items-center gap-4">
-                                    <img
-                                        v-if="connection.user.avatar"
-                                        :src="connection.user.avatar"
-                                        class="h-12 w-12 rounded-2xl object-cover"
-                                    />
-
-                                    <div>
-                                        <p class="font-bold text-white">
-                                            {{ connection.user.name }}
-                                        </p>
-
-                                        <p class="text-sm text-zinc-500">
-                                            {{ connection.user.steam_id }}
-                                        </p>
-                                    </div>
+                                    <span
+                                        v-if="review.recommended"
+                                        class="rounded-xl bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-300"
+                                    >
+                                        Recommended
+                                    </span>
                                 </div>
 
-                                <button
-                                    type="button"
-                                    class="rounded-xl p-2 text-zinc-500 transition hover:bg-zinc-800 hover:text-red-300"
-                                    @click="removeConnection(connection)"
-                                >
-                                    <Trash2 class="h-5 w-5" />
-                                </button>
-                            </article>
+                                <h3 class="mt-4 text-2xl font-black text-white">
+                                    {{
+                                        review.title ||
+                                        'Untitled review'
+                                    }}
+                                </h3>
 
-                            <div
-                                v-if="!friends.length"
-                                class="rounded-2xl border border-dashed border-zinc-800 p-10 text-center text-zinc-500"
-                            >
-                                No friends yet.
+                                <p class="mt-4 whitespace-pre-line text-zinc-300">
+                                    {{ truncatedBody(review.body) }}
+                                </p>
+
+                                <button
+                                    v-if="shouldTruncate(review.body)"
+                                    type="button"
+                                    class="mt-4 text-sm font-bold text-white underline underline-offset-4 transition hover:text-zinc-300"
+                                    @click="openReviewModal(review)"
+                                >
+                                    Read more
+                                </button>
                             </div>
                         </div>
-                    </section>
+                    </article>
 
-                    <section>
-                        <h2 class="mb-4 text-2xl font-black text-white">
-                            Following
+                    <div
+                        v-if="!reviews.length"
+                        class="rounded-3xl border border-dashed border-zinc-800 p-16 text-center"
+                    >
+                        <h2 class="text-2xl font-black text-white">
+                            No reviews yet
                         </h2>
 
-                        <div class="space-y-4">
-                            <article
-                                v-for="connection in followed"
-                                :key="connection.id"
-                                class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-900 p-5"
-                            >
-                                <div class="flex items-center gap-4">
-                                    <img
-                                        v-if="connection.user.avatar"
-                                        :src="connection.user.avatar"
-                                        class="h-12 w-12 rounded-2xl object-cover"
-                                    />
-
-                                    <div>
-                                        <p class="font-bold text-white">
-                                            {{ connection.user.name }}
-                                        </p>
-
-                                        <p class="text-sm text-zinc-500">
-                                            {{ connection.user.steam_id }}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    class="rounded-xl p-2 text-zinc-500 transition hover:bg-zinc-800 hover:text-red-300"
-                                    @click="removeConnection(connection)"
-                                >
-                                    <Trash2 class="h-5 w-5" />
-                                </button>
-                            </article>
-
-                            <div
-                                v-if="!followed.length"
-                                class="rounded-2xl border border-dashed border-zinc-800 p-10 text-center text-zinc-500"
-                            >
-                                You are not following anyone yet.
-                            </div>
-                        </div>
-                    </section>
+                        <p class="mt-3 text-zinc-400">
+                            Public reviews will appear here.
+                        </p>
+                    </div>
                 </div>
             </main>
+        </div>
+
+        <div
+            v-if="isReviewModalOpen"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+        >
+            <div class="max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl">
+                <div class="flex items-start justify-between gap-4 border-b border-zinc-800 p-6">
+                    <div>
+                        <h2 class="text-2xl font-black text-white">
+                            {{
+                                selectedReview.title ||
+                                'Untitled review'
+                            }}
+                        </h2>
+
+                        <p class="mt-2 text-sm text-zinc-400">
+                            By
+                            {{
+                                selectedReview.user?.name ??
+                                'Unknown user'
+                            }}
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="rounded-xl p-2 text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                        @click="closeReviewModal"
+                    >
+                        <X class="h-5 w-5" />
+                    </button>
+                </div>
+
+                <div class="max-h-[65vh] overflow-y-auto p-6">
+                    <div class="mb-5 flex flex-wrap gap-3">
+                        <span
+                            v-if="selectedReview.rating"
+                            class="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-1 text-sm font-bold text-white"
+                        >
+                            {{ selectedReview.rating }}/10
+                        </span>
+
+                        <span
+                            v-if="selectedReview.recommended"
+                            class="rounded-xl bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-300"
+                        >
+                            Recommended
+                        </span>
+                    </div>
+
+                    <p class="whitespace-pre-line text-zinc-300">
+                        {{ selectedReview.body }}
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 </template>
