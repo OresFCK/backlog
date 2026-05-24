@@ -173,6 +173,10 @@ class SteamService
     {
         $query = trim($query);
 
+        if (preg_match('/steamcommunity\.com\/profiles\/(\d+)/', $query, $matches)) {
+            return $matches[1];
+        }
+
         if (preg_match('/7656\d{13}/', $query, $matches)) {
             return $matches[0];
         }

@@ -13,7 +13,9 @@ import {
     Eye,
     Trash2,
     Search,
-    ExternalLink,
+    Check,
+    X,
+    Copy,
 } from 'lucide-vue-next'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
@@ -29,6 +31,11 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+
+    incomingRequests: {
+        type: Array,
+        default: () => [],
+    },
 })
 
 const query = ref('')
@@ -39,26 +46,29 @@ const searched = ref(false)
 const friends = computed(() =>
     props.connections.filter(
         (connection) =>
-            connection.type ===
-            'friend'
+            connection.type === 'friend' &&
+            connection.status === 'accepted'
     )
 )
 
 const followed = computed(() =>
     props.connections.filter(
         (connection) =>
-            connection.type ===
-            'follow'
+            connection.type === 'follow' &&
+            connection.status === 'accepted'
     )
 )
 
 let searchTimeout = null
 
 const search = async () => {
+
     clearTimeout(searchTimeout)
 
     searchTimeout = setTimeout(async () => {
+
         if (!query.value.trim()) {
+
             results.value = []
             searched.value = false
 
@@ -69,27 +79,59 @@ const search = async () => {
         searched.value = true
 
         try {
+
             const response = await fetch(
                 `/people/search?q=${encodeURIComponent(query.value)}`
             )
 
-            results.value = await response.json()
+            results.value =
+                await response.json()
+
         } finally {
+
             loading.value = false
         }
+
     }, 300)
 }
 
 const addConnection = (
-    steamId,
+    userId,
     type
 ) => {
+
     router.post(
         '/people',
         {
-            steam_id: steamId,
+            user_id: userId,
             type,
         },
+        {
+            preserveScroll: true,
+        }
+    )
+}
+
+const inviteUser = async (
+    steamId
+) => {
+
+    await navigator.clipboard.writeText(
+        `${window.location.origin}/invite/${steamId}`
+    )
+
+    alert(
+        'Invite link copied to clipboard.'
+    )
+}
+
+const acceptRequest = (
+    request
+) => {
+
+    router.patch(
+        `/people/${request.id}/accept`,
+        {},
         {
             preserveScroll: true,
         }
@@ -99,6 +141,7 @@ const addConnection = (
 const removeConnection = (
     connection
 ) => {
+
     router.delete(
         `/people/${connection.id}`,
         {
@@ -109,25 +152,110 @@ const removeConnection = (
 </script>
 
 <template>
-    <div class="flex min-h-screen bg-zinc-950">
+    <div
+        class="flex min-h-screen bg-zinc-950"
+    >
         <Sidebar />
 
-        <div class="flex flex-1 flex-col">
+        <div
+            class="flex flex-1 flex-col"
+        >
             <Topbar :user="user" />
 
             <main class="flex-1 p-8">
                 <div class="mb-8">
-                    <h1 class="text-4xl font-black text-white">
+                    <h1
+                        class="text-4xl font-black text-white"
+                    >
                         People
                     </h1>
 
-                    <p class="mt-2 text-zinc-400">
-                        Find people by Steam profile URL, vanity name or SteamID64.
+                    <p
+                        class="mt-2 text-zinc-400"
+                    >
+                        Find users by Steam profile URL, vanity name or SteamID64.
                     </p>
                 </div>
 
-                <section class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
-                    <div class="relative">
+                <section
+                    v-if="incomingRequests.length"
+                    class="mb-8 rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
+                >
+                    <h2
+                        class="mb-4 text-2xl font-black text-white"
+                    >
+                        Friend requests
+                    </h2>
+
+                    <div
+                        class="space-y-3"
+                    >
+                        <article
+                            v-for="request in incomingRequests"
+                            :key="request.id"
+                            class="flex items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-950 p-4"
+                        >
+                            <div
+                                class="flex items-center gap-4"
+                            >
+                                <img
+                                    v-if="request.user.avatar"
+                                    :src="request.user.avatar"
+                                    class="h-12 w-12 rounded-2xl object-cover"
+                                />
+
+                                <div>
+                                    <p
+                                        class="font-bold text-white"
+                                    >
+                                        {{ request.user.name }}
+                                    </p>
+
+                                    <p
+                                        class="text-sm text-zinc-500"
+                                    >
+                                        {{ request.user.steam_id }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div
+                                class="flex gap-3"
+                            >
+                                <button
+                                    type="button"
+                                    class="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
+                                    @click="acceptRequest(request)"
+                                >
+                                    <Check
+                                        class="h-4 w-4"
+                                    />
+
+                                    Accept
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="flex items-center gap-2 rounded-xl border border-zinc-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-zinc-800"
+                                    @click="removeConnection(request)"
+                                >
+                                    <X
+                                        class="h-4 w-4"
+                                    />
+
+                                    Decline
+                                </button>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <section
+                    class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
+                >
+                    <div
+                        class="relative"
+                    >
                         <Search
                             class="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500"
                         />
@@ -145,14 +273,14 @@ const removeConnection = (
                         v-if="loading"
                         class="mt-5 text-sm text-zinc-500"
                     >
-                        Searching Steam profile...
+                        Searching users...
                     </div>
 
                     <div
                         v-if="!loading && searched && !results.length"
                         class="mt-5 rounded-2xl border border-dashed border-zinc-800 p-6 text-sm text-zinc-500"
                     >
-                        No Steam profile found. Try SteamID64 or profile URL.
+                        No Steam users found.
                     </div>
 
                     <div
@@ -164,7 +292,9 @@ const removeConnection = (
                             :key="result.steam_id"
                             class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4"
                         >
-                            <div class="flex items-center gap-4">
+                            <div
+                                class="flex items-center gap-4"
+                            >
                                 <img
                                     v-if="result.avatar"
                                     :src="result.avatar"
@@ -172,39 +302,38 @@ const removeConnection = (
                                 />
 
                                 <div>
-                                    <p class="font-bold text-white">
+                                    <p
+                                        class="font-bold text-white"
+                                    >
                                         {{ result.name }}
                                     </p>
 
-                                    <p class="mt-1 text-sm text-zinc-500">
+                                    <p
+                                        class="mt-1 text-sm text-zinc-500"
+                                    >
                                         {{ result.steam_id }}
                                     </p>
-
-                                    <a
-                                        v-if="result.profile_url"
-                                        :href="result.profile_url"
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        class="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-zinc-400 transition hover:text-white"
-                                    >
-                                        View Steam profile
-                                        <ExternalLink class="h-3 w-3" />
-                                    </a>
                                 </div>
                             </div>
 
-                            <div class="flex items-center gap-3">
+                            <div
+                                v-if="result.exists"
+                                class="flex items-center gap-3"
+                            >
                                 <button
                                     type="button"
                                     class="flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
                                     @click="
                                         addConnection(
-                                            result.steam_id,
+                                            result.id,
                                             'friend'
                                         )
                                     "
                                 >
-                                    <UserPlus class="h-4 w-4" />
+                                    <UserPlus
+                                        class="h-4 w-4"
+                                    />
+
                                     Add friend
                                 </button>
 
@@ -213,43 +342,77 @@ const removeConnection = (
                                     class="flex items-center gap-2 rounded-xl border border-zinc-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-zinc-800"
                                     @click="
                                         addConnection(
-                                            result.steam_id,
+                                            result.id,
                                             'follow'
                                         )
                                     "
                                 >
-                                    <Eye class="h-4 w-4" />
+                                    <Eye
+                                        class="h-4 w-4"
+                                    />
+
                                     Follow
                                 </button>
                             </div>
+
+                            <button
+                                v-else
+                                type="button"
+                                class="flex items-center gap-2 rounded-xl border border-zinc-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-zinc-800"
+                                @click="
+                                    inviteUser(
+                                        result.steam_id
+                                    )
+                                "
+                            >
+                                <Copy
+                                    class="h-4 w-4"
+                                />
+
+                                Invite
+                            </button>
                         </article>
                     </div>
                 </section>
 
-                <div class="mt-10 grid gap-8 lg:grid-cols-2">
+                <div
+                    class="mt-10 grid gap-8 lg:grid-cols-2"
+                >
                     <section>
-                        <h2 class="mb-4 text-2xl font-black text-white">
+                        <h2
+                            class="mb-4 text-2xl font-black text-white"
+                        >
                             Friends
                         </h2>
 
-                        <div class="space-y-4">
+                        <div
+                            class="space-y-4"
+                        >
                             <article
                                 v-for="connection in friends"
                                 :key="connection.id"
                                 class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-900 p-5"
                             >
-                                <div class="flex items-center gap-4">
-                                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-800 text-zinc-300">
-                                        <UserPlus class="h-5 w-5" />
-                                    </div>
+                                <div
+                                    class="flex items-center gap-4"
+                                >
+                                    <img
+                                        v-if="connection.user.avatar"
+                                        :src="connection.user.avatar"
+                                        class="h-12 w-12 rounded-2xl object-cover"
+                                    />
 
                                     <div>
-                                        <p class="font-bold text-white">
-                                            {{ connection.steam_id }}
+                                        <p
+                                            class="font-bold text-white"
+                                        >
+                                            {{ connection.user.name }}
                                         </p>
 
-                                        <p class="text-sm capitalize text-zinc-500">
-                                            {{ connection.status }}
+                                        <p
+                                            class="text-sm text-zinc-500"
+                                        >
+                                            {{ connection.user.steam_id }}
                                         </p>
                                     </div>
                                 </div>
@@ -263,7 +426,9 @@ const removeConnection = (
                                         )
                                     "
                                 >
-                                    <Trash2 class="h-5 w-5" />
+                                    <Trash2
+                                        class="h-5 w-5"
+                                    />
                                 </button>
                             </article>
 
@@ -277,28 +442,40 @@ const removeConnection = (
                     </section>
 
                     <section>
-                        <h2 class="mb-4 text-2xl font-black text-white">
-                            Followed
+                        <h2
+                            class="mb-4 text-2xl font-black text-white"
+                        >
+                            Following
                         </h2>
 
-                        <div class="space-y-4">
+                        <div
+                            class="space-y-4"
+                        >
                             <article
                                 v-for="connection in followed"
                                 :key="connection.id"
                                 class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-900 p-5"
                             >
-                                <div class="flex items-center gap-4">
-                                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-800 text-zinc-300">
-                                        <Eye class="h-5 w-5" />
-                                    </div>
+                                <div
+                                    class="flex items-center gap-4"
+                                >
+                                    <img
+                                        v-if="connection.user.avatar"
+                                        :src="connection.user.avatar"
+                                        class="h-12 w-12 rounded-2xl object-cover"
+                                    />
 
                                     <div>
-                                        <p class="font-bold text-white">
-                                            {{ connection.steam_id }}
+                                        <p
+                                            class="font-bold text-white"
+                                        >
+                                            {{ connection.user.name }}
                                         </p>
 
-                                        <p class="text-sm capitalize text-zinc-500">
-                                            {{ connection.status }}
+                                        <p
+                                            class="text-sm text-zinc-500"
+                                        >
+                                            {{ connection.user.steam_id }}
                                         </p>
                                     </div>
                                 </div>
@@ -312,7 +489,9 @@ const removeConnection = (
                                         )
                                     "
                                 >
-                                    <Trash2 class="h-5 w-5" />
+                                    <Trash2
+                                        class="h-5 w-5"
+                                    />
                                 </button>
                             </article>
 
