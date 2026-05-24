@@ -42,9 +42,23 @@ Route::middleware('auth')->group(function () {
     Route::get('/backlog', fn (SteamService $steam) =>
         Inertia::render(
             'backlog/index',
-            Payload::pageData($steam)
+            Payload::backlogPageData($steam)
         )
     )->name('backlog.index');
+
+    Route::get('/playing', fn (SteamService $steam) =>
+        Inertia::render(
+            'playing/index',
+            Payload::playingPageData($steam)
+        )
+    )->name('playing.index');
+
+    Route::get('/finished', fn (SteamService $steam) =>
+        Inertia::render(
+            'finished/index',
+            Payload::finishedPageData($steam)
+        )
+    )->name('finished.index');
 
     Route::get('/wishlist', fn (SteamService $steam) =>
         Inertia::render(
@@ -139,4 +153,11 @@ Route::middleware('auth')->group(function () {
 
         return back();
     })->name('profile.banner.update');
+
+    Route::get('/dropped', fn (SteamService $steam) =>
+        Inertia::render(
+            'dropped/index',
+            Payload::droppedPageData($steam)
+        )
+    )->name('dropped.index');
 });

@@ -20,6 +20,7 @@ import {
     Users,
     Trophy,
     UserPlus,
+    Ban
 } from 'lucide-vue-next'
 
 const page = usePage()
@@ -62,9 +63,9 @@ const collectionItems = [
     },
 
     {
-        label: 'Wishlist',
-        href: '/wishlist',
-        icon: Heart,
+        label: 'Dropped',
+        href: '/dropped',
+        icon: Ban,
     },
 ]
 

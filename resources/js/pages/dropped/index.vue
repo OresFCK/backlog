@@ -43,12 +43,12 @@ const games = computed(() =>
             status:
                 status?.name ??
                 game.status ??
-                'Backlog',
+                'Dropped',
 
             status_color:
                 status?.color ??
                 game.status_color ??
-                '#71717a',
+                '#ef4444',
 
             average_playtime_minutes:
                 game.playtime_forever ?? 0,
@@ -73,11 +73,11 @@ const games = computed(() =>
             <main class="flex-1 p-8">
                 <div class="mb-8">
                     <h1 class="text-4xl font-bold text-white">
-                        Backlog
+                        Dropped
                     </h1>
 
                     <p class="mt-2 text-zinc-400">
-                        Organize and finish your games.
+                        Games you decided to stop playing.
                     </p>
                 </div>
 
