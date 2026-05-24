@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class SteamService
 {
@@ -27,7 +27,6 @@ class SteamService
         string $steamId,
         int|string $appId
     ): ?array {
-
         return collect(
             $this->getOwnedGames($steamId)
         )->first(
@@ -40,7 +39,6 @@ class SteamService
         string $steamId,
         int|string $appId
     ): array {
-
         $response = Http::get(
             'https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/',
             [
@@ -69,64 +67,6 @@ class SteamService
 
             'total' => count($achievements),
         ];
-    }
-
-    public function getWishlist(string $steamId): array
-    {
-        $url = "https://store.steampowered.com/wishlist/profiles/{$steamId}/wishlistdata/?p=0";
-
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-
-                'header' => implode("\r\n", [
-                    'User-Agent: Mozilla/5.0',
-                    'Accept: application/json,text/javascript,*/*;q=0.01',
-                    'Accept-Language: en-US,en;q=0.9',
-                    'Referer: https://store.steampowered.com/',
-                ]),
-            ],
-        ]);
-
-        $response = file_get_contents(
-            $url,
-            false,
-            $context
-        );
-
-        if (! $response) {
-            return [];
-        }
-
-        $data = json_decode($response, true);
-
-        if (! is_array($data)) {
-            return [];
-        }
-
-        return collect($data)
-            ->map(function ($game, $appid) {
-
-                return [
-                    'appid' => (int) $appid,
-
-                    'name' =>
-                        $game['name']
-                        ?? 'Unknown game',
-
-                    'playtime_forever' => null,
-
-                    'capsule' =>
-                        $game['capsule']
-                        ?? null,
-
-                    'review_score' =>
-                        $game['review_score']
-                        ?? null,
-                ];
-            })
-            ->values()
-            ->all();
     }
 
     public function searchStore(string $query): array
@@ -171,7 +111,6 @@ class SteamService
     public function getPlayerSummary(
         string $steamId
     ): ?array {
-
         $response = Http::get(
             'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/',
             [
@@ -189,7 +128,6 @@ class SteamService
     public function getAppDetails(
         int|string $appId
     ): ?array {
-
         $response = Http::withHeaders([
             'User-Agent' => 'Mozilla/5.0',
         ])->get(
@@ -214,5 +152,87 @@ class SteamService
         }
 
         return $data;
+    }
+
+    public function searchPlayer(string $query): array
+    {
+        $steamId = $this->extractSteamId($query);
+
+        if (! $steamId) {
+            $steamId = $this->resolveVanityUrl($query);
+        }
+
+        if (! $steamId) {
+            return [];
+        }
+
+        return $this->playerSummary($steamId);
+    }
+
+    private function extractSteamId(string $query): ?string
+    {
+        $query = trim($query);
+
+        if (preg_match('/7656\d{13}/', $query, $matches)) {
+            return $matches[0];
+        }
+
+        return null;
+    }
+
+    private function resolveVanityUrl(string $query): ?string
+    {
+        $vanity = trim($query);
+
+        if (Str::contains($vanity, 'steamcommunity.com/id/')) {
+            $vanity = Str::after($vanity, 'steamcommunity.com/id/');
+            $vanity = trim($vanity, '/');
+        }
+
+        if (Str::contains($vanity, '/')) {
+            return null;
+        }
+
+        $response = Http::get(
+            'https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/',
+            [
+                'key' => config('services.steam.key'),
+                'vanityurl' => $vanity,
+            ]
+        );
+
+        if (! $response->successful()) {
+            return null;
+        }
+
+        return data_get($response->json(), 'response.steamid');
+    }
+
+    private function playerSummary(string $steamId): array
+    {
+        $response = Http::get(
+            'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/',
+            [
+                'key' => config('services.steam.key'),
+                'steamids' => $steamId,
+            ]
+        );
+
+        if (! $response->successful()) {
+            return [];
+        }
+
+        return collect(
+            data_get($response->json(), 'response.players', [])
+        )
+            ->map(fn ($player) => [
+                'steam_id' => $player['steamid'] ?? null,
+                'name' => $player['personaname'] ?? null,
+                'avatar' => $player['avatarfull'] ?? null,
+                'profile_url' => $player['profileurl'] ?? null,
+            ])
+            ->filter(fn ($player) => filled($player['steam_id']))
+            ->values()
+            ->toArray();
     }
 }

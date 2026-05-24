@@ -7,6 +7,8 @@ use App\Http\Requests\StoreCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
+use App\Http\Controllers\PublicReviewController;
+use App\Http\Controllers\UserConnectionController;
 use App\Services\SteamService;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -160,4 +162,45 @@ Route::middleware('auth')->group(function () {
             Payload::droppedPageData($steam)
         )
     )->name('dropped.index');
+
+    Route::post('/reviews/public', [
+        PublicReviewController::class,
+        'store',
+    ])->name('reviews.public.store');
+
+    Route::get('/reviews', [
+        PublicReviewController::class,
+        'index',
+    ])->name('reviews.index');
+
+   Route::get('/people', [
+    UserConnectionController::class,
+    'index',
+])->name('people.index');
+
+Route::get('/people/search', [
+    UserConnectionController::class,
+    'search',
+])->name('people.search');
+
+Route::get('/people/notifications', [
+    UserConnectionController::class,
+    'notifications',
+])->name('people.notifications');
+
+Route::post('/people', [
+    UserConnectionController::class,
+    'store',
+])->name('people.store');
+
+Route::patch('/people/{connection}/accept', [
+    UserConnectionController::class,
+    'accept',
+])->name('people.accept');
+
+Route::delete('/people/{connection}', [
+    UserConnectionController::class,
+    'destroy',
+])->name('people.destroy');
+
 });

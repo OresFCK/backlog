@@ -11,7 +11,7 @@ import {
     Library,
     PlayCircle,
     CheckCircle2,
-    Heart,
+    Ban,
     Sparkles,
     PlusCircle,
     ChevronDown,
@@ -20,7 +20,7 @@ import {
     Users,
     Trophy,
     UserPlus,
-    Ban
+    MessageSquareText,
 } from 'lucide-vue-next'
 
 const page = usePage()
@@ -71,9 +71,9 @@ const collectionItems = [
 
 const communityItems = [
     {
-        label: 'Friends',
-        href: '/friends',
-        icon: Users,
+        label: 'Reviews',
+        href: '/reviews',
+        icon: MessageSquareText,
     },
 
     {
@@ -83,10 +83,10 @@ const communityItems = [
     },
 
     {
-        label: 'Followed',
-        href: '/followed',
-        icon: UserPlus,
-    },
+        label: 'People',
+        href: '/people',
+        icon: Users,
+    }
 ]
 
 const toolItems = [
@@ -113,22 +113,16 @@ const settingsItems = [
         <div
             class="flex h-[89px] flex-col justify-center border-b border-zinc-800 px-6"
         >
-            <h1
-                class="text-2xl font-bold tracking-tight text-white"
-            >
+            <h1 class="text-2xl font-bold tracking-tight text-white">
                 Curator.gg
             </h1>
 
-            <p
-                class="mt-1 text-sm text-zinc-400"
-            >
+            <p class="mt-1 text-sm text-zinc-400">
                 Beat your backlog.
             </p>
         </div>
 
-        <nav
-            class="flex-1 overflow-y-auto px-4 py-5"
-        >
+        <nav class="flex-1 overflow-y-auto px-4 py-5">
             <div class="space-y-2">
                 <Link
                     v-for="item in mainItems"
@@ -156,17 +150,11 @@ const settingsItems = [
                     class="mb-3 flex w-full items-center justify-between px-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
                     @click="isCollectionOpen = !isCollectionOpen"
                 >
-                    <span>
-                        Collection
-                    </span>
+                    <span>Collection</span>
 
                     <ChevronDown
                         class="h-4 w-4 transition-transform"
-                        :class="
-                            isCollectionOpen
-                                ? 'rotate-180'
-                                : ''
-                        "
+                        :class="isCollectionOpen ? 'rotate-180' : ''"
                     />
                 </button>
 
@@ -201,17 +189,11 @@ const settingsItems = [
                     class="mb-3 flex w-full items-center justify-between px-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
                     @click="isCommunityOpen = !isCommunityOpen"
                 >
-                    <span>
-                        Community
-                    </span>
+                    <span>Community</span>
 
                     <ChevronDown
                         class="h-4 w-4 transition-transform"
-                        :class="
-                            isCommunityOpen
-                                ? 'rotate-180'
-                                : ''
-                        "
+                        :class="isCommunityOpen ? 'rotate-180' : ''"
                     />
                 </button>
 
@@ -275,25 +257,15 @@ const settingsItems = [
                     class="mb-3 flex w-full items-center justify-between px-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
                     @click="isSettingsOpen = !isSettingsOpen"
                 >
-                    <div
-                        class="flex items-center gap-2"
-                    >
-                        <Settings
-                            class="h-4 w-4"
-                        />
+                    <div class="flex items-center gap-2">
+                        <Settings class="h-4 w-4" />
 
-                        <span>
-                            Settings
-                        </span>
+                        <span>Settings</span>
                     </div>
 
                     <ChevronDown
                         class="h-4 w-4 transition-transform"
-                        :class="
-                            isSettingsOpen
-                                ? 'rotate-180'
-                                : ''
-                        "
+                        :class="isSettingsOpen ? 'rotate-180' : ''"
                     />
                 </button>
 
