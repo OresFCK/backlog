@@ -23,6 +23,10 @@ class User extends Authenticatable
         'steam_persona_name',
         'steam_avatar_url',
         'banner_url',
+        'xp',
+        'level',
+        'profile_level_multiplier_enabled',
+        'xp_multiplier',
     ];
 
     protected $hidden = [

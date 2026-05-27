@@ -1,5 +1,11 @@
 <script setup>
-import { computed, ref } from 'vue'
+import {
+    computed,
+    ref,
+} from 'vue'
+
+import { router } from '@inertiajs/vue3'
+
 import { X } from 'lucide-vue-next'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
@@ -19,7 +25,84 @@ const props = defineProps({
 
 const selectedReview = ref(null)
 
-const isReviewModalOpen = computed(() => selectedReview.value !== null)
+const filters = ref({
+    user: '',
+    game: '',
+    rating: '',
+    recommendation: '',
+})
+
+const isReviewModalOpen = computed(
+    () => selectedReview.value !== null
+)
+
+const filteredReviews = computed(() => {
+
+    return props.reviews.filter((review) => {
+
+        const userName = String(
+            review.user?.name ?? ''
+        ).toLowerCase()
+
+        const gameTitle = String(
+            review.title ?? ''
+        ).toLowerCase()
+
+        const matchesUser =
+            !filters.value.user ||
+
+            userName.includes(
+                filters.value.user.toLowerCase()
+            )
+
+        const matchesGame =
+            !filters.value.game ||
+
+            gameTitle.includes(
+                filters.value.game.toLowerCase()
+            )
+
+        const matchesRating =
+            !filters.value.rating ||
+
+            Number(review.rating) ===
+            Number(filters.value.rating)
+
+        const matchesRecommendation =
+            !filters.value.recommendation ||
+
+            (
+                filters.value.recommendation ===
+                'recommended' &&
+
+                review.recommended
+            ) ||
+
+            (
+                filters.value.recommendation ===
+                'not_recommended' &&
+
+                review.not_recommended
+            )
+
+        return (
+            matchesUser &&
+            matchesGame &&
+            matchesRating &&
+            matchesRecommendation
+        )
+    })
+})
+
+const clearFilters = () => {
+
+    filters.value = {
+        user: '',
+        game: '',
+        rating: '',
+        recommendation: '',
+    }
+}
 
 const openReviewModal = (review) => {
     selectedReview.value = review
@@ -34,6 +117,7 @@ const shouldTruncate = (body) => {
 }
 
 const truncatedBody = (body) => {
+
     const text = String(body ?? '')
 
     if (text.length <= 420) {
@@ -41,6 +125,46 @@ const truncatedBody = (body) => {
     }
 
     return `${text.slice(0, 420)}...`
+}
+
+const vote = (review, value) => {
+
+    router.post(
+        `/reviews/${review.id}/vote`,
+        {
+            value,
+        },
+        {
+            preserveScroll: true,
+        }
+    )
+}
+
+const removeVote = (review) => {
+
+    router.delete(
+        `/reviews/${review.id}/vote`,
+        {
+            preserveScroll: true,
+        }
+    )
+}
+
+const toggleVote = (
+    review,
+    value
+) => {
+
+    if (
+        review.user_vote === value
+    ) {
+
+        removeVote(review)
+
+        return
+    }
+
+    vote(review, value)
 }
 </script>
 
@@ -62,9 +186,85 @@ const truncatedBody = (body) => {
                     </p>
                 </div>
 
+                <div
+                    class="mb-6 rounded-3xl border border-zinc-800 bg-zinc-900 p-5"
+                >
+                    <div
+                        class="grid gap-4 md:grid-cols-4"
+                    >
+                        <input
+                            v-model="filters.user"
+                            type="text"
+                            placeholder="Filter by user"
+                            class="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
+                        />
+
+                        <input
+                            v-model="filters.game"
+                            type="text"
+                            placeholder="Filter by game"
+                            class="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
+                        />
+
+                        <select
+                            v-model="filters.rating"
+                            class="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-600"
+                        >
+                            <option value="">
+                                Any rating
+                            </option>
+
+                            <option
+                                v-for="rating in 10"
+                                :key="rating"
+                                :value="rating"
+                            >
+                                {{ rating }}/10
+                            </option>
+                        </select>
+
+                        <select
+                            v-model="filters.recommendation"
+                            class="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-600"
+                        >
+                            <option value="">
+                                Any recommendation
+                            </option>
+
+                            <option value="recommended">
+                                Recommended
+                            </option>
+
+                            <option value="not_recommended">
+                                Not Recommended
+                            </option>
+                        </select>
+                    </div>
+
+                    <div
+                        class="mt-4 flex items-center justify-between gap-3"
+                    >
+                        <p class="text-sm text-zinc-500">
+                            Showing
+                            {{ filteredReviews.length }}
+                            of
+                            {{ reviews.length }}
+                            reviews
+                        </p>
+
+                        <button
+                            type="button"
+                            class="rounded-xl border border-zinc-800 px-4 py-2 text-sm font-bold text-zinc-300 transition hover:bg-zinc-950 hover:text-white"
+                            @click="clearFilters"
+                        >
+                            Clear filters
+                        </button>
+                    </div>
+                </div>
+
                 <div class="space-y-6">
                     <article
-                        v-for="review in reviews"
+                        v-for="review in filteredReviews"
                         :key="review.id"
                         class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
                     >
@@ -76,15 +276,21 @@ const truncatedBody = (body) => {
                             />
 
                             <div class="min-w-0 flex-1">
-                                <div class="flex flex-wrap items-center gap-3">
-                                    <h2 class="text-lg font-bold text-white">
+                                <div
+                                    class="flex flex-wrap items-center gap-3"
+                                >
+                                    <h2
+                                        class="text-lg font-bold text-white"
+                                    >
                                         {{
                                             review.user?.name ??
                                             'Unknown user'
                                         }}
                                     </h2>
 
-                                    <span class="text-sm text-zinc-500">
+                                    <span
+                                        class="text-sm text-zinc-500"
+                                    >
                                         {{ review.created_at }}
                                     </span>
 
@@ -101,24 +307,101 @@ const truncatedBody = (body) => {
                                     >
                                         Recommended
                                     </span>
+
+                                    <span
+                                        v-if="review.not_recommended"
+                                        class="rounded-xl bg-red-500/10 px-3 py-1 text-sm font-bold text-red-300"
+                                    >
+                                        Not Recommended
+                                    </span>
                                 </div>
 
-                                <h3 class="mt-4 text-2xl font-black text-white">
+                                <h3
+                                    class="mt-4 text-2xl font-black text-white"
+                                >
                                     {{
                                         review.title ||
                                         'Untitled review'
                                     }}
                                 </h3>
 
-                                <p class="mt-4 whitespace-pre-line text-zinc-300">
-                                    {{ truncatedBody(review.body) }}
+                                <p
+                                    class="mt-4 whitespace-pre-line text-zinc-300"
+                                >
+                                    {{
+                                        truncatedBody(
+                                            review.body
+                                        )
+                                    }}
                                 </p>
 
+                                <div
+                                    class="mt-5 flex flex-wrap items-center gap-3"
+                                >
+                                    <template
+                                        v-if="review.can_vote"
+                                    >
+                                        <button
+                                            type="button"
+                                            class="rounded-xl border px-3 py-1 text-sm font-bold transition"
+                                            :class="
+                                                review.user_vote === 1
+                                                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300'
+                                                    : 'border-zinc-700 bg-zinc-950 text-zinc-300 hover:text-white'
+                                            "
+                                            @click="
+                                                toggleVote(
+                                                    review,
+                                                    1
+                                                )
+                                            "
+                                        >
+                                            +1
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="rounded-xl border px-3 py-1 text-sm font-bold transition"
+                                            :class="
+                                                review.user_vote === -1
+                                                    ? 'border-red-500 bg-red-500/10 text-red-300'
+                                                    : 'border-zinc-700 bg-zinc-950 text-zinc-300 hover:text-white'
+                                            "
+                                            @click="
+                                                toggleVote(
+                                                    review,
+                                                    -1
+                                                )
+                                            "
+                                        >
+                                            -1
+                                        </button>
+                                    </template>
+
+                                    <span
+                                        class="text-sm font-bold text-zinc-400"
+                                    >
+                                        Score:
+                                        {{
+                                            review.votes_score ??
+                                            0
+                                        }}
+                                    </span>
+                                </div>
+
                                 <button
-                                    v-if="shouldTruncate(review.body)"
+                                    v-if="
+                                        shouldTruncate(
+                                            review.body
+                                        )
+                                    "
                                     type="button"
                                     class="mt-4 text-sm font-bold text-white underline underline-offset-4 transition hover:text-zinc-300"
-                                    @click="openReviewModal(review)"
+                                    @click="
+                                        openReviewModal(
+                                            review
+                                        )
+                                    "
                                 >
                                     Read more
                                 </button>
@@ -127,15 +410,19 @@ const truncatedBody = (body) => {
                     </article>
 
                     <div
-                        v-if="!reviews.length"
+                        v-if="!filteredReviews.length"
                         class="rounded-3xl border border-dashed border-zinc-800 p-16 text-center"
                     >
-                        <h2 class="text-2xl font-black text-white">
-                            No reviews yet
+                        <h2
+                            class="text-2xl font-black text-white"
+                        >
+                            No reviews found
                         </h2>
 
-                        <p class="mt-3 text-zinc-400">
-                            Public reviews will appear here.
+                        <p
+                            class="mt-3 text-zinc-400"
+                        >
+                            Try changing your filters.
                         </p>
                     </div>
                 </div>
@@ -146,20 +433,29 @@ const truncatedBody = (body) => {
             v-if="isReviewModalOpen"
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
         >
-            <div class="max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl">
-                <div class="flex items-start justify-between gap-4 border-b border-zinc-800 p-6">
+            <div
+                class="max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl"
+            >
+                <div
+                    class="flex items-start justify-between gap-4 border-b border-zinc-800 p-6"
+                >
                     <div>
-                        <h2 class="text-2xl font-black text-white">
+                        <h2
+                            class="text-2xl font-black text-white"
+                        >
                             {{
                                 selectedReview.title ||
                                 'Untitled review'
                             }}
                         </h2>
 
-                        <p class="mt-2 text-sm text-zinc-400">
+                        <p
+                            class="mt-2 text-sm text-zinc-400"
+                        >
                             By
                             {{
-                                selectedReview.user?.name ??
+                                selectedReview.user
+                                    ?.name ??
                                 'Unknown user'
                             }}
                         </p>
@@ -174,24 +470,99 @@ const truncatedBody = (body) => {
                     </button>
                 </div>
 
-                <div class="max-h-[65vh] overflow-y-auto p-6">
-                    <div class="mb-5 flex flex-wrap gap-3">
+                <div
+                    class="max-h-[65vh] overflow-y-auto p-6"
+                >
+                    <div
+                        class="mb-5 flex flex-wrap gap-3"
+                    >
                         <span
                             v-if="selectedReview.rating"
                             class="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-1 text-sm font-bold text-white"
                         >
-                            {{ selectedReview.rating }}/10
+                            {{
+                                selectedReview.rating
+                            }}/10
                         </span>
 
                         <span
-                            v-if="selectedReview.recommended"
+                            v-if="
+                                selectedReview.recommended
+                            "
                             class="rounded-xl bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-300"
                         >
                             Recommended
                         </span>
+
+                        <span
+                            v-if="
+                                selectedReview.not_recommended
+                            "
+                            class="rounded-xl bg-red-500/10 px-3 py-1 text-sm font-bold text-red-300"
+                        >
+                            Not Recommended
+                        </span>
                     </div>
 
-                    <p class="whitespace-pre-line text-zinc-300">
+                    <div
+                        class="mb-5 flex flex-wrap items-center gap-3"
+                    >
+                        <template
+                            v-if="
+                                selectedReview.can_vote
+                            "
+                        >
+                            <button
+                                type="button"
+                                class="rounded-xl border px-3 py-1 text-sm font-bold transition"
+                                :class="
+                                    selectedReview.user_vote === 1
+                                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300'
+                                        : 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:text-white'
+                                "
+                                @click="
+                                    toggleVote(
+                                        selectedReview,
+                                        1
+                                    )
+                                "
+                            >
+                                +1
+                            </button>
+
+                            <button
+                                type="button"
+                                class="rounded-xl border px-3 py-1 text-sm font-bold transition"
+                                :class="
+                                    selectedReview.user_vote === -1
+                                        ? 'border-red-500 bg-red-500/10 text-red-300'
+                                        : 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:text-white'
+                                "
+                                @click="
+                                    toggleVote(
+                                        selectedReview,
+                                        -1
+                                    )
+                                "
+                            >
+                                -1
+                            </button>
+                        </template>
+
+                        <span
+                            class="text-sm font-bold text-zinc-400"
+                        >
+                            Score:
+                            {{
+                                selectedReview.votes_score ??
+                                0
+                            }}
+                        </span>
+                    </div>
+
+                    <p
+                        class="whitespace-pre-line text-zinc-300"
+                    >
                         {{ selectedReview.body }}
                     </p>
                 </div>

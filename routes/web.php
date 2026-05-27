@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
 use App\Http\Controllers\PublicReviewController;
 use App\Http\Controllers\UserConnectionController;
+use App\Http\Controllers\PublicReviewVoteController;
 use App\Services\SteamService;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -194,10 +195,10 @@ Route::middleware('auth')->group(function () {
         'index',
     ])->name('reviews.index');
 
-   Route::get('/people', [
-    UserConnectionController::class,
-    'index',
-])->name('people.index');
+    Route::get('/people', [
+        UserConnectionController::class,
+        'index',
+    ])->name('people.index');
 
 Route::get('/people/search', [
     UserConnectionController::class,
@@ -223,5 +224,15 @@ Route::delete('/people/{connection}', [
     UserConnectionController::class,
     'destroy',
 ])->name('people.destroy');
+
+Route::post('/reviews/{review}/vote', [
+    PublicReviewVoteController::class,
+    'store',
+])->name('reviews.vote.store');
+
+Route::delete('/reviews/{review}/vote', [
+    PublicReviewVoteController::class,
+    'destroy',
+])->name('reviews.vote.destroy');
 
 });

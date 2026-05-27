@@ -29,6 +29,10 @@ class UpdateGameMetaRequest extends FormRequest
             'recommended' => [
                 'boolean',
             ],
+            
+            'not_recommended' => ['
+                boolean'
+            ],
 
             'status' => [
                 'required',

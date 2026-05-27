@@ -29,6 +29,7 @@ class GameMetaService
                     'status',
                 ]),
                 'recommended' => $request->boolean('recommended'),
+                'not_recommended' => $request->boolean('not_recommended'),
             ]
         );
 
@@ -64,6 +65,7 @@ class GameMetaService
             'note' => $meta->note,
             'rating' => $meta->rating,
             'recommended' => $meta->recommended ?? false,
+            'not_recommended' => $meta->not_recommended ?? false,
             'updated_at' => $meta->updated_at?->diffForHumans(),
         ];
     }
@@ -76,6 +78,7 @@ class GameMetaService
             'note' => null,
             'rating' => null,
             'recommended' => false,
+            'not_recommended' => false,
             'updated_at' => null,
         ];
     }

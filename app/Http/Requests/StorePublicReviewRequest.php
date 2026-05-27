@@ -43,6 +43,9 @@ class StorePublicReviewRequest extends FormRequest
             'recommended' => [
                 'boolean',
             ],
+            'not_recommended' => [
+                'boolean',
+            ],
         ];
     }
 }

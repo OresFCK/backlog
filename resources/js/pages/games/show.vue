@@ -1,17 +1,7 @@
 <script setup>
-import {
-    ref,
-    watch,
-} from 'vue'
-
+import { ref, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
-
-import {
-    Trophy,
-    Calendar,
-    ThumbsUp,
-    X,
-} from 'lucide-vue-next'
+import { Trophy, Calendar, ThumbsUp, X } from 'lucide-vue-next'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
@@ -34,30 +24,20 @@ const props = defineProps({
 })
 
 const note = ref(props.game.note ?? '')
-
-const rating = ref(
-    props.game.rating
-        ? String(props.game.rating)
-        : ''
-)
-
-const recommended = ref(
-    props.game.recommended ?? false
-)
-
+const rating = ref(props.game.rating ? String(props.game.rating) : '')
+const recommended = ref(props.game.recommended ?? false)
+const notRecommended = ref(props.game.not_recommended ?? false)
 const status = ref('')
 
 const isReviewModalOpen = ref(false)
+
 const publicReviewTitle = ref('')
 const publicReviewBody = ref('')
 const publicReviewRating = ref(
-    props.game.rating
-        ? String(props.game.rating)
-        : ''
+    props.game.rating ? String(props.game.rating) : ''
 )
-const publicReviewRecommended = ref(
-    props.game.recommended ?? false
-)
+const publicReviewRecommended = ref(props.game.recommended ?? false)
+const publicReviewNotRecommended = ref(props.game.not_recommended ?? false)
 
 watch(
     () => props.statuses,
@@ -66,10 +46,9 @@ watch(
             return
         }
 
-        status.value =
-            props.game.has_meta
-                ? props.game.status
-                : statuses[0].name
+        status.value = props.game.has_meta
+            ? props.game.status
+            : statuses[0].name
     },
     {
         immediate: true,
@@ -81,13 +60,9 @@ const saveMeta = () => {
         `/games/${props.game.id}/meta`,
         {
             note: note.value,
-
-            rating: rating.value
-                ? Number(rating.value)
-                : null,
-
+            rating: rating.value ? Number(rating.value) : null,
             recommended: recommended.value,
-
+            not_recommended: notRecommended.value,
             status: status.value,
         },
         {
@@ -96,11 +71,49 @@ const saveMeta = () => {
     )
 }
 
+const toggleRecommended = () => {
+    recommended.value = !recommended.value
+
+    if (recommended.value) {
+        notRecommended.value = false
+    }
+
+    saveMeta()
+}
+
+const toggleNotRecommended = () => {
+    notRecommended.value = !notRecommended.value
+
+    if (notRecommended.value) {
+        recommended.value = false
+    }
+
+    saveMeta()
+}
+
+const togglePublicRecommended = () => {
+    publicReviewRecommended.value = !publicReviewRecommended.value
+
+    if (publicReviewRecommended.value) {
+        publicReviewNotRecommended.value = false
+    }
+}
+
+const togglePublicNotRecommended = () => {
+    publicReviewNotRecommended.value = !publicReviewNotRecommended.value
+
+    if (publicReviewNotRecommended.value) {
+        publicReviewRecommended.value = false
+    }
+}
+
 const openReviewModal = () => {
     publicReviewTitle.value = props.game.title
     publicReviewBody.value = note.value ?? ''
     publicReviewRating.value = rating.value
     publicReviewRecommended.value = recommended.value
+    publicReviewNotRecommended.value = notRecommended.value
+
     isReviewModalOpen.value = true
 }
 
@@ -119,6 +132,7 @@ const submitPublicReview = () => {
                 ? Number(publicReviewRating.value)
                 : null,
             recommended: publicReviewRecommended.value,
+            not_recommended: publicReviewNotRecommended.value,
         },
         {
             preserveScroll: true,
@@ -148,50 +162,30 @@ const blockInvalidKeys = (event) => {
     }
 }
 
+const normalizeRating = (value) => {
+    let normalizedValue = value.replace(/\D/g, '').slice(0, 2)
+
+    if (normalizedValue === '') {
+        return ''
+    }
+
+    if (Number(normalizedValue) > 10) {
+        return '10'
+    }
+
+    if (Number(normalizedValue) < 1) {
+        return '1'
+    }
+
+    return normalizedValue
+}
+
 const handleRatingInput = (event) => {
-    let value =
-        event.target.value
-            .replace(/\D/g, '')
-            .slice(0, 2)
-
-    if (value === '') {
-        rating.value = ''
-
-        return
-    }
-
-    if (Number(value) > 10) {
-        value = '10'
-    }
-
-    if (Number(value) < 1) {
-        value = '1'
-    }
-
-    rating.value = value
+    rating.value = normalizeRating(event.target.value)
 }
 
 const handlePublicRatingInput = (event) => {
-    let value =
-        event.target.value
-            .replace(/\D/g, '')
-            .slice(0, 2)
-
-    if (value === '') {
-        publicReviewRating.value = ''
-
-        return
-    }
-
-    if (Number(value) > 10) {
-        value = '10'
-    }
-
-    if (Number(value) < 1) {
-        value = '1'
-    }
-
-    publicReviewRating.value = value
+    publicReviewRating.value = normalizeRating(event.target.value)
 }
 </script>
 
@@ -207,10 +201,9 @@ const handlePublicRatingInput = (event) => {
                     <div
                         class="relative min-h-[360px] bg-cover bg-center"
                         :style="{
-                            backgroundImage:
-                                game.header_image
-                                    ? `linear-gradient(to right, rgba(9,9,11,.95), rgba(9,9,11,.55)), url(${game.header_image})`
-                                    : null,
+                            backgroundImage: game.header_image
+                                ? `linear-gradient(to right, rgba(9,9,11,.95), rgba(9,9,11,.55)), url(${game.header_image})`
+                                : null,
                         }"
                     >
                         <div class="flex min-h-[360px] flex-col justify-between p-10">
@@ -230,10 +223,7 @@ const handlePublicRatingInput = (event) => {
                                 </h1>
 
                                 <p class="mt-4 max-w-2xl text-zinc-300">
-                                    {{
-                                        game.description ||
-                                        'No description available.'
-                                    }}
+                                    {{ game.description || 'No description available.' }}
                                 </p>
                             </div>
 
@@ -299,14 +289,29 @@ const handlePublicRatingInput = (event) => {
                                                     ? 'text-emerald-300'
                                                     : 'text-zinc-300 hover:text-white'
                                             "
-                                            @click="recommended = !recommended; saveMeta()"
+                                            @click="toggleRecommended"
                                         >
                                             <ThumbsUp class="h-4 w-4" />
 
+                                            {{ recommended ? 'Recommended' : 'Recommend' }}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="mt-3 flex w-full items-center justify-center gap-2 text-sm font-semibold transition"
+                                            :class="
+                                                notRecommended
+                                                    ? 'text-red-300'
+                                                    : 'text-zinc-300 hover:text-white'
+                                            "
+                                            @click="toggleNotRecommended"
+                                        >
+                                            <X class="h-4 w-4" />
+
                                             {{
-                                                recommended
-                                                    ? 'Recommended'
-                                                    : 'Recommend'
+                                                notRecommended
+                                                    ? 'Not Recommended'
+                                                    : 'Do Not Recommend'
                                             }}
                                         </button>
 
@@ -333,10 +338,7 @@ const handlePublicRatingInput = (event) => {
                                         </p>
 
                                         <p class="mt-3 text-3xl font-black text-white">
-                                            {{
-                                                game.playtime_hours ??
-                                                '—'
-                                            }}h
+                                            {{ game.playtime_hours ?? '—' }}h
                                         </p>
 
                                         <p class="mt-1 text-xs text-zinc-500">
@@ -348,10 +350,7 @@ const handlePublicRatingInput = (event) => {
                                         <Trophy class="h-6 w-6 text-zinc-400" />
 
                                         <p class="mt-3 text-3xl font-black text-white">
-                                            {{
-                                                game.achievements_unlocked ??
-                                                '—'
-                                            }}/{{ game.achievements_total ?? '—' }}
+                                            {{ game.achievements_unlocked ?? '—' }}/{{ game.achievements_total ?? '—' }}
                                         </p>
 
                                         <p class="mt-1 text-xs text-zinc-500">
@@ -363,10 +362,7 @@ const handlePublicRatingInput = (event) => {
                                         <Calendar class="h-6 w-6 text-zinc-400" />
 
                                         <p class="mt-3 text-2xl font-black text-white">
-                                            {{
-                                                game.release_date ||
-                                                '—'
-                                            }}
+                                            {{ game.release_date || '—' }}
                                         </p>
 
                                         <p class="mt-1 text-xs text-zinc-500">
@@ -425,10 +421,7 @@ const handlePublicRatingInput = (event) => {
                                         </dt>
 
                                         <dd class="text-zinc-200">
-                                            {{
-                                                game.developers?.join(', ') ||
-                                                'Unknown'
-                                            }}
+                                            {{ game.developers?.join(', ') || 'Unknown' }}
                                         </dd>
                                     </div>
 
@@ -452,10 +445,7 @@ const handlePublicRatingInput = (event) => {
                                         </dt>
 
                                         <dd class="text-zinc-200">
-                                            {{
-                                                game.release_date ||
-                                                'Unknown'
-                                            }}
+                                            {{ game.release_date || 'Unknown' }}
                                         </dd>
                                     </div>
 
@@ -566,7 +556,7 @@ const handlePublicRatingInput = (event) => {
                             </div>
                         </div>
 
-                        <div class="flex items-end">
+                        <div class="flex items-end gap-3">
                             <button
                                 type="button"
                                 class="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 px-4 py-3 text-sm font-semibold transition"
@@ -575,14 +565,33 @@ const handlePublicRatingInput = (event) => {
                                         ? 'bg-emerald-500/10 text-emerald-300'
                                         : 'bg-zinc-900 text-zinc-300 hover:text-white'
                                 "
-                                @click="publicReviewRecommended = !publicReviewRecommended"
+                                @click="togglePublicRecommended"
                             >
                                 <ThumbsUp class="h-4 w-4" />
 
                                 {{
                                     publicReviewRecommended
                                         ? 'Recommended'
-                                        : 'Recommend this game'
+                                        : 'Recommend'
+                                }}
+                            </button>
+
+                            <button
+                                type="button"
+                                class="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 px-4 py-3 text-sm font-semibold transition"
+                                :class="
+                                    publicReviewNotRecommended
+                                        ? 'bg-red-500/10 text-red-300'
+                                        : 'bg-zinc-900 text-zinc-300 hover:text-white'
+                                "
+                                @click="togglePublicNotRecommended"
+                            >
+                                <X class="h-4 w-4" />
+
+                                {{
+                                    publicReviewNotRecommended
+                                        ? 'Not Recommended'
+                                        : 'Do Not Recommend'
                                 }}
                             </button>
                         </div>

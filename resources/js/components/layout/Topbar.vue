@@ -1,5 +1,6 @@
 <script setup>
 import {
+    computed,
     onMounted,
     ref,
 } from 'vue'
@@ -16,7 +17,7 @@ import {
     router,
 } from '@inertiajs/vue3'
 
-defineProps({
+const props = defineProps({
     user: {
         type: Object,
         default: null,
@@ -26,6 +27,39 @@ defineProps({
 const isOpen = ref(false)
 const requests = ref([])
 const count = ref(0)
+
+const level = computed(() =>
+    props.user?.level ?? 1
+)
+
+const xp = computed(() =>
+    props.user?.xp ?? 0
+)
+
+const nextLevelXp = computed(() =>
+    props.user?.xp_for_next_level ?? 100
+)
+
+const currentLevelXp = computed(() =>
+    props.user?.xp_for_current_level ?? 0
+)
+
+const xpProgress = computed(() => {
+    const required =
+        nextLevelXp.value - currentLevelXp.value
+
+    if (required <= 0) {
+        return 0
+    }
+
+    return Math.min(
+        100,
+        Math.max(
+            0,
+            ((xp.value - currentLevelXp.value) / required) * 100
+        )
+    )
+})
 
 const loadNotifications = async () => {
     const response = await fetch('/people/notifications')
@@ -78,6 +112,29 @@ onMounted(() => {
         </div>
 
         <div class="flex items-center gap-4">
+            <div
+                class="hidden w-56 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 lg:block"
+            >
+                <div class="mb-2 flex items-center justify-between">
+                    <p class="text-xs font-bold text-white">
+                        Level {{ level }}
+                    </p>
+
+                    <p class="text-xs text-zinc-500">
+                        {{ xp }} / {{ nextLevelXp }} XP
+                    </p>
+                </div>
+
+                <div class="h-2 overflow-hidden rounded-full bg-zinc-800">
+                    <div
+                        class="h-full rounded-full bg-white transition-all"
+                        :style="{
+                            width: `${xpProgress}%`,
+                        }"
+                    />
+                </div>
+            </div>
+
             <div class="relative">
                 <button
                     type="button"

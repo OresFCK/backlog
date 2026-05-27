@@ -136,6 +136,7 @@ class GameLibraryService
             'status_color' => $this->statuses->statusColor($status),
             'rating' => $meta->rating,
             'recommended' => $meta->recommended ?? false,
+            'not_recommended' => $meta->not_recommended ?? false,
             'note' => $meta->note,
             'updated_at' => $meta->updated_at?->diffForHumans(),
         ];

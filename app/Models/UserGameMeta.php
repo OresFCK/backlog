@@ -15,10 +15,12 @@ class UserGameMeta extends Model
         'rating',
         'recommended',
         'status',
+        'not_recommended'
     ];
 
     protected $casts = [
         'recommended' => 'boolean',
         'rating' => 'integer',
+        'not_recommended' => 'boolean',
     ];
 }
