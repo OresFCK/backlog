@@ -32,6 +32,27 @@ Route::controller(SteamAuthController::class)
             ->name('callback');
     });
 
+Route::get('/invite/{steamId}', function (
+    string $steamId,
+    SteamService $steam
+) {
+
+    $profile = collect(
+        $steam->searchPlayer($steamId)
+    )->first();
+
+    if (! $profile) {
+        abort(404);
+    }
+
+    return Inertia::render(
+        'invite/show',
+        [
+            'profile' => $profile,
+        ]
+    );
+})->name('invite.show');
+
 Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', fn (SteamService $steam) =>
