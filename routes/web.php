@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateProfileBannerRequest;
 use App\Http\Controllers\PublicReviewController;
 use App\Http\Controllers\UserConnectionController;
 use App\Http\Controllers\PublicReviewVoteController;
+use App\Http\Controllers\RecommendationController;
 use App\Services\SteamService;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -91,12 +92,10 @@ Route::middleware('auth')->group(function () {
         )
     )->name('wishlist.index');
 
-    Route::get('/recommendations', fn (SteamService $steam) =>
-        Inertia::render(
-            'recommendations/index',
-            Payload::pageData($steam)
-        )
-    )->name('recommendations.index');
+    Route::get('/recommendations', [
+        RecommendationController::class,
+        'index',
+    ])->name('recommendations.index');
 
     Route::get('/games/create', fn (SteamService $steam) =>
         Inertia::render(

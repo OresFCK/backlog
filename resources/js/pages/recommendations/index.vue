@@ -2,16 +2,34 @@
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
 
+import RecommendationsSection from '@/components/recommendations/RecommendationsSection.vue'
+import RecommendationCarousel from '@/components/recommendations/RecommendationCarousel.vue'
+
 defineProps({
-    user: Object,
+    user: {
+        type: Object,
+        required: true,
+    },
 
-    backlogRecommendations: Array,
+    backlogRecommendations: {
+        type: Array,
+        default: () => [],
+    },
 
-    steamRecommendations: Array,
+    steamRecommendations: {
+        type: Array,
+        default: () => [],
+    },
 
-    friendsRanking: Array,
+    friendsRanking: {
+        type: Array,
+        default: () => [],
+    },
 
-    globalRanking: Array,
+    globalRanking: {
+        type: Array,
+        default: () => [],
+    },
 })
 </script>
 
