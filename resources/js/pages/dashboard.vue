@@ -26,34 +26,54 @@ const searchQuery = ref('')
 const selectedStatus = ref('all')
 
 const recommended = computed(() => {
-    if (!props.games.length) {
+
+    const sources = [
+
+        ...(props.friendsRanking ?? []),
+
+        ...(props.globalRanking ?? []),
+    ]
+
+    if (!sources.length) {
         return null
     }
 
-    const randomGame =
-        props.games[
-            Math.floor(
-                Math.random() *
-                    props.games.length
-            )
-        ]
+    const topRecommendation =
+        [...sources]
+
+            .sort(
+                (a, b) =>
+                    Number(
+                        b.score ?? 0
+                    ) -
+
+                    Number(
+                        a.score ?? 0
+                    )
+            )[0]
 
     return {
         game: {
-            id: randomGame.id,
+            id:
+                topRecommendation.game.id,
 
             title:
-                randomGame.name ??
-                randomGame.title ??
-                'Unknown game',
+                topRecommendation.game.title,
 
             header_image_url:
-                randomGame.cover_url ??
-                `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${randomGame.appid}/header.jpg`,
+                topRecommendation
+                    .game
+                    .header_image_url,
         },
 
         reason:
-            'Recommended from your library.',
+            topRecommendation.reason,
+
+        score:
+            topRecommendation.score,
+
+        average_rating:
+            topRecommendation.average_rating,
     }
 })
 
