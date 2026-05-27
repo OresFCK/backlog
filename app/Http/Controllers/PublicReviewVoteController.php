@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\PublicReview;
 use App\Models\UserConnection;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class PublicReviewVoteController extends Controller
 {
@@ -13,7 +13,6 @@ class PublicReviewVoteController extends Controller
         Request $request,
         PublicReview $review
     ): RedirectResponse {
-
         $data = $request->validate([
             'value' => [
                 'required',
@@ -51,7 +50,6 @@ class PublicReviewVoteController extends Controller
         Request $request,
         PublicReview $review
     ): RedirectResponse {
-
         abort_unless(
             $this->canVoteForReview(
                 $request->user()->id,
@@ -61,10 +59,7 @@ class PublicReviewVoteController extends Controller
         );
 
         $review->votes()
-            ->where(
-                'user_id',
-                $request->user()->id
-            )
+            ->where('user_id', $request->user()->id)
             ->delete();
 
         return back();
@@ -74,101 +69,34 @@ class PublicReviewVoteController extends Controller
         int $voterId,
         int $reviewAuthorId
     ): bool {
-
         return UserConnection::query()
-
-            ->where(function ($query) use (
-                $voterId,
-                $reviewAuthorId
-            ) {
-
+            ->where(function ($query) use ($voterId, $reviewAuthorId) {
                 $query
-                    ->where(function ($query) use (
-                        $voterId,
-                        $reviewAuthorId
-                    ) {
-
+                    ->where(function ($query) use ($voterId, $reviewAuthorId) {
                         $query
-                            ->where(
-                                'type',
-                                'friend'
-                            )
-
-                            ->where(
-                                'status',
-                                'accepted'
-                            )
-
-                            ->where(function ($query) use (
-                                $voterId,
-                                $reviewAuthorId
-                            ) {
-
+                            ->where('type', 'friend')
+                            ->where('status', 'accepted')
+                            ->where(function ($query) use ($voterId, $reviewAuthorId) {
                                 $query
-                                    ->where(function ($query) use (
-                                        $voterId,
-                                        $reviewAuthorId
-                                    ) {
-
+                                    ->where(function ($query) use ($voterId, $reviewAuthorId) {
                                         $query
-                                            ->where(
-                                                'sender_id',
-                                                $voterId
-                                            )
-
-                                            ->where(
-                                                'receiver_id',
-                                                $reviewAuthorId
-                                            );
+                                            ->where('sender_id', $voterId)
+                                            ->where('receiver_id', $reviewAuthorId);
                                     })
-
-                                    ->orWhere(function ($query) use (
-                                        $voterId,
-                                        $reviewAuthorId
-                                    ) {
-
+                                    ->orWhere(function ($query) use ($voterId, $reviewAuthorId) {
                                         $query
-                                            ->where(
-                                                'sender_id',
-                                                $reviewAuthorId
-                                            )
-
-                                            ->where(
-                                                'receiver_id',
-                                                $voterId
-                                            );
+                                            ->where('sender_id', $reviewAuthorId)
+                                            ->where('receiver_id', $voterId);
                                     });
                             });
                     })
-
-                    ->orWhere(function ($query) use (
-                        $voterId,
-                        $reviewAuthorId
-                    ) {
-
+                    ->orWhere(function ($query) use ($voterId, $reviewAuthorId) {
                         $query
-                            ->where(
-                                'type',
-                                'follow'
-                            )
-
-                            ->where(
-                                'status',
-                                'accepted'
-                            )
-
-                            ->where(
-                                'sender_id',
-                                $voterId
-                            )
-
-                            ->where(
-                                'receiver_id',
-                                $reviewAuthorId
-                            );
+                            ->where('type', 'follow')
+                            ->where('sender_id', $voterId)
+                            ->where('receiver_id', $reviewAuthorId);
                     });
             })
-
             ->exists();
     }
 }

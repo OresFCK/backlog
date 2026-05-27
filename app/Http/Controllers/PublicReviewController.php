@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePublicReviewRequest;
 use App\Models\PublicReview;
+use App\Models\UserConnection;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -13,7 +14,10 @@ class PublicReviewController extends Controller
     public function index(): Response
     {
         $reviews = PublicReview::query()
-            ->with('user')
+            ->with([
+                'user',
+                'votes',
+            ])
             ->latest()
             ->get()
             ->map(fn ($review) => [
@@ -25,6 +29,19 @@ class PublicReviewController extends Controller
                 'not_recommended' => $review->not_recommended,
                 'game_id' => $review->game_id,
                 'created_at' => $review->created_at?->diffForHumans(),
+
+                'can_vote' =>
+                    $review->user_id !== auth()->id()
+                    && $this->canVoteForReview(
+                        auth()->id(),
+                        $review->user_id
+                    ),
+
+                'votes_score' => $review->votes->sum('value'),
+
+                'user_vote' => $review->votes
+                    ->firstWhere('user_id', auth()->id())
+                    ?->value,
 
                 'user' => [
                     'name' => $review->user?->name,
@@ -60,11 +77,46 @@ class PublicReviewController extends Controller
                 'body' => $request->body,
                 'rating' => $request->rating,
                 'recommended' => $request->boolean('recommended'),
-                'is_public' => true,
                 'not_recommended' => $request->boolean('not_recommended'),
+                'is_public' => true,
             ]
         );
 
         return back();
+    }
+
+    private function canVoteForReview(
+        int $voterId,
+        int $reviewAuthorId
+    ): bool {
+        return UserConnection::query()
+            ->where(function ($query) use ($voterId, $reviewAuthorId) {
+                $query
+                    ->where(function ($query) use ($voterId, $reviewAuthorId) {
+                        $query
+                            ->where('type', 'friend')
+                            ->where('status', 'accepted')
+                            ->where(function ($query) use ($voterId, $reviewAuthorId) {
+                                $query
+                                    ->where(function ($query) use ($voterId, $reviewAuthorId) {
+                                        $query
+                                            ->where('sender_id', $voterId)
+                                            ->where('receiver_id', $reviewAuthorId);
+                                    })
+                                    ->orWhere(function ($query) use ($voterId, $reviewAuthorId) {
+                                        $query
+                                            ->where('sender_id', $reviewAuthorId)
+                                            ->where('receiver_id', $voterId);
+                                    });
+                            });
+                    })
+                    ->orWhere(function ($query) use ($voterId, $reviewAuthorId) {
+                        $query
+                            ->where('type', 'follow')
+                            ->where('sender_id', $voterId)
+                            ->where('receiver_id', $reviewAuthorId);
+                    });
+            })
+            ->exists();
     }
 }
