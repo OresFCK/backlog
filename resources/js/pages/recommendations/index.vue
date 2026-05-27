@@ -2,31 +2,17 @@
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
 
-import RecommendationCard from '@/components/game/RecommendationCard.vue'
+defineProps({
+    user: Object,
 
-const recommendations = [
-    {
-        id: 1,
-        game: {
-            title: 'Hades',
-            header_image_url:
-                'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1145360/header.jpg',
-        },
-        reason:
-            'Polecane, bo jest relatywnie krótka i ma bardzo dobre oceny.',
-    },
+    backlogRecommendations: Array,
 
-    {
-        id: 2,
-        game: {
-            title: 'Firewatch',
-            header_image_url:
-                'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/383870/header.jpg',
-        },
-        reason:
-            'Idealna na krótkie sesje i szybkie ukończenie.',
-    },
-]
+    steamRecommendations: Array,
+
+    friendsRanking: Array,
+
+    globalRanking: Array,
+})
 </script>
 
 <template>
@@ -34,26 +20,55 @@ const recommendations = [
         <Sidebar />
 
         <div class="flex flex-1 flex-col">
-            <Topbar />
+            <Topbar :user="user" />
 
-            <main class="flex-1 space-y-8 p-8">
-                <div>
-                    <h1 class="text-4xl font-bold text-white">
-                        Recommendations
-                    </h1>
+            <main class="flex-1 space-y-10 p-8">
+                <section>
+                    <div class="mb-6">
+                        <h1
+                            class="text-4xl font-black text-white"
+                        >
+                            Recommendations
+                        </h1>
 
-                    <p class="mt-2 text-zinc-400">
-                        We picked these games for you.
-                    </p>
-                </div>
+                        <p
+                            class="mt-2 text-zinc-400"
+                        >
+                            Personalized recommendations
+                            powered by your community.
+                        </p>
+                    </div>
+                </section>
 
-                <div class="space-y-8">
-                    <RecommendationCard
-                        v-for="recommendation in recommendations"
-                        :key="recommendation.id"
-                        :recommendation="recommendation"
-                    />
-                </div>
+                <RecommendationsSection
+                    :friends-ranking="
+                        friendsRanking
+                    "
+
+                    :global-ranking="
+                        globalRanking
+                    "
+                />
+
+                <RecommendationCarousel
+                    title="From your backlog"
+
+                    subtitle="Games you already own and should play next."
+
+                    :items="
+                        backlogRecommendations
+                    "
+                />
+
+                <RecommendationCarousel
+                    title="Steam discoveries"
+
+                    subtitle="Games outside your backlog recommended by the community."
+
+                    :items="
+                        steamRecommendations
+                    "
+                />
             </main>
         </div>
     </div>
