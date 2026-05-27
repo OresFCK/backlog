@@ -19,65 +19,46 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+
+    friendsRanking: {
+        type: Array,
+        default: () => [],
+    },
+
+    globalRanking: {
+        type: Array,
+        default: () => [],
+    },
 })
 
 const sortBy = ref('name')
 const searchQuery = ref('')
 const selectedStatus = ref('all')
 
-const recommended = computed(() => {
+const topFriendRecommendation = computed(() => {
 
-    const sources = [
+    return [...(props.friendsRanking ?? [])]
 
-        ...(props.friendsRanking ?? []),
+        .sort(
+            (a, b) =>
+                Number(b.score ?? 0) -
+                Number(a.score ?? 0)
+        )[0] ?? null
+})
 
-        ...(props.globalRanking ?? []),
-    ]
+const topGlobalRecommendation = computed(() => {
 
-    if (!sources.length) {
-        return null
-    }
+    return [...(props.globalRanking ?? [])]
 
-    const topRecommendation =
-        [...sources]
-
-            .sort(
-                (a, b) =>
-                    Number(
-                        b.score ?? 0
-                    ) -
-
-                    Number(
-                        a.score ?? 0
-                    )
-            )[0]
-
-    return {
-        game: {
-            id:
-                topRecommendation.game.id,
-
-            title:
-                topRecommendation.game.title,
-
-            header_image_url:
-                topRecommendation
-                    .game
-                    .header_image_url,
-        },
-
-        reason:
-            topRecommendation.reason,
-
-        score:
-            topRecommendation.score,
-
-        average_rating:
-            topRecommendation.average_rating,
-    }
+        .sort(
+            (a, b) =>
+                Number(b.score ?? 0) -
+                Number(a.score ?? 0)
+        )[0] ?? null
 })
 
 const mappedGames = computed(() => {
+
     let games = props.games.map((game) => {
 
         const status =
@@ -110,15 +91,18 @@ const mappedGames = computed(() => {
             average_playtime_minutes:
                 game.playtime_forever ?? 0,
 
-            platform: game.is_custom
-                ? 'Custom'
-                : 'Steam',
+            platform:
+                game.is_custom
+                    ? 'Custom'
+                    : 'Steam',
 
-            rating: game.rating ?? null,
+            rating:
+                game.rating ?? null,
         }
     })
 
     if (searchQuery.value.trim()) {
+
         games = games.filter((game) =>
             String(game.title)
                 .toLowerCase()
@@ -131,6 +115,7 @@ const mappedGames = computed(() => {
     if (
         selectedStatus.value !== 'all'
     ) {
+
         games = games.filter(
             (game) =>
                 game.status ===
@@ -139,7 +124,9 @@ const mappedGames = computed(() => {
     }
 
     switch (sortBy.value) {
+
         case 'playtime':
+
             return games.sort(
                 (a, b) =>
                     b.average_playtime_minutes -
@@ -147,6 +134,7 @@ const mappedGames = computed(() => {
             )
 
         case 'rating':
+
             return games.sort(
                 (a, b) =>
                     (b.rating ?? 0) -
@@ -154,6 +142,7 @@ const mappedGames = computed(() => {
             )
 
         default:
+
             return games.sort((a, b) =>
                 String(a.title).localeCompare(
                     String(b.title)
@@ -171,12 +160,51 @@ const mappedGames = computed(() => {
             <Topbar :user="user" />
 
             <main class="flex-1 space-y-10 p-8">
-                <RecommendationCard
-                    v-if="recommended"
-                    :recommendation="
-                        recommended
-                    "
-                />
+                <section class="space-y-6">
+                    <RecommendationCard
+                        v-if="
+                            topFriendRecommendation
+                        "
+                        :recommendation="{
+                            game:
+                                topFriendRecommendation.game,
+
+                            reason:
+                                topFriendRecommendation.reason,
+
+                            score:
+                                topFriendRecommendation.score,
+
+                            average_rating:
+                                topFriendRecommendation.average_rating,
+
+                            label:
+                                'Top from friends',
+                        }"
+                    />
+
+                    <RecommendationCard
+                        v-if="
+                            topGlobalRecommendation
+                        "
+                        :recommendation="{
+                            game:
+                                topGlobalRecommendation.game,
+
+                            reason:
+                                topGlobalRecommendation.reason,
+
+                            score:
+                                topGlobalRecommendation.score,
+
+                            average_rating:
+                                topGlobalRecommendation.average_rating,
+
+                            label:
+                                'Top globally',
+                        }"
+                    />
+                </section>
 
                 <section>
                     <div

@@ -2,17 +2,19 @@
 
 use App\Helpers\PayloadHelper as Payload;
 use App\Http\Controllers\Auth\SteamAuthController;
+use App\Http\Controllers\PublicReviewController;
+use App\Http\Controllers\PublicReviewVoteController;
+use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\UserConnectionController;
 use App\Http\Requests\StoreCustomGameRequest;
 use App\Http\Requests\StoreCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
-use App\Http\Controllers\PublicReviewController;
-use App\Http\Controllers\UserConnectionController;
-use App\Http\Controllers\PublicReviewVoteController;
-use App\Http\Controllers\RecommendationController;
+use App\Services\RecommendationService;
 use App\Services\SteamService;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 Route::redirect('/', '/home');
@@ -27,6 +29,7 @@ Route::controller(SteamAuthController::class)
     ->prefix('auth/steam')
     ->name('steam.')
     ->group(function () {
+
         Route::get('/', 'redirect')
             ->name('redirect');
 
@@ -57,12 +60,24 @@ Route::get('/invite/{steamId}', function (
 
 Route::middleware('auth')->group(function () {
 
-    Route::get('/dashboard', fn (SteamService $steam) =>
-        Inertia::render(
+    Route::get('/dashboard', function (
+        SteamService $steam,
+        RecommendationService $recommendations
+    ) {
+
+        return Inertia::render(
             'dashboard',
-            Payload::pageData($steam)
-        )
-    )->name('dashboard');
+            [
+                ...Payload::pageData($steam),
+
+                'friendsRanking' =>
+                    $recommendations->friendsRanking(),
+
+                'globalRanking' =>
+                    $recommendations->globalRanking(),
+            ]
+        );
+    })->name('dashboard');
 
     Route::get('/backlog', fn (SteamService $steam) =>
         Inertia::render(
@@ -158,11 +173,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/banner', function (
         UpdateProfileBannerRequest $request
     ) {
+
         $user = $request->user();
 
         if ($user->banner_url) {
+
             Storage::disk('public')->delete(
-                str_replace('/storage/', '', $user->banner_url)
+                str_replace(
+                    '/storage/',
+                    '',
+                    $user->banner_url
+                )
             );
         }
 
@@ -194,44 +215,43 @@ Route::middleware('auth')->group(function () {
         'index',
     ])->name('reviews.index');
 
+    Route::post('/reviews/{review}/vote', [
+        PublicReviewVoteController::class,
+        'store',
+    ])->name('reviews.vote.store');
+
+    Route::delete('/reviews/{review}/vote', [
+        PublicReviewVoteController::class,
+        'destroy',
+    ])->name('reviews.vote.destroy');
+
     Route::get('/people', [
         UserConnectionController::class,
         'index',
     ])->name('people.index');
 
-Route::get('/people/search', [
-    UserConnectionController::class,
-    'search',
-])->name('people.search');
+    Route::get('/people/search', [
+        UserConnectionController::class,
+        'search',
+    ])->name('people.search');
 
-Route::get('/people/notifications', [
-    UserConnectionController::class,
-    'notifications',
-])->name('people.notifications');
+    Route::get('/people/notifications', [
+        UserConnectionController::class,
+        'notifications',
+    ])->name('people.notifications');
 
-Route::post('/people', [
-    UserConnectionController::class,
-    'store',
-])->name('people.store');
+    Route::post('/people', [
+        UserConnectionController::class,
+        'store',
+    ])->name('people.store');
 
-Route::patch('/people/{connection}/accept', [
-    UserConnectionController::class,
-    'accept',
-])->name('people.accept');
+    Route::patch('/people/{connection}/accept', [
+        UserConnectionController::class,
+        'accept',
+    ])->name('people.accept');
 
-Route::delete('/people/{connection}', [
-    UserConnectionController::class,
-    'destroy',
-])->name('people.destroy');
-
-Route::post('/reviews/{review}/vote', [
-    PublicReviewVoteController::class,
-    'store',
-])->name('reviews.vote.store');
-
-Route::delete('/reviews/{review}/vote', [
-    PublicReviewVoteController::class,
-    'destroy',
-])->name('reviews.vote.destroy');
-
+    Route::delete('/people/{connection}', [
+        UserConnectionController::class,
+        'destroy',
+    ])->name('people.destroy');
 });
