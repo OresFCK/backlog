@@ -5,7 +5,7 @@ import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
 
 import GameGrid from '@/components/game/GameGrid.vue'
-import RecommendationCard from '@/components/game/RecommendationCard.vue'
+import RecommendationsSection from '@/components/recommendations/RecommendationsSection.vue'
 
 const props = defineProps({
     user: Object,
@@ -34,28 +34,6 @@ const props = defineProps({
 const sortBy = ref('name')
 const searchQuery = ref('')
 const selectedStatus = ref('all')
-
-const topFriendRecommendation = computed(() => {
-
-    return [...(props.friendsRanking ?? [])]
-
-        .sort(
-            (a, b) =>
-                Number(b.score ?? 0) -
-                Number(a.score ?? 0)
-        )[0] ?? null
-})
-
-const topGlobalRecommendation = computed(() => {
-
-    return [...(props.globalRanking ?? [])]
-
-        .sort(
-            (a, b) =>
-                Number(b.score ?? 0) -
-                Number(a.score ?? 0)
-        )[0] ?? null
-})
 
 const mappedGames = computed(() => {
 
@@ -163,56 +141,17 @@ const mappedGames = computed(() => {
 
                 <section
                     v-if="
-                        topFriendRecommendation ||
-                        topGlobalRecommendation
+                        friendsRanking?.length ||
+                        globalRanking?.length
                     "
-
-                    class="space-y-6"
                 >
-                    <RecommendationCard
-                        v-if="
-                            topFriendRecommendation
+                    <RecommendationsSection
+                        :friends-ranking="
+                            friendsRanking
                         "
-
-                        :recommendation="{
-                            game:
-                                topFriendRecommendation.game,
-
-                            reason:
-                                topFriendRecommendation.reason,
-
-                            score:
-                                topFriendRecommendation.score,
-
-                            average_rating:
-                                topFriendRecommendation.average_rating,
-
-                            label:
-                                'Top from friends',
-                        }"
-                    />
-
-                    <RecommendationCard
-                        v-if="
-                            topGlobalRecommendation
+                        :global-ranking="
+                            globalRanking
                         "
-
-                        :recommendation="{
-                            game:
-                                topGlobalRecommendation.game,
-
-                            reason:
-                                topGlobalRecommendation.reason,
-
-                            score:
-                                topGlobalRecommendation.score,
-
-                            average_rating:
-                                topGlobalRecommendation.average_rating,
-
-                            label:
-                                'Top globally',
-                        }"
                     />
                 </section>
 
