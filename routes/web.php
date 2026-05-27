@@ -60,24 +60,20 @@ Route::get('/invite/{steamId}', function (
 
 Route::middleware('auth')->group(function () {
 
-    Route::get('/dashboard', function (
-        SteamService $steam,
-        RecommendationService $recommendations
-    ) {
+Route::get('/dashboard', function (
+    SteamService $steam,
+    \App\Services\RecommendationService $recommendations
+) {
+    return Inertia::render(
+        'dashboard',
+        [
+            ...Payload::pageData($steam),
 
-        return Inertia::render(
-            'dashboard',
-            [
-                ...Payload::pageData($steam),
-
-                'friendsRanking' =>
-                    $recommendations->friendsRanking(),
-
-                'globalRanking' =>
-                    $recommendations->globalRanking(),
-            ]
-        );
-    })->name('dashboard');
+            'friendsRanking' => $recommendations->friendsRanking(),
+            'globalRanking' => $recommendations->globalRanking(),
+        ]
+    );
+})->name('dashboard');
 
     Route::get('/backlog', fn (SteamService $steam) =>
         Inertia::render(

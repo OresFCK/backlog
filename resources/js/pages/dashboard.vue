@@ -160,11 +160,20 @@ const mappedGames = computed(() => {
             <Topbar :user="user" />
 
             <main class="flex-1 space-y-10 p-8">
-                <section class="space-y-6">
+
+                <section
+                    v-if="
+                        topFriendRecommendation ||
+                        topGlobalRecommendation
+                    "
+
+                    class="space-y-6"
+                >
                     <RecommendationCard
                         v-if="
                             topFriendRecommendation
                         "
+
                         :recommendation="{
                             game:
                                 topFriendRecommendation.game,
@@ -187,6 +196,7 @@ const mappedGames = computed(() => {
                         v-if="
                             topGlobalRecommendation
                         "
+
                         :recommendation="{
                             game:
                                 topGlobalRecommendation.game,
