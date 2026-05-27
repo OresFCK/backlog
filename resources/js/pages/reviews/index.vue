@@ -45,7 +45,9 @@ const filteredReviews = computed(() => {
         ).toLowerCase()
 
         const gameTitle = String(
-            review.title ?? ''
+            review.game_title
+            ?? review.title
+            ?? ''
         ).toLowerCase()
 
         const matchesUser =
@@ -316,8 +318,17 @@ const toggleVote = (
                                     </span>
                                 </div>
 
+                                <p
+                                    class="mt-4 text-sm font-bold text-indigo-300"
+                                >
+                                    {{
+                                        review.game_title ||
+                                        'Unknown game'
+                                    }}
+                                </p>
+
                                 <h3
-                                    class="mt-4 text-2xl font-black text-white"
+                                    class="mt-1 text-2xl font-black text-white"
                                 >
                                     {{
                                         review.title ||
@@ -427,146 +438,6 @@ const toggleVote = (
                     </div>
                 </div>
             </main>
-        </div>
-
-        <div
-            v-if="isReviewModalOpen"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
-        >
-            <div
-                class="max-h-[85vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl"
-            >
-                <div
-                    class="flex items-start justify-between gap-4 border-b border-zinc-800 p-6"
-                >
-                    <div>
-                        <h2
-                            class="text-2xl font-black text-white"
-                        >
-                            {{
-                                selectedReview.title ||
-                                'Untitled review'
-                            }}
-                        </h2>
-
-                        <p
-                            class="mt-2 text-sm text-zinc-400"
-                        >
-                            By
-                            {{
-                                selectedReview.user
-                                    ?.name ??
-                                'Unknown user'
-                            }}
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        class="rounded-xl p-2 text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
-                        @click="closeReviewModal"
-                    >
-                        <X class="h-5 w-5" />
-                    </button>
-                </div>
-
-                <div
-                    class="max-h-[65vh] overflow-y-auto p-6"
-                >
-                    <div
-                        class="mb-5 flex flex-wrap gap-3"
-                    >
-                        <span
-                            v-if="selectedReview.rating"
-                            class="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-1 text-sm font-bold text-white"
-                        >
-                            {{
-                                selectedReview.rating
-                            }}/10
-                        </span>
-
-                        <span
-                            v-if="
-                                selectedReview.recommended
-                            "
-                            class="rounded-xl bg-emerald-500/10 px-3 py-1 text-sm font-bold text-emerald-300"
-                        >
-                            Recommended
-                        </span>
-
-                        <span
-                            v-if="
-                                selectedReview.not_recommended
-                            "
-                            class="rounded-xl bg-red-500/10 px-3 py-1 text-sm font-bold text-red-300"
-                        >
-                            Not Recommended
-                        </span>
-                    </div>
-
-                    <div
-                        class="mb-5 flex flex-wrap items-center gap-3"
-                    >
-                        <template
-                            v-if="
-                                selectedReview.can_vote
-                            "
-                        >
-                            <button
-                                type="button"
-                                class="rounded-xl border px-3 py-1 text-sm font-bold transition"
-                                :class="
-                                    selectedReview.user_vote === 1
-                                        ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300'
-                                        : 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:text-white'
-                                "
-                                @click="
-                                    toggleVote(
-                                        selectedReview,
-                                        1
-                                    )
-                                "
-                            >
-                                +1
-                            </button>
-
-                            <button
-                                type="button"
-                                class="rounded-xl border px-3 py-1 text-sm font-bold transition"
-                                :class="
-                                    selectedReview.user_vote === -1
-                                        ? 'border-red-500 bg-red-500/10 text-red-300'
-                                        : 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:text-white'
-                                "
-                                @click="
-                                    toggleVote(
-                                        selectedReview,
-                                        -1
-                                    )
-                                "
-                            >
-                                -1
-                            </button>
-                        </template>
-
-                        <span
-                            class="text-sm font-bold text-zinc-400"
-                        >
-                            Score:
-                            {{
-                                selectedReview.votes_score ??
-                                0
-                            }}
-                        </span>
-                    </div>
-
-                    <p
-                        class="whitespace-pre-line text-zinc-300"
-                    >
-                        {{ selectedReview.body }}
-                    </p>
-                </div>
-            </div>
         </div>
     </div>
 </template>

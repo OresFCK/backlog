@@ -10,214 +10,132 @@ use Illuminate\Support\Facades\Auth;
 
 class RecommendationService
 {
+    /**
+     * Games user already owns but should play from backlog
+     */
     public function backlogRecommendations(): array
     {
         $userId = Auth::id();
 
-        $ownedGameIds = UserGameMeta::query()
-            ->where('user_id', $userId)
+        $ownedGameIds = UserGameMeta::where('user_id', $userId)
             ->pluck('game_id');
 
         return $this->buildRecommendations()
-
-            ->whereIn(
-                'game_id',
-                $ownedGameIds
-            )
-
+            ->whereIn('game_id', $ownedGameIds)
             ->sortByDesc('score')
-
             ->take(10)
-
             ->values()
-
             ->toArray();
     }
 
+    /**
+     * Games user does NOT own yet
+     */
     public function steamRecommendations(): array
     {
         $userId = Auth::id();
 
-        $ownedGameIds = UserGameMeta::query()
-            ->where('user_id', $userId)
+        $ownedGameIds = UserGameMeta::where('user_id', $userId)
             ->pluck('game_id');
 
         return $this->buildRecommendations()
-
-            ->whereNotIn(
-                'game_id',
-                $ownedGameIds
-            )
-
+            ->whereNotIn('game_id', $ownedGameIds)
             ->sortByDesc('score')
-
             ->take(10)
-
             ->values()
-
             ->toArray();
     }
 
+    /**
+     * Ranking based only on friends recommendations
+     */
     public function friendsRanking(): array
     {
         return $this->buildRecommendations()
-
-            ->where(
-                'friend_recommendations',
-                '>',
-                0
-            )
-
+            ->where('friend_recommendations', '>', 0)
             ->sortByDesc('score')
-
             ->take(10)
-
             ->values()
-
             ->toArray();
     }
 
+    /**
+     * Overall global ranking
+     */
     public function globalRanking(): array
     {
         return $this->buildRecommendations()
-
             ->sortByDesc('score')
-
             ->take(10)
-
             ->values()
-
             ->toArray();
     }
 
+    /**
+     * Main recommendation engine
+     */
     private function buildRecommendations(): Collection
     {
         $userId = Auth::id();
 
-        $friendIds = $this->friendIds(
-            $userId
-        );
+        $friendIds = $this->friendIds($userId);
 
         return PublicReview::query()
-
-            ->with([
-                'user',
-                'votes',
-            ])
-
-            ->where(
-                'recommended',
-                true
-            )
-
+            ->with(['user', 'votes'])
+            ->where('recommended', true)
             ->get()
 
+            // Group all reviews by game
             ->groupBy('game_id')
 
-            ->map(function (
-                $reviews,
-                $gameId
-            ) use (
-                $friendIds
-            ) {
+            ->map(function ($reviews, $gameId) use ($friendIds) {
 
-                $first =
-                    $reviews->first();
+                $firstReview = $reviews->first();
 
-                $friendReviews =
-                    $reviews->whereIn(
-                        'user_id',
-                        $friendIds
-                    );
+                // Reviews from friends only
+                $friendReviews = $reviews->whereIn(
+                    'user_id',
+                    $friendIds
+                );
 
-                $friendRecommendations =
-                    $friendReviews
-                        ->where(
-                            'recommended',
-                            true
-                        )
-                        ->count();
+                $friendRecommendations = $friendReviews
+                    ->where('recommended', true)
+                    ->count();
 
-                $globalRecommendations =
+                $globalRecommendations = $reviews
+                    ->where('recommended', true)
+                    ->count();
+
+                $notRecommendedCount = $reviews
+                    ->where('not_recommended', true)
+                    ->count();
+
+                $averageRating = round(
                     $reviews
-                        ->where(
-                            'recommended',
-                            true
-                        )
-                        ->count();
+                        ->whereNotNull('rating')
+                        ->avg('rating'),
+                    1
+                );
 
-                $notRecommendedCount =
-                    $reviews
-                        ->where(
-                            'not_recommended',
-                            true
-                        )
-                        ->count();
+                // Sum all votes from all reviews
+                $votesScore = $reviews->sum(
+                    fn ($review) => $review->votes->sum('value')
+                );
 
-                $averageRating =
-                    round(
-                        $reviews
-                            ->whereNotNull(
-                                'rating'
-                            )
-                            ->avg(
-                                'rating'
-                            ),
-                        1
-                    );
-
-                $votesScore =
-                    $reviews->sum(
-                        fn ($review) =>
-                            $review
-                                ->votes
-                                ->sum(
-                                    'value'
-                                )
-                    );
-
+                /**
+                 * Final recommendation score
+                 */
                 $score =
-
-                    (
-                        $friendRecommendations
-                        * 40
-                    )
-
-                    +
-
-                    (
-                        $globalRecommendations
-                        * 8
-                    )
-
-                    +
-
-                    (
-                        $averageRating
-                        * 6
-                    )
-
-                    +
-
-                    (
-                        $votesScore
-                        * 3
-                    )
-
-                    -
-
-                    (
-                        $notRecommendedCount
-                        * 30
-                    );
+                    ($friendRecommendations * 40) +
+                    ($globalRecommendations * 8) +
+                    ($averageRating * 6) +
+                    ($votesScore * 3) -
+                    ($notRecommendedCount * 30);
 
                 return [
+                    'game_id' => $gameId,
 
-                    'game_id' =>
-                        $gameId,
-
-                    'score' =>
-                        $score,
+                    'score' => $score,
 
                     'friend_recommendations' =>
                         $friendRecommendations,
@@ -235,165 +153,104 @@ class RecommendationService
                         $votesScore,
 
                     'game' => [
-
-                        'id' =>
-                            $gameId,
+                        'id' => $gameId,
 
                         'title' =>
-                            $first->title,
+
+                            $firstReview->game_title
+                            ?? $firstReview->game?->title
+                            ?? "Game {$gameId}",
 
                         'header_image_url' =>
-
                             "https://cdn.cloudflare.steamstatic.com/steam/apps/{$gameId}/header.jpg",
                     ],
 
-                    'reason' =>
-
-                        $this->reasonText(
-                            $friendRecommendations,
-                            $globalRecommendations,
-                            $averageRating
-                        ),
+                    'reason' => $this->reasonText(
+                        $friendRecommendations,
+                        $globalRecommendations,
+                        $averageRating
+                    ),
                 ];
             })
 
             ->sortByDesc('score')
-
             ->values();
     }
 
-    private function friendIds(
-        int $userId
-    ): Collection {
-
+    /**
+     * Get all friend/followed user IDs
+     */
+    private function friendIds(int $userId): Collection
+    {
         return UserConnection::query()
 
-            ->where(function (
-                $query
-            ) use (
-                $userId
-            ) {
+            ->where(function ($query) use ($userId) {
 
-                $query
+                // Accepted friend requests sent by user
+                $query->where(function ($query) use ($userId) {
 
-                    // FRIENDS SENT
-                    ->where(function (
-                        $query
-                    ) use (
-                        $userId
-                    ) {
+                    $query
+                        ->where('type', 'friend')
+                        ->where('status', 'accepted')
+                        ->where('sender_id', $userId);
 
-                        $query
-                            ->where(
-                                'type',
-                                'friend'
-                            )
+                })
 
-                            ->where(
-                                'status',
-                                'accepted'
-                            )
+                // Accepted friend requests received by user
+                ->orWhere(function ($query) use ($userId) {
 
-                            ->where(
-                                'sender_id',
-                                $userId
-                            );
-                    })
+                    $query
+                        ->where('type', 'friend')
+                        ->where('status', 'accepted')
+                        ->where('receiver_id', $userId);
 
-                    // FRIENDS RECEIVED
-                    ->orWhere(function (
-                        $query
-                    ) use (
-                        $userId
-                    ) {
+                })
 
-                        $query
-                            ->where(
-                                'type',
-                                'friend'
-                            )
+                // Following users
+                ->orWhere(function ($query) use ($userId) {
 
-                            ->where(
-                                'status',
-                                'accepted'
-                            )
+                    $query
+                        ->where('type', 'follow')
+                        ->where('sender_id', $userId);
 
-                            ->where(
-                                'receiver_id',
-                                $userId
-                            );
-                    })
-
-                    // FOLLOWING
-                    ->orWhere(function (
-                        $query
-                    ) use (
-                        $userId
-                    ) {
-
-                        $query
-                            ->where(
-                                'type',
-                                'follow'
-                            )
-
-                            ->where(
-                                'sender_id',
-                                $userId
-                            );
-                    });
+                });
             })
 
             ->get()
 
-            ->flatMap(function (
-                $connection
-            ) {
+            ->flatMap(function ($connection) {
 
                 return [
-
                     $connection->sender_id,
-
                     $connection->receiver_id,
                 ];
             })
 
             ->unique()
-
             ->values();
     }
 
+    /**
+     * Human-readable recommendation reason
+     */
     private function reasonText(
         int $friendRecommendations,
         int $globalRecommendations,
         float $averageRating
     ): string {
 
-        if (
-            $friendRecommendations >= 3
-        ) {
-
-            return
-                'Your friends highly recommend this game.';
+        if ($friendRecommendations >= 3) {
+            return 'Your friends highly recommend this game.';
         }
 
-        if (
-            $averageRating >= 8
-        ) {
-
-            return
-                'Players consistently rate this game very highly.';
+        if ($averageRating >= 8) {
+            return 'Players consistently rate this game very highly.';
         }
 
-        if (
-            $globalRecommendations >= 10
-        ) {
-
-            return
-                'One of the most recommended games right now.';
+        if ($globalRecommendations >= 10) {
+            return 'One of the most recommended games right now.';
         }
 
-        return
-            'Trending in the community.';
+        return 'Trending in the community.';
     }
 }

@@ -11,6 +11,7 @@ class PublicReview extends Model
     protected $fillable = [
         'user_id',
         'game_id',
+        'game_title',
         'title',
         'body',
         'rating',

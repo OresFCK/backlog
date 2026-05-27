@@ -126,6 +126,7 @@ const submitPublicReview = () => {
         '/reviews/public',
         {
             game_id: props.game.id,
+            game_title: props.game.title,
             title: publicReviewTitle.value,
             body: publicReviewBody.value,
             rating: publicReviewRating.value

@@ -28,6 +28,7 @@ class PublicReviewController extends Controller
                 'recommended' => $review->recommended,
                 'not_recommended' => $review->not_recommended,
                 'game_id' => $review->game_id,
+                'game_title' => $review->game_title,
                 'created_at' => $review->created_at?->diffForHumans(),
 
                 'can_vote' =>
@@ -73,6 +74,7 @@ class PublicReviewController extends Controller
                 'game_id' => $request->game_id,
             ],
             [
+                'game_title' => $request->game_title,
                 'title' => $request->title,
                 'body' => $request->body,
                 'rating' => $request->rating,

@@ -19,7 +19,11 @@ class StorePublicReviewRequest extends FormRequest
                 'string',
                 'max:255',
             ],
-
+            'game_title' => [
+                'required',
+                'string',
+            ],
+            
             'title' => [
                 'nullable',
                 'string',
