@@ -19,8 +19,8 @@ import {
     Tags,
     Users,
     Trophy,
-    UserPlus,
     MessageSquareText,
+    ShoppingBag
 } from 'lucide-vue-next'
 
 const page = usePage()
@@ -94,6 +94,12 @@ const toolItems = [
         label: 'Add Game',
         href: '/games/create',
         icon: PlusCircle,
+    },
+
+    {
+        label: 'Shop',
+        href: '/shop',
+        icon: ShoppingBag,
     },
 ]
 
