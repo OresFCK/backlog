@@ -11,7 +11,7 @@ class ShopItem extends Model
         'description',
         'type',
         'price',
-        'preview_url',
+        'image_path',
         'metadata',
         'is_active',
     ];

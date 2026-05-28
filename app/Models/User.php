@@ -27,6 +27,7 @@ class User extends Authenticatable
         'level',
         'profile_level_multiplier_enabled',
         'xp_multiplier',
+        'is_admin',
     ];
 
     protected $hidden = [
@@ -39,6 +40,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
     }
 

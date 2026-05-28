@@ -12,6 +12,7 @@ use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\ShopItemController;
 use App\Services\RecommendationService;
 use App\Services\SteamService;
 use Illuminate\Support\Facades\Route;
@@ -261,3 +262,20 @@ Route::get('/dashboard', function (
     Route::post('/shop/{item}/equip', [ShopController::class, 'equip'])
         ->name('shop.equip');
 });
+
+Route::middleware(['auth', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/', [ShopItemController::class, 'index'])
+            ->name('index');
+
+        Route::post('/shop-items', [ShopItemController::class, 'store'])
+            ->name('shop-items.store');
+
+        Route::put('/shop-items/{item}', [ShopItemController::class, 'update'])
+            ->name('shop-items.update');
+
+        Route::delete('/shop-items/{item}', [ShopItemController::class, 'destroy'])
+            ->name('shop-items.destroy');
+    });
