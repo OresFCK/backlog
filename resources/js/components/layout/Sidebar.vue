@@ -20,7 +20,8 @@ import {
     Users,
     Trophy,
     MessageSquareText,
-    ShoppingBag
+    ShoppingBag,
+    Shirt
 } from 'lucide-vue-next'
 
 const page = usePage()
@@ -101,6 +102,12 @@ const toolItems = [
         href: '/shop',
         icon: ShoppingBag,
     },
+
+    {
+        label: 'Wardrobe',
+        href: '/wardrobe',
+        icon: Shirt,
+    }
 ]
 
 const settingsItems = [

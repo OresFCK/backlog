@@ -13,6 +13,7 @@ use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\ShopItemController;
+use App\Http\Controllers\WardrobeController;
 use App\Services\RecommendationService;
 use App\Services\SteamService;
 use Illuminate\Support\Facades\Route;
@@ -261,6 +262,15 @@ Route::get('/dashboard', function (
 
     Route::post('/shop/{item}/equip', [ShopController::class, 'equip'])
         ->name('shop.equip');
+
+    Route::get('/wardrobe', [WardrobeController::class, 'index'])
+        ->name('wardrobe.index');
+
+    Route::post('/wardrobe/{item}/equip', [WardrobeController::class, 'equip'])
+        ->name('wardrobe.equip');
+
+    Route::delete('/wardrobe/{item}/equip', [WardrobeController::class, 'unequip'])
+        ->name('wardrobe.unequip');
 });
 
 Route::middleware(['auth', 'admin'])
