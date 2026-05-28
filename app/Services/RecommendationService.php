@@ -82,17 +82,22 @@ class RecommendationService
 
         return PublicReview::query()
             ->with(['user', 'votes'])
+
+            // Exclude current user reviews
+            ->where('user_id', '!=', $userId)
+
             ->where('recommended', true)
             ->get()
 
-            // Group all reviews by game
             ->groupBy('game_id')
 
             ->map(function ($reviews, $gameId) use ($friendIds) {
 
-                $firstReview = $reviews->first();
+                $review = $reviews->first();
 
-                // Reviews from friends only
+                /**
+                 * Friend reviews
+                 */
                 $friendReviews = $reviews->whereIn(
                     'user_id',
                     $friendIds
@@ -102,11 +107,14 @@ class RecommendationService
                     ->where('recommended', true)
                     ->count();
 
+                /**
+                 * Global stats
+                 */
                 $globalRecommendations = $reviews
                     ->where('recommended', true)
                     ->count();
 
-                $notRecommendedCount = $reviews
+                $negativeRecommendations = $reviews
                     ->where('not_recommended', true)
                     ->count();
 
@@ -117,10 +125,12 @@ class RecommendationService
                     1
                 );
 
-                // Sum all votes from all reviews
-                $votesScore = $reviews->sum(
-                    fn ($review) => $review->votes->sum('value')
-                );
+                /**
+                 * Community votes score
+                 */
+                $votesScore = $reviews->sum(function ($review) {
+                    return $review->votes->sum('value');
+                });
 
                 /**
                  * Final recommendation score
@@ -130,7 +140,7 @@ class RecommendationService
                     ($globalRecommendations * 8) +
                     ($averageRating * 6) +
                     ($votesScore * 3) -
-                    ($notRecommendedCount * 30);
+                    ($negativeRecommendations * 30);
 
                 return [
                     'game_id' => $gameId,
@@ -144,7 +154,7 @@ class RecommendationService
                         $globalRecommendations,
 
                     'not_recommended_count' =>
-                        $notRecommendedCount,
+                        $negativeRecommendations,
 
                     'average_rating' =>
                         $averageRating,
@@ -156,9 +166,8 @@ class RecommendationService
                         'id' => $gameId,
 
                         'title' =>
-
-                            $firstReview->game_title
-                            ?? $firstReview->game?->title
+                            $review->game_title
+                            ?? $review->game?->title
                             ?? "Game {$gameId}",
 
                         'header_image_url' =>
@@ -186,33 +195,36 @@ class RecommendationService
 
             ->where(function ($query) use ($userId) {
 
-                // Accepted friend requests sent by user
+                /**
+                 * Accepted friend requests sent by user
+                 */
                 $query->where(function ($query) use ($userId) {
 
                     $query
                         ->where('type', 'friend')
                         ->where('status', 'accepted')
                         ->where('sender_id', $userId);
-
                 })
 
-                // Accepted friend requests received by user
+                /**
+                 * Accepted friend requests received by user
+                 */
                 ->orWhere(function ($query) use ($userId) {
 
                     $query
                         ->where('type', 'friend')
                         ->where('status', 'accepted')
                         ->where('receiver_id', $userId);
-
                 })
 
-                // Following users
+                /**
+                 * Followed users
+                 */
                 ->orWhere(function ($query) use ($userId) {
 
                     $query
                         ->where('type', 'follow')
                         ->where('sender_id', $userId);
-
                 });
             })
 
@@ -225,6 +237,11 @@ class RecommendationService
                     $connection->receiver_id,
                 ];
             })
+
+            /**
+             * Remove current user from friend IDs
+             */
+            ->reject(fn ($id) => $id === $userId)
 
             ->unique()
             ->values();
