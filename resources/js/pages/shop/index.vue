@@ -24,6 +24,10 @@ const buyItem = (item) => {
 const equipItem = (item) => {
     router.post(`/shop/${item.id}/equip`)
 }
+
+const itemImage = (item) => {
+    return item.image_url || item.image_path || item.metadata?.image_url || item.metadata?.image_path
+}
 </script>
 
 <template>
@@ -35,13 +39,9 @@ const equipItem = (item) => {
 
             <main class="flex-1 space-y-8 p-8">
                 <section>
-                    <div
-                        class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8"
-                    >
+                    <div class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8">
                         <div class="flex items-center gap-4">
-                            <div
-                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-800 text-white"
-                            >
+                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-800 text-white">
                                 <ShoppingBag class="h-7 w-7" />
                             </div>
 
@@ -67,12 +67,10 @@ const equipItem = (item) => {
                         :key="item.id"
                         class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 transition hover:border-zinc-700"
                     >
-                        <div
-                            class="flex h-44 items-center justify-center bg-zinc-800"
-                        >
+                        <div class="flex h-44 items-center justify-center overflow-hidden bg-zinc-800">
                             <img
-                                v-if="item.preview_url"
-                                :src="item.preview_url"
+                                v-if="itemImage(item)"
+                                :src="itemImage(item)"
                                 :alt="item.name"
                                 class="h-full w-full object-cover"
                             />
@@ -85,9 +83,7 @@ const equipItem = (item) => {
 
                         <div class="space-y-5 p-6">
                             <div>
-                                <div
-                                    class="mb-3 inline-flex rounded-full bg-zinc-800 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-zinc-400"
-                                >
+                                <div class="mb-3 inline-flex rounded-full bg-zinc-800 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">
                                     {{ item.type }}
                                 </div>
 
@@ -100,9 +96,7 @@ const equipItem = (item) => {
                                 </p>
                             </div>
 
-                            <div
-                                class="flex items-center justify-between border-t border-zinc-800 pt-5"
-                            >
+                            <div class="flex items-center justify-between border-t border-zinc-800 pt-5">
                                 <div>
                                     <p class="text-xs text-zinc-500">
                                         Price

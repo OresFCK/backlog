@@ -8,6 +8,7 @@ use App\Models\UserShopItem;
 use App\Services\SteamService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -32,7 +33,9 @@ class ShopController extends Controller
                     'description' => $item->description,
                     'type' => $item->type,
                     'price' => $item->price,
-                    'preview_url' => $item->preview_url,
+                    'image_url' => $item->image_path
+                        ? Storage::url($item->image_path)
+                        : null,
 
                     'owned' => $ownedItemIds->contains($item->id),
 
