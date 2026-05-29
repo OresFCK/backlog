@@ -90,13 +90,10 @@ const submit = () => {
     }
 
     if (editingItem.value) {
-        form.post(`/admin/shop-items/${editingItem.value.id}`, {
+        form.put(`/admin/shop-items/${editingItem.value.id}`, {
             preserveScroll: true,
             forceFormData: true,
             onSuccess: resetForm,
-            data: {
-                _method: 'put',
-            },
         })
 
         return
