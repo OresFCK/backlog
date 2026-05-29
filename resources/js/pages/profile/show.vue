@@ -1,6 +1,5 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { router } from '@inertiajs/vue3'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
@@ -27,20 +26,30 @@ const equippedByType = computed(() => {
     }, {})
 })
 
-const uploadBanner = (event) => {
-    const file = event.target.files?.[0]
+const profileTheme = computed(() => {
+    return equippedByType.value.theme
+})
 
-    if (!file) {
-        return
+const usernameFontStyle = computed(() => {
+    const font = equippedByType.value.username_font?.metadata?.font_family
+
+    return font
+        ? { fontFamily: font }
+        : {}
+})
+
+const profileBackgroundStyle = computed(() => {
+    if (!profileTheme.value?.image_url) {
+        return {}
     }
 
-    router.post('/profile/banner', {
-        banner: file,
-    }, {
-        forceFormData: true,
-        preserveScroll: true,
-    })
-}
+    return {
+        backgroundImage: `url(${profileTheme.value.image_url})`,
+        backgroundSize: 'cover',
+        backgroundAttachment: 'fixed',
+        backgroundPosition: 'center',
+    }
+})
 
 const ratingStars = (rating) => {
     if (!rating) {
@@ -137,21 +146,24 @@ const toggleStatus = (status) => {
 </script>
 
 <template>
-    <div class="flex min-h-screen bg-zinc-950 text-white">
+    <div
+        class="flex min-h-screen bg-zinc-950 text-white"
+        :style="profileBackgroundStyle"
+    >
         <Sidebar />
 
-        <div class="flex min-h-screen flex-1 flex-col">
+        <div class="flex min-h-screen flex-1 flex-col bg-zinc-950/80 backdrop-blur-sm">
             <Topbar :user="user" />
 
             <main class="flex-1 px-8 py-10">
                 <div class="mx-auto max-w-7xl space-y-8">
-
                     <div
-                        class="group relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
+                        class="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
                     >
                         <img
-                            v-if="user?.banner_url"
-                            :src="user.banner_url"
+                            v-if="equippedByType.profile_banner?.image_url"
+                            :src="equippedByType.profile_banner.image_url"
+                            :alt="equippedByType.profile_banner.name"
                             class="absolute inset-0 h-full w-full object-cover"
                         />
 
@@ -161,21 +173,6 @@ const toggleStatus = (status) => {
                         />
 
                         <div class="pointer-events-none absolute inset-0 bg-black/45" />
-
-                        <label class="absolute inset-0 z-20 cursor-pointer">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                class="hidden"
-                                @change="uploadBanner"
-                            />
-                        </label>
-
-                        <div
-                            class="pointer-events-none absolute right-4 top-4 z-30 rounded-xl border border-zinc-700 bg-zinc-950/90 px-4 py-2 text-sm font-medium text-white opacity-0 transition group-hover:opacity-100"
-                        >
-                            Change banner
-                        </div>
 
                         <div
                             class="relative z-10 flex flex-col gap-6 p-8 pt-44 lg:flex-row lg:items-end"
@@ -203,7 +200,10 @@ const toggleStatus = (status) => {
 
                             <div class="flex-1">
                                 <div class="flex flex-wrap items-center gap-3">
-                                    <h1 class="text-5xl font-bold tracking-tight">
+                                    <h1
+                                        class="text-5xl font-bold tracking-tight"
+                                        :style="usernameFontStyle"
+                                    >
                                         {{ user?.name }}
                                     </h1>
 
@@ -247,6 +247,17 @@ const toggleStatus = (status) => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div
+                        v-if="equippedByType.profile_showcase?.image_url"
+                        class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
+                    >
+                        <img
+                            :src="equippedByType.profile_showcase.image_url"
+                            :alt="equippedByType.profile_showcase.name"
+                            class="max-h-[420px] w-full object-cover"
+                        />
                     </div>
 
                     <div class="grid gap-4 md:grid-cols-3">

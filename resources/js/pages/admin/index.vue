@@ -25,6 +25,54 @@ const form = useForm({
     is_active: true,
 })
 
+const typeInfo = {
+    profile_overlay: {
+        size: '512x512',
+        format: 'PNG / WebP',
+        notes: 'Transparent background required',
+    },
+
+    badge: {
+        size: '128x128',
+        format: 'PNG / WebP',
+        notes: 'Transparent background required',
+    },
+
+    profile_banner: {
+        size: '1600x400',
+        format: 'JPG / WebP',
+        notes: 'Panoramic banner',
+    },
+
+    theme: {
+        size: '1200x700',
+        format: 'JPG / WebP',
+        notes: 'Preview image only',
+    },
+
+    profile_showcase: {
+        size: '1200x600',
+        format: 'JPG / WebP',
+        notes: 'Optional showcase image',
+    },
+
+    username_font: {
+        size: 'No image',
+        format: '-',
+        notes: 'Uses CSS/font only',
+    },
+
+    user_title: {
+        size: 'No image',
+        format: '-',
+        notes: 'Text-only item',
+    },
+}
+
+const hasImageUpload = () => {
+    return !['username_font', 'user_title'].includes(form.type)
+}
+
 const resetForm = () => {
     editingItem.value = null
 
@@ -37,6 +85,10 @@ const resetForm = () => {
 }
 
 const submit = () => {
+    if (!hasImageUpload()) {
+        form.image = null
+    }
+
     if (editingItem.value) {
         form.post(`/admin/shop-items/${editingItem.value.id}`, {
             preserveScroll: true,
@@ -129,30 +181,70 @@ const deleteItem = (item) => {
                                 Profile overlay
                             </option>
 
-                            <option value="username_font">
-                                Username font
+                            <option value="badge">
+                                Badge
                             </option>
 
                             <option value="profile_banner">
                                 Profile banner
                             </option>
 
-                            <option value="profile_showcase">
-                                Profile showcase
+                            <option value="theme">
+                                Theme
                             </option>
 
                             <option value="user_title">
                                 User title
                             </option>
 
-                            <option value="theme">
-                                Theme
+                            <option value="profile_showcase">
+                                Profile showcase
                             </option>
 
-                            <option value="badge">
-                                Badge
+                            <option value="username_font">
+                                Username font
                             </option>
                         </select>
+
+                        <div
+                            class="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4"
+                        >
+                            <h3 class="mb-3 text-sm font-bold text-blue-300">
+                                Asset requirements
+                            </h3>
+
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between gap-4">
+                                    <span class="text-zinc-400">
+                                        Recommended size
+                                    </span>
+
+                                    <span class="text-right font-medium text-white">
+                                        {{ typeInfo[form.type]?.size }}
+                                    </span>
+                                </div>
+
+                                <div class="flex justify-between gap-4">
+                                    <span class="text-zinc-400">
+                                        Format
+                                    </span>
+
+                                    <span class="text-right font-medium text-white">
+                                        {{ typeInfo[form.type]?.format }}
+                                    </span>
+                                </div>
+
+                                <div class="flex justify-between gap-4">
+                                    <span class="text-zinc-400">
+                                        Notes
+                                    </span>
+
+                                    <span class="text-right font-medium text-white">
+                                        {{ typeInfo[form.type]?.notes }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
 
                         <input
                             v-model="form.price"
@@ -162,12 +254,30 @@ const deleteItem = (item) => {
                             class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
                         />
 
-                        <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none file:mr-4 file:rounded-xl file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-bold file:text-zinc-950 hover:file:bg-zinc-200"
-                            @input="form.image = $event.target.files[0]"
-                        />
+                        <div v-if="hasImageUpload()">
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none file:mr-4 file:rounded-xl file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-bold file:text-zinc-950 hover:file:bg-zinc-200"
+                                @input="form.image = $event.target.files[0]"
+                            />
+                        </div>
+
+                        <div
+                            v-else-if="form.type === 'user_title'"
+                            class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-300"
+                        >
+                            This item uses only text and does not require an
+                            image.
+                        </div>
+
+                        <div
+                            v-else-if="form.type === 'username_font'"
+                            class="rounded-2xl border border-purple-500/20 bg-purple-500/5 p-4 text-sm text-purple-300"
+                        >
+                            This item should store font information in metadata
+                            instead of an image.
+                        </div>
 
                         <label
                             class="flex items-center gap-3 text-sm text-zinc-300"
@@ -217,7 +327,7 @@ const deleteItem = (item) => {
                                 class="flex items-center gap-5 p-5"
                             >
                                 <div
-                                    class="h-20 w-28 overflow-hidden rounded-2xl bg-zinc-800"
+                                    class="flex h-20 w-28 items-center justify-center overflow-hidden rounded-2xl bg-zinc-800"
                                 >
                                     <img
                                         v-if="item.image_url"
@@ -225,6 +335,13 @@ const deleteItem = (item) => {
                                         :alt="item.name"
                                         class="h-full w-full object-cover"
                                     />
+
+                                    <span
+                                        v-else
+                                        class="px-3 text-center text-xs font-medium text-zinc-500"
+                                    >
+                                        No image
+                                    </span>
                                 </div>
 
                                 <div class="min-w-0 flex-1">

@@ -6,15 +6,12 @@ use App\Http\Requests\StoreCustomGameRequest;
 use App\Http\Requests\StoreCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
-
 use App\Models\UserShopItem;
-
 use App\Services\GameDetailsService;
 use App\Services\GameLibraryService;
 use App\Services\GameMetaService;
 use App\Services\StatusService;
 use App\Services\SteamService;
-
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -22,10 +19,8 @@ use Illuminate\Support\Facades\Storage;
 
 class PayloadHelper
 {
-    public static function pageData(
-        SteamService $steam
-    ): array {
-
+    public static function pageData(SteamService $steam): array
+    {
         return [
             'user' => self::currentUser(),
 
@@ -36,70 +31,48 @@ class PayloadHelper
         ];
     }
 
-    public static function backlogPageData(
-        SteamService $steam
-    ): array {
-
+    public static function backlogPageData(SteamService $steam): array
+    {
         return [
             ...self::pageData($steam),
 
             'games' => self::library()
-                ->gamesByStatus(
-                    $steam,
-                    'Backlog'
-                ),
+                ->gamesByStatus($steam, 'Backlog'),
         ];
     }
 
-    public static function playingPageData(
-        SteamService $steam
-    ): array {
-
+    public static function playingPageData(SteamService $steam): array
+    {
         return [
             ...self::pageData($steam),
 
             'games' => self::library()
-                ->gamesByStatus(
-                    $steam,
-                    'Playing'
-                ),
+                ->gamesByStatus($steam, 'Playing'),
         ];
     }
 
-    public static function finishedPageData(
-        SteamService $steam
-    ): array {
-
+    public static function finishedPageData(SteamService $steam): array
+    {
         return [
             ...self::pageData($steam),
 
             'games' => self::library()
-                ->gamesByStatus(
-                    $steam,
-                    'Finished'
-                ),
+                ->gamesByStatus($steam, 'Finished'),
         ];
     }
 
-    public static function droppedPageData(
-        SteamService $steam
-    ): array {
-
+    public static function droppedPageData(SteamService $steam): array
+    {
         return [
             ...self::pageData($steam),
 
             'games' => self::library()
-                ->gamesByStatus(
-                    $steam,
-                    'Dropped'
-                ),
+                ->gamesByStatus($steam, 'Dropped'),
         ];
     }
 
-    public static function wishlistPageData(
-        SteamService $steam
-    ): array {
-
+    public static function wishlistPageData(SteamService $steam): array
+    {
         return [
             ...self::pageData($steam),
 
@@ -108,10 +81,8 @@ class PayloadHelper
         ];
     }
 
-    public static function profilePageData(
-        SteamService $steam
-    ): array {
-
+    public static function profilePageData(SteamService $steam): array
+    {
         return [
             'user' => self::currentUser(),
 
@@ -125,21 +96,15 @@ class PayloadHelper
         ];
     }
 
-    public static function gamePageData(
-        string $gameId,
-        SteamService $steam
-    ): array {
-
+    public static function gamePageData(string $gameId, SteamService $steam): array
+    {
         return [
             'user' => self::currentUser(),
 
             'statuses' => self::statuses(),
 
             'game' => self::details()
-                ->gameDetails(
-                    $gameId,
-                    $steam
-                ),
+                ->gameDetails($gameId, $steam),
         ];
     }
 
@@ -149,13 +114,9 @@ class PayloadHelper
 
         return [
             'name' => $user->name,
-
             'steam_id' => $user->steam_id,
-
             'avatar' => $user->steam_avatar_url,
-
             'banner_url' => $user->banner_url,
-
             'is_admin' => $user->is_admin,
         ];
     }
@@ -163,42 +124,21 @@ class PayloadHelper
     public static function equippedItems(): array
     {
         return UserShopItem::query()
-
             ->with('item')
-
-            ->where(
-                'user_id',
-                Auth::id()
-            )
-
-            ->where(
-                'is_equipped',
-                true
-            )
-
+            ->where('user_id', Auth::id())
+            ->where('is_equipped', true)
             ->get()
-
             ->map(fn ($ownedItem) => [
+                'id' => $ownedItem->item->id,
+                'name' => $ownedItem->item->name,
+                'type' => $ownedItem->item->type,
+                'metadata' => $ownedItem->item->metadata ?? [],
 
-                'id' =>
-                    $ownedItem->item->id,
-
-                'name' =>
-                    $ownedItem->item->name,
-
-                'type' =>
-                    $ownedItem->item->type,
-
-                'image_url' =>
-                    $ownedItem->item->image_path
-                        ? Storage::url(
-                            $ownedItem->item->image_path
-                        )
-                        : null,
+                'image_url' => $ownedItem->item->image_path
+                    ? Storage::url($ownedItem->item->image_path)
+                    : null,
             ])
-
             ->values()
-
             ->toArray();
     }
 
@@ -212,26 +152,20 @@ class PayloadHelper
         return self::status()->customLabels();
     }
 
-    public static function storeCustomLabel(
-        StoreCustomLabelRequest $request
-    ): RedirectResponse {
-
+    public static function storeCustomLabel(StoreCustomLabelRequest $request): RedirectResponse
+    {
         return self::status()
             ->storeCustomLabel($request);
     }
 
-    public static function storeStatus(
-        StoreCustomStatusRequest $request
-    ): RedirectResponse {
-
+    public static function storeStatus(StoreCustomStatusRequest $request): RedirectResponse
+    {
         return self::status()
             ->storeStatus($request);
     }
 
-    public static function storeCustomGame(
-        StoreCustomGameRequest $request
-    ): RedirectResponse {
-
+    public static function storeCustomGame(StoreCustomGameRequest $request): RedirectResponse
+    {
         return self::library()
             ->storeCustomGame($request);
     }
@@ -240,18 +174,12 @@ class PayloadHelper
         UpdateGameMetaRequest $request,
         string $gameId
     ): RedirectResponse {
-
         return self::meta()
-            ->storeMeta(
-                $request,
-                $gameId
-            );
+            ->storeMeta($request, $gameId);
     }
 
-    public static function steamSearch(
-        SteamService $steam
-    ): JsonResponse {
-
+    public static function steamSearch(SteamService $steam): JsonResponse
+    {
         $query = request('q');
 
         return response()->json(
