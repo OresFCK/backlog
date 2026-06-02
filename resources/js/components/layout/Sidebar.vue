@@ -26,9 +26,32 @@ import {
 
 const page = usePage()
 
-const isCollectionOpen = ref(true)
-const isCommunityOpen = ref(true)
-const isSettingsOpen = ref(true)
+const isCollectionOpen = ref(
+    ['/backlog', '/playing', '/finished', '/dropped']
+        .some(route => page.url.startsWith(route))
+)
+
+const isCommunityOpen = ref(
+    ['/reviews', '/challenges', '/people']
+        .some(route => page.url.startsWith(route))
+)
+
+const isToolsOpen = ref(
+    ['/games/create', '/shop', '/wardrobe']
+        .some(route => page.url.startsWith(route))
+)
+
+const isSettingsOpen = ref(
+    page.url.startsWith('/settings')
+)
+
+const navItemClass = (href) =>
+    page.url.startsWith(href)
+        ? 'border border-zinc-700 bg-zinc-800 text-white shadow-sm'
+        : 'border border-transparent text-zinc-300 hover:border-zinc-800 hover:bg-zinc-900 hover:text-white'
+
+const sectionButtonClass =
+    'mb-3 flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900 hover:text-white'
 
 const mainItems = [
     {
@@ -36,7 +59,6 @@ const mainItems = [
         href: '/dashboard',
         icon: LayoutDashboard,
     },
-
     {
         label: 'Recommendations',
         href: '/recommendations',
@@ -50,19 +72,16 @@ const collectionItems = [
         href: '/backlog',
         icon: Library,
     },
-
     {
         label: 'Playing',
         href: '/playing',
         icon: PlayCircle,
     },
-
     {
         label: 'Finished',
         href: '/finished',
         icon: CheckCircle2,
     },
-
     {
         label: 'Dropped',
         href: '/dropped',
@@ -76,13 +95,11 @@ const communityItems = [
         href: '/reviews',
         icon: MessageSquareText,
     },
-
     {
         label: 'Challenges',
         href: '/challenges',
         icon: Trophy,
     },
-
     {
         label: 'People',
         href: '/people',
@@ -96,13 +113,11 @@ const toolItems = [
         href: '/games/create',
         icon: PlusCircle,
     },
-
     {
         label: 'Shop',
         href: '/shop',
         icon: ShoppingBag,
     },
-
     {
         label: 'Wardrobe',
         href: '/wardrobe',
@@ -136,175 +151,210 @@ const settingsItems = [
         </div>
 
         <nav class="flex-1 overflow-y-auto px-4 py-5">
+            <!-- Main -->
+
             <div class="space-y-2">
                 <Link
                     v-for="item in mainItems"
                     :key="item.href"
                     :href="item.href"
-                    class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all"
-                    :class="
-                        page.url.startsWith(item.href)
-                            ? 'bg-zinc-800 text-white'
-                            : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
-                    "
+                    class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200"
+                    :class="navItemClass(item.href)"
                 >
                     <component
                         :is="item.icon"
-                        class="h-5 w-5"
+                        class="h-5 w-5 shrink-0"
                     />
 
-                    {{ item.label }}
+                    <span>{{ item.label }}</span>
                 </Link>
             </div>
+
+            <!-- Collection -->
 
             <div class="mt-8">
                 <button
                     type="button"
-                    class="mb-3 flex w-full items-center justify-between px-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
+                    :class="sectionButtonClass"
                     @click="isCollectionOpen = !isCollectionOpen"
                 >
                     <span>Collection</span>
 
                     <ChevronDown
-                        class="h-4 w-4 transition-transform"
+                        class="h-4 w-4 transition-transform duration-200"
                         :class="isCollectionOpen ? 'rotate-180' : ''"
                     />
                 </button>
 
-                <div
-                    v-if="isCollectionOpen"
-                    class="space-y-2"
+                <Transition
+                    enter-active-class="transition-all duration-200"
+                    enter-from-class="opacity-0 -translate-y-1"
+                    enter-to-class="opacity-100 translate-y-0"
+                    leave-active-class="transition-all duration-150"
+                    leave-from-class="opacity-100 translate-y-0"
+                    leave-to-class="opacity-0 -translate-y-1"
                 >
-                    <Link
-                        v-for="item in collectionItems"
-                        :key="item.href"
-                        :href="item.href"
-                        class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all"
-                        :class="
-                            page.url.startsWith(item.href)
-                                ? 'bg-zinc-800 text-white'
-                                : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
-                        "
+                    <div
+                        v-if="isCollectionOpen"
+                        class="space-y-2 border-l border-zinc-800 pl-3"
                     >
-                        <component
-                            :is="item.icon"
-                            class="h-5 w-5"
-                        />
+                        <Link
+                            v-for="item in collectionItems"
+                            :key="item.href"
+                            :href="item.href"
+                            class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200"
+                            :class="navItemClass(item.href)"
+                        >
+                            <component
+                                :is="item.icon"
+                                class="h-5 w-5 shrink-0"
+                            />
 
-                        {{ item.label }}
-                    </Link>
-                </div>
+                            <span>{{ item.label }}</span>
+                        </Link>
+                    </div>
+                </Transition>
             </div>
+
+            <!-- Community -->
 
             <div class="mt-8">
                 <button
                     type="button"
-                    class="mb-3 flex w-full items-center justify-between px-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
+                    :class="sectionButtonClass"
                     @click="isCommunityOpen = !isCommunityOpen"
                 >
                     <span>Community</span>
 
                     <ChevronDown
-                        class="h-4 w-4 transition-transform"
+                        class="h-4 w-4 transition-transform duration-200"
                         :class="isCommunityOpen ? 'rotate-180' : ''"
                     />
                 </button>
 
-                <div
-                    v-if="isCommunityOpen"
-                    class="space-y-2"
+                <Transition
+                    enter-active-class="transition-all duration-200"
+                    enter-from-class="opacity-0 -translate-y-1"
+                    enter-to-class="opacity-100 translate-y-0"
+                    leave-active-class="transition-all duration-150"
+                    leave-from-class="opacity-100 translate-y-0"
+                    leave-to-class="opacity-0 -translate-y-1"
                 >
-                    <Link
-                        v-for="item in communityItems"
-                        :key="item.href"
-                        :href="item.href"
-                        class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all"
-                        :class="
-                            page.url.startsWith(item.href)
-                                ? 'bg-zinc-800 text-white'
-                                : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
-                        "
+                    <div
+                        v-if="isCommunityOpen"
+                        class="space-y-2 border-l border-zinc-800 pl-3"
                     >
-                        <component
-                            :is="item.icon"
-                            class="h-5 w-5"
-                        />
+                        <Link
+                            v-for="item in communityItems"
+                            :key="item.href"
+                            :href="item.href"
+                            class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200"
+                            :class="navItemClass(item.href)"
+                        >
+                            <component
+                                :is="item.icon"
+                                class="h-5 w-5 shrink-0"
+                            />
 
-                        {{ item.label }}
-                    </Link>
-                </div>
+                            <span>{{ item.label }}</span>
+                        </Link>
+                    </div>
+                </Transition>
             </div>
+
+            <!-- Tools -->
 
             <div class="mt-8">
-                <p
-                    class="mb-3 px-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
+                <button
+                    type="button"
+                    :class="sectionButtonClass"
+                    @click="isToolsOpen = !isToolsOpen"
                 >
-                    Tools
-                </p>
+                    <span>Tools</span>
 
-                <div class="space-y-2">
-                    <Link
-                        v-for="item in toolItems"
-                        :key="item.href"
-                        :href="item.href"
-                        class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all"
-                        :class="
-                            page.url.startsWith(item.href)
-                                ? 'bg-zinc-800 text-white'
-                                : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
-                        "
+                    <ChevronDown
+                        class="h-4 w-4 transition-transform duration-200"
+                        :class="isToolsOpen ? 'rotate-180' : ''"
+                    />
+                </button>
+
+                <Transition
+                    enter-active-class="transition-all duration-200"
+                    enter-from-class="opacity-0 -translate-y-1"
+                    enter-to-class="opacity-100 translate-y-0"
+                    leave-active-class="transition-all duration-150"
+                    leave-from-class="opacity-100 translate-y-0"
+                    leave-to-class="opacity-0 -translate-y-1"
+                >
+                    <div
+                        v-if="isToolsOpen"
+                        class="space-y-2 border-l border-zinc-800 pl-3"
                     >
-                        <component
-                            :is="item.icon"
-                            class="h-5 w-5"
-                        />
+                        <Link
+                            v-for="item in toolItems"
+                            :key="item.href"
+                            :href="item.href"
+                            class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200"
+                            :class="navItemClass(item.href)"
+                        >
+                            <component
+                                :is="item.icon"
+                                class="h-5 w-5 shrink-0"
+                            />
 
-                        {{ item.label }}
-                    </Link>
-                </div>
+                            <span>{{ item.label }}</span>
+                        </Link>
+                    </div>
+                </Transition>
             </div>
+
+            <!-- Settings -->
 
             <div class="mt-8 pb-6">
                 <button
                     type="button"
-                    class="mb-3 flex w-full items-center justify-between px-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
+                    :class="sectionButtonClass"
                     @click="isSettingsOpen = !isSettingsOpen"
                 >
                     <div class="flex items-center gap-2">
                         <Settings class="h-4 w-4" />
-
                         <span>Settings</span>
                     </div>
 
                     <ChevronDown
-                        class="h-4 w-4 transition-transform"
+                        class="h-4 w-4 transition-transform duration-200"
                         :class="isSettingsOpen ? 'rotate-180' : ''"
                     />
                 </button>
 
-                <div
-                    v-if="isSettingsOpen"
-                    class="space-y-2"
+                <Transition
+                    enter-active-class="transition-all duration-200"
+                    enter-from-class="opacity-0 -translate-y-1"
+                    enter-to-class="opacity-100 translate-y-0"
+                    leave-active-class="transition-all duration-150"
+                    leave-from-class="opacity-100 translate-y-0"
+                    leave-to-class="opacity-0 -translate-y-1"
                 >
-                    <Link
-                        v-for="item in settingsItems"
-                        :key="item.href"
-                        :href="item.href"
-                        class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all"
-                        :class="
-                            page.url.startsWith(item.href)
-                                ? 'bg-zinc-800 text-white'
-                                : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
-                        "
+                    <div
+                        v-if="isSettingsOpen"
+                        class="space-y-2 border-l border-zinc-800 pl-3"
                     >
-                        <component
-                            :is="item.icon"
-                            class="h-5 w-5"
-                        />
+                        <Link
+                            v-for="item in settingsItems"
+                            :key="item.href"
+                            :href="item.href"
+                            class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200"
+                            :class="navItemClass(item.href)"
+                        >
+                            <component
+                                :is="item.icon"
+                                class="h-5 w-5 shrink-0"
+                            />
 
-                        {{ item.label }}
-                    </Link>
-                </div>
+                            <span>{{ item.label }}</span>
+                        </Link>
+                    </div>
+                </Transition>
             </div>
         </nav>
     </aside>
