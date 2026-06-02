@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Helpers\LevelSystem;
 
 class PayloadHelper
 {
@@ -112,12 +113,20 @@ class PayloadHelper
     {
         $user = Auth::user();
 
+        $level = LevelSystem::levelFromXp($user->xp ?? 0);
+
         return [
             'name' => $user->name,
             'steam_id' => $user->steam_id,
             'avatar' => $user->steam_avatar_url,
             'banner_url' => $user->banner_url,
             'is_admin' => $user->is_admin,
+
+            'xp' => $user->xp ?? 0,
+            'coins' => $user->coins ?? 0,
+            'level' => $level,
+            'xp_for_current_level' => LevelSystem::xpForNextLevel($level - 1),
+            'xp_for_next_level' => LevelSystem::xpForNextLevel($level),
         ];
     }
 

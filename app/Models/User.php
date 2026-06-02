@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
@@ -28,6 +29,7 @@ class User extends Authenticatable
         'profile_level_multiplier_enabled',
         'xp_multiplier',
         'is_admin',
+        'coins',
     ];
 
     protected $hidden = [
@@ -41,6 +43,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'coins' => 'integer',
         ];
     }
 
@@ -67,5 +70,12 @@ class User extends Authenticatable
     public function customStatuses()
     {
     return $this->hasMany(CustomStatus::class);
+    }
+
+    public function challenges(): BelongsToMany
+    {
+        return $this->belongsToMany(Challenge::class)
+            ->withPivot('completed_at')
+            ->withTimestamps();
     }
 }

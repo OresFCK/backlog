@@ -10,6 +10,7 @@ import {
     Bell,
     X,
     Check,
+    Coins,
 } from 'lucide-vue-next'
 
 import {
@@ -30,6 +31,10 @@ const count = ref(0)
 
 const level = computed(() =>
     props.user?.level ?? 1
+)
+
+const coins = computed(() =>
+    props.user?.coins ?? 0
 )
 
 const xp = computed(() =>
@@ -99,19 +104,17 @@ onMounted(() => {
     <header
         class="flex h-[89px] items-center justify-between border-b border-zinc-800 bg-zinc-950 px-8"
     >
-        <div class="relative w-full max-w-md">
-            <Search
-                class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
-            />
-
-            <input
-                type="text"
-                placeholder="Search games..."
-                class="w-full rounded-xl border border-zinc-800 bg-zinc-900 py-3 pl-11 pr-4 text-sm text-white outline-none transition-all placeholder:text-zinc-500 focus:border-zinc-700"
-            />
-        </div>
+        <div class="relative w-full max-w-md"></div>
 
         <div class="flex items-center gap-4">
+            <div
+                class="hidden items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-bold text-white lg:flex"
+            >
+                <Coins class="h-4 w-4 text-yellow-400" />
+
+                <span>{{ coins }}</span>
+            </div>
+            
             <div
                 class="hidden w-56 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 lg:block"
             >

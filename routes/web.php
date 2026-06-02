@@ -1,6 +1,8 @@
 <?php
 
 use App\Helpers\PayloadHelper as Payload;
+use App\Http\Controllers\ChallengeController;
+use App\Http\Controllers\AdminChallengeController;
 use App\Http\Controllers\Auth\SteamAuthController;
 use App\Http\Controllers\PublicReviewController;
 use App\Http\Controllers\PublicReviewVoteController;
@@ -271,6 +273,15 @@ Route::get('/dashboard', function (
 
     Route::delete('/wardrobe/{item}/equip', [WardrobeController::class, 'unequip'])
         ->name('wardrobe.unequip');
+
+    Route::get('/challenges', [ChallengeController::class, 'index'])
+        ->name('challenges.index');
+
+    Route::post('/challenges/{challenge}/join', [ChallengeController::class, 'join'])
+        ->name('challenges.join');
+
+    Route::post('/challenges/{challenge}/complete', [ChallengeController::class, 'complete'])
+        ->name('challenges.complete');
 });
 
 Route::middleware(['auth', 'admin'])
@@ -288,4 +299,13 @@ Route::middleware(['auth', 'admin'])
 
         Route::delete('/shop-items/{item}', [ShopItemController::class, 'destroy'])
             ->name('shop-items.destroy');
+
+        Route::get('/challenges', [AdminChallengeController::class, 'index'])
+            ->name('challenges.index');
+
+        Route::post('/challenges', [AdminChallengeController::class, 'store'])
+            ->name('challenges.store');
+
+        Route::delete('/challenges/{challenge}', [AdminChallengeController::class, 'destroy'])
+            ->name('challenges.destroy');
     });
