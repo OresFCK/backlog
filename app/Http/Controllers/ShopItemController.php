@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\PayloadHelper as Payload;
 use App\Models\Challenge;
+use App\Models\ChallengeSubmission;
 use App\Models\ShopItem;
 use App\Services\SteamService;
 use Illuminate\Http\RedirectResponse;
@@ -50,6 +51,7 @@ class ShopItemController extends Controller
                 'id' => $challenge->id,
                 'title' => $challenge->title,
                 'description' => $challenge->description,
+                'game_name' => $challenge->game_name,
                 'reward_xp' => $challenge->reward_xp,
                 'reward_coins' => $challenge->reward_coins,
                 'is_active' => $challenge->is_active,
@@ -61,12 +63,46 @@ class ShopItemController extends Controller
                 ] : null,
             ]);
 
+        $submissions = ChallengeSubmission::query()
+            ->with(['challenge.item', 'user'])
+            ->latest()
+            ->get()
+            ->map(fn (ChallengeSubmission $submission) => [
+                'id' => $submission->id,
+                'status' => $submission->status,
+                'admin_note' => $submission->admin_note,
+                'created_at' => $submission->created_at?->format('Y-m-d H:i'),
+                'reviewed_at' => $submission->reviewed_at?->format('Y-m-d H:i'),
+                'screenshot_url' => Storage::url($submission->screenshot_path),
+
+                'user' => [
+                    'id' => $submission->user->id,
+                    'name' => $submission->user->name,
+                    'email' => $submission->user->email,
+                    'avatar' => $submission->user->steam_avatar_url,
+                ],
+
+                'challenge' => [
+                    'id' => $submission->challenge->id,
+                    'title' => $submission->challenge->title,
+                    'game_name' => $submission->challenge->game_name,
+                    'reward_xp' => $submission->challenge->reward_xp,
+                    'reward_coins' => $submission->challenge->reward_coins,
+
+                    'item' => $submission->challenge->item ? [
+                        'id' => $submission->challenge->item->id,
+                        'name' => $submission->challenge->item->name,
+                    ] : null,
+                ],
+            ]);
+
         return Inertia::render('admin/index', [
             ...Payload::pageData($steam),
 
             'items' => $items,
             'shopItems' => $shopItems,
             'challenges' => $challenges,
+            'submissions' => $submissions,
         ]);
     }
 

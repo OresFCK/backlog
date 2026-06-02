@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Challenge extends Model
 {
@@ -12,6 +13,7 @@ class Challenge extends Model
         'shop_item_id',
         'title',
         'description',
+        'game_name',
         'reward_xp',
         'reward_coins',
         'is_active',
@@ -33,5 +35,10 @@ class Challenge extends Model
         return $this->belongsToMany(User::class)
             ->withPivot('completed_at')
             ->withTimestamps();
+    }
+
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(ChallengeSubmission::class);
     }
 }

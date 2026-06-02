@@ -281,8 +281,8 @@ Route::get('/dashboard', function (
     Route::post('/challenges/{challenge}/join', [ChallengeController::class, 'join'])
         ->name('challenges.join');
 
-    Route::post('/challenges/{challenge}/complete', [ChallengeController::class, 'complete'])
-        ->name('challenges.complete');
+    Route::post('/challenges/{challenge}/submit', [ChallengeController::class, 'submit'])
+        ->name('challenges.submit');
 });
 
 Route::middleware(['auth', 'admin'])
@@ -317,5 +317,11 @@ Route::middleware(['auth', 'admin'])
             ->name('users.logs');
 
         Route::post('/users/{user}/coins', [AdminUserController::class, 'addCoins'])
-        ->name('users.coins');
+            ->name('users.coins');
+
+        Route::post('/challenge-submissions/{submission}/approve', [AdminChallengeController::class, 'approve'])
+            ->name('challenge-submissions.approve');
+
+        Route::post('/challenge-submissions/{submission}/reject', [AdminChallengeController::class, 'reject'])
+            ->name('challenge-submissions.reject');
     });

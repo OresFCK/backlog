@@ -1,15 +1,23 @@
 <script setup>
-import { router } from '@inertiajs/vue3'
+import { ref } from 'vue'
+import { router, useForm } from '@inertiajs/vue3'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
 
 defineProps({
     user: Object,
+
     challenges: {
         type: Array,
         default: () => [],
     },
+})
+
+const selectedChallenge = ref(null)
+
+const proofForm = useForm({
+    screenshot: null,
 })
 
 const joinChallenge = (challenge) => {
@@ -18,9 +26,27 @@ const joinChallenge = (challenge) => {
     })
 }
 
-const completeChallenge = (challenge) => {
-    router.post(`/challenges/${challenge.id}/complete`, {}, {
+const openProofModal = (challenge) => {
+    selectedChallenge.value = challenge
+    proofForm.reset()
+    proofForm.screenshot = null
+}
+
+const closeProofModal = () => {
+    selectedChallenge.value = null
+    proofForm.reset()
+    proofForm.screenshot = null
+}
+
+const submitProof = () => {
+    if (!selectedChallenge.value) {
+        return
+    }
+
+    proofForm.post(`/challenges/${selectedChallenge.value.id}/submit`, {
         preserveScroll: true,
+        forceFormData: true,
+        onSuccess: closeProofModal,
     })
 }
 </script>
@@ -39,7 +65,7 @@ const completeChallenge = (challenge) => {
                     </h1>
 
                     <p class="mt-2 text-zinc-400">
-                        Join challenges, complete them and earn XP, coins or shop items.
+                        Join challenges, submit proof and earn XP, coins or shop items after admin approval.
                     </p>
                 </section>
 
@@ -49,13 +75,29 @@ const completeChallenge = (challenge) => {
                         :key="challenge.id"
                         class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
                     >
-                        <h2 class="text-xl font-bold text-white">
-                            {{ challenge.title }}
-                        </h2>
+                        <div class="mb-4">
+                            <p
+                                v-if="challenge.game_name"
+                                class="mb-2 inline-flex rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400"
+                            >
+                                {{ challenge.game_name }}
+                            </p>
 
-                        <p class="mt-3 text-sm text-zinc-400">
+                            <h2 class="text-xl font-bold text-white">
+                                {{ challenge.title }}
+                            </h2>
+                        </div>
+
+                        <p class="text-sm text-zinc-400">
                             {{ challenge.description }}
                         </p>
+
+                        <div
+                            v-if="challenge.admin_note && challenge.submission_status === 'rejected'"
+                            class="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300"
+                        >
+                            {{ challenge.admin_note }}
+                        </div>
 
                         <div class="mt-5 space-y-2 text-sm">
                             <p
@@ -91,13 +133,20 @@ const completeChallenge = (challenge) => {
                             </button>
 
                             <button
-                                v-else-if="!challenge.completed"
+                                v-else-if="!challenge.completed && challenge.submission_status !== 'pending'"
                                 type="button"
                                 class="w-full rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-emerald-400"
-                                @click="completeChallenge(challenge)"
+                                @click="openProofModal(challenge)"
                             >
-                                Complete challenge
+                                Submit proof
                             </button>
+
+                            <div
+                                v-else-if="challenge.submission_status === 'pending'"
+                                class="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-5 py-3 text-center text-sm font-bold text-amber-400"
+                            >
+                                Waiting for admin review
+                            </div>
 
                             <div
                                 v-else
@@ -116,6 +165,52 @@ const completeChallenge = (challenge) => {
                     </div>
                 </section>
             </main>
+        </div>
+
+        <div
+            v-if="selectedChallenge"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+        >
+            <form
+                class="w-full max-w-lg rounded-3xl border border-zinc-800 bg-zinc-950 p-6"
+                @submit.prevent="submitProof"
+            >
+                <h2 class="text-xl font-bold text-white">
+                    Submit proof
+                </h2>
+
+                <p class="mt-2 text-sm text-zinc-400">
+                    Upload a screenshot proving you completed:
+                    <span class="font-bold text-white">
+                        {{ selectedChallenge.title }}
+                    </span>
+                </p>
+
+                <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    class="mt-6 w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white file:mr-4 file:rounded-xl file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-bold file:text-zinc-950"
+                    @input="proofForm.screenshot = $event.target.files[0]"
+                />
+
+                <div class="mt-6 flex gap-3">
+                    <button
+                        type="submit"
+                        class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
+                        :disabled="proofForm.processing"
+                    >
+                        Send to admin
+                    </button>
+
+                    <button
+                        type="button"
+                        class="rounded-2xl bg-zinc-800 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-700"
+                        @click="closeProofModal"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </template>

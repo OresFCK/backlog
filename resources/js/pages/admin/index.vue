@@ -12,6 +12,11 @@ defineProps({
     items: Array,
     shopItems: Array,
     challenges: Array,
+
+    submissions: {
+        type: Array,
+        default: () => [],
+    },
 })
 </script>
 
@@ -42,6 +47,7 @@ defineProps({
                 <ChallengeManager
                     :shop-items="shopItems"
                     :challenges="challenges"
+                    :submissions="submissions"
                 />
 
                 <UserTools />
