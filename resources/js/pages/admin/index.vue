@@ -1,4 +1,6 @@
 <script setup>
+import { ref } from 'vue'
+
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
 
@@ -18,6 +20,8 @@ defineProps({
         default: () => [],
     },
 })
+
+const activeTab = ref('shop')
 </script>
 
 <template>
@@ -38,19 +42,64 @@ defineProps({
                     <p class="mt-2 text-zinc-400">
                         Manage shop items, challenges and user rewards.
                     </p>
+
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <button
+                            type="button"
+                            class="rounded-2xl px-5 py-3 text-sm font-bold transition"
+                            :class="
+                                activeTab === 'shop'
+                                    ? 'bg-white text-zinc-950'
+                                    : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                            "
+                            @click="activeTab = 'shop'"
+                        >
+                            Shop Items
+                        </button>
+
+                        <button
+                            type="button"
+                            class="rounded-2xl px-5 py-3 text-sm font-bold transition"
+                            :class="
+                                activeTab === 'challenges'
+                                    ? 'bg-white text-zinc-950'
+                                    : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                            "
+                            @click="activeTab = 'challenges'"
+                        >
+                            Challenges
+                        </button>
+
+                        <button
+                            type="button"
+                            class="rounded-2xl px-5 py-3 text-sm font-bold transition"
+                            :class="
+                                activeTab === 'users'
+                                    ? 'bg-white text-zinc-950'
+                                    : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                            "
+                            @click="activeTab = 'users'"
+                        >
+                            Users
+                        </button>
+                    </div>
                 </section>
 
                 <ShopItemsManager
+                    v-if="activeTab === 'shop'"
                     :items="items"
                 />
 
                 <ChallengeManager
+                    v-if="activeTab === 'challenges'"
                     :shop-items="shopItems"
                     :challenges="challenges"
                     :submissions="submissions"
                 />
 
-                <UserTools />
+                <UserTools
+                    v-if="activeTab === 'users'"
+                />
             </main>
         </div>
     </div>
