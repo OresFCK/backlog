@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\PayloadHelper as Payload;
 use App\Models\Challenge;
 use App\Models\UserShopItem;
-use App\Support\LevelSystem;
+use App\Helpers\LevelSystem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;

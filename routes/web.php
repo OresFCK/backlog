@@ -16,6 +16,7 @@ use App\Http\Requests\UpdateProfileBannerRequest;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\ShopItemController;
 use App\Http\Controllers\WardrobeController;
+use App\Http\Controllers\AdminUserController;
 use App\Services\RecommendationService;
 use App\Services\SteamService;
 use Illuminate\Support\Facades\Route;
@@ -308,4 +309,13 @@ Route::middleware(['auth', 'admin'])
 
         Route::delete('/challenges/{challenge}', [AdminChallengeController::class, 'destroy'])
             ->name('challenges.destroy');
+
+        Route::get('/users/search', [AdminUserController::class, 'search'])
+            ->name('users.search');
+
+        Route::get('/users/{user}/logs', [AdminUserController::class, 'logs'])
+            ->name('users.logs');
+
+        Route::post('/users/{user}/coins', [AdminUserController::class, 'addCoins'])
+        ->name('users.coins');
     });

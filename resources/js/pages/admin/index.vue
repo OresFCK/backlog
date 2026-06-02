@@ -12,9 +12,24 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+
+    shopItems: {
+        type: Array,
+        default: () => [],
+    },
+
+    challenges: {
+        type: Array,
+        default: () => [],
+    },
 })
 
 const editingItem = ref(null)
+
+const userSearch = ref('')
+const foundUsers = ref([])
+const selectedUser = ref(null)
+const userLogs = ref([])
 
 const form = useForm({
     name: '',
@@ -23,6 +38,20 @@ const form = useForm({
     price: 0,
     image: null,
     is_active: true,
+})
+
+const challengeForm = useForm({
+    title: '',
+    description: '',
+    reward_xp: 0,
+    reward_coins: 0,
+    shop_item_id: '',
+    is_active: true,
+})
+
+const coinsForm = useForm({
+    amount: 0,
+    reason: '',
 })
 
 const typeInfo = {
@@ -126,6 +155,63 @@ const deleteItem = (item) => {
         preserveScroll: true,
     })
 }
+
+const createChallenge = () => {
+    challengeForm.post('/admin/challenges', {
+        preserveScroll: true,
+        onSuccess: () => {
+            challengeForm.reset()
+            challengeForm.reward_xp = 0
+            challengeForm.reward_coins = 0
+            challengeForm.shop_item_id = ''
+            challengeForm.is_active = true
+        },
+    })
+}
+
+const deleteChallenge = (challenge) => {
+    if (!confirm(`Delete "${challenge.title}"?`)) {
+        return
+    }
+
+    router.delete(`/admin/challenges/${challenge.id}`, {
+        preserveScroll: true,
+    })
+}
+
+const searchUsers = async () => {
+    if (!userSearch.value) {
+        foundUsers.value = []
+        return
+    }
+
+    const response = await fetch(
+        `/admin/users/search?q=${encodeURIComponent(userSearch.value)}`
+    )
+
+    foundUsers.value = await response.json()
+}
+
+const selectUser = async (user) => {
+    selectedUser.value = user
+
+    const response = await fetch(`/admin/users/${user.id}/logs`)
+    userLogs.value = await response.json()
+}
+
+const addCoins = () => {
+    if (!selectedUser.value) {
+        return
+    }
+
+    coinsForm.post(`/admin/users/${selectedUser.value.id}/coins`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            coinsForm.reset()
+            selectUser(selectedUser.value)
+        },
+    })
+}
 </script>
 
 <template>
@@ -144,7 +230,7 @@ const deleteItem = (item) => {
                     </h1>
 
                     <p class="mt-2 text-zinc-400">
-                        Add, edit and manage shop items.
+                        Manage shop items, challenges and user rewards.
                     </p>
                 </section>
 
@@ -390,6 +476,275 @@ const deleteItem = (item) => {
                                 class="p-10 text-center text-zinc-500"
                             >
                                 No shop items yet.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="grid gap-8 xl:grid-cols-[420px_1fr]">
+                    <form
+                        class="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
+                        @submit.prevent="createChallenge"
+                    >
+                        <h2 class="text-xl font-bold text-white">
+                            Challenge creator
+                        </h2>
+
+                        <input
+                            v-model="challengeForm.title"
+                            placeholder="Challenge title"
+                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                        />
+
+                        <textarea
+                            v-model="challengeForm.description"
+                            placeholder="Challenge description"
+                            rows="4"
+                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                        />
+
+                        <input
+                            v-model="challengeForm.reward_xp"
+                            type="number"
+                            min="0"
+                            placeholder="Reward XP"
+                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                        />
+
+                        <input
+                            v-model="challengeForm.reward_coins"
+                            type="number"
+                            min="0"
+                            placeholder="Reward coins"
+                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                        />
+
+                        <select
+                            v-model="challengeForm.shop_item_id"
+                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                        >
+                            <option value="">
+                                No item reward
+                            </option>
+
+                            <option
+                                v-for="item in shopItems"
+                                :key="item.id"
+                                :value="item.id"
+                            >
+                                {{ item.name }} · {{ item.type }}
+                            </option>
+                        </select>
+
+                        <label
+                            class="flex items-center gap-3 text-sm text-zinc-300"
+                        >
+                            <input
+                                v-model="challengeForm.is_active"
+                                type="checkbox"
+                                class="h-4 w-4 rounded border-zinc-700 bg-zinc-950"
+                            />
+
+                            Active
+                        </label>
+
+                        <button
+                            type="submit"
+                            class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
+                            :disabled="challengeForm.processing"
+                        >
+                            Create challenge
+                        </button>
+                    </form>
+
+                    <div
+                        class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
+                    >
+                        <div class="border-b border-zinc-800 p-6">
+                            <h2 class="text-xl font-bold text-white">
+                                Challenges
+                            </h2>
+                        </div>
+
+                        <div class="divide-y divide-zinc-800">
+                            <div
+                                v-for="challenge in challenges"
+                                :key="challenge.id"
+                                class="flex items-center gap-5 p-5"
+                            >
+                                <div class="min-w-0 flex-1">
+                                    <h3 class="font-bold text-white">
+                                        {{ challenge.title }}
+                                    </h3>
+
+                                    <p class="mt-1 text-sm text-zinc-400">
+                                        {{ challenge.reward_xp }} XP ·
+                                        {{ challenge.reward_coins }} coins
+                                    </p>
+
+                                    <p
+                                        v-if="challenge.item"
+                                        class="mt-1 text-sm text-zinc-500"
+                                    >
+                                        Item: {{ challenge.item.name }}
+                                    </p>
+
+                                    <p
+                                        v-if="challenge.description"
+                                        class="mt-1 truncate text-sm text-zinc-500"
+                                    >
+                                        {{ challenge.description }}
+                                    </p>
+                                </div>
+
+                                <span
+                                    class="rounded-full px-3 py-1 text-xs font-bold"
+                                    :class="
+                                        challenge.is_active
+                                            ? 'bg-emerald-500/10 text-emerald-400'
+                                            : 'bg-zinc-800 text-zinc-500'
+                                    "
+                                >
+                                    {{ challenge.is_active ? 'Active' : 'Hidden' }}
+                                </span>
+
+                                <button
+                                    type="button"
+                                    class="rounded-xl bg-red-500/10 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/20"
+                                    @click="deleteChallenge(challenge)"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+
+                            <div
+                                v-if="!challenges.length"
+                                class="p-10 text-center text-zinc-500"
+                            >
+                                No challenges yet.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="grid gap-8 xl:grid-cols-[420px_1fr]">
+                    <div
+                        class="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
+                    >
+                        <h2 class="text-xl font-bold text-white">
+                            User tools
+                        </h2>
+
+                        <input
+                            v-model="userSearch"
+                            placeholder="Search user by name, email or Steam ID"
+                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                            @input="searchUsers"
+                        />
+
+                        <div class="space-y-2">
+                            <button
+                                v-for="foundUser in foundUsers"
+                                :key="foundUser.id"
+                                type="button"
+                                class="flex w-full items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-left transition hover:border-zinc-700"
+                                @click="selectUser(foundUser)"
+                            >
+                                <img
+                                    v-if="foundUser.avatar"
+                                    :src="foundUser.avatar"
+                                    class="h-10 w-10 rounded-full object-cover"
+                                />
+
+                                <div
+                                    v-else
+                                    class="h-10 w-10 rounded-full bg-zinc-800"
+                                />
+
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-bold text-white">
+                                        {{ foundUser.name }}
+                                    </p>
+
+                                    <p class="truncate text-xs text-zinc-500">
+                                        {{ foundUser.email }}
+                                    </p>
+                                </div>
+                            </button>
+                        </div>
+
+                        <div
+                            v-if="selectedUser"
+                            class="rounded-2xl border border-zinc-800 bg-zinc-950 p-4"
+                        >
+                            <h3 class="font-bold text-white">
+                                {{ selectedUser.name }}
+                            </h3>
+
+                            <p class="mt-1 text-sm text-zinc-400">
+                                Level {{ selectedUser.level }} ·
+                                {{ selectedUser.xp }} XP ·
+                                {{ selectedUser.coins }} coins
+                            </p>
+
+                            <form
+                                class="mt-5 space-y-3"
+                                @submit.prevent="addCoins"
+                            >
+                                <input
+                                    v-model="coinsForm.amount"
+                                    type="number"
+                                    min="1"
+                                    placeholder="Coins amount"
+                                    class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                                />
+
+                                <input
+                                    v-model="coinsForm.reason"
+                                    placeholder="Reason"
+                                    class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                                />
+
+                                <button
+                                    type="submit"
+                                    class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
+                                    :disabled="coinsForm.processing"
+                                >
+                                    Add coins
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div
+                        class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
+                    >
+                        <div class="border-b border-zinc-800 p-6">
+                            <h2 class="text-xl font-bold text-white">
+                                Activity logs
+                            </h2>
+                        </div>
+
+                        <div class="divide-y divide-zinc-800">
+                            <div
+                                v-for="log in userLogs"
+                                :key="log.id"
+                                class="p-5"
+                            >
+                                <p class="font-bold text-white">
+                                    {{ log.message }}
+                                </p>
+
+                                <p class="mt-1 text-sm text-zinc-500">
+                                    {{ log.type }} · {{ log.created_at }}
+                                </p>
+                            </div>
+
+                            <div
+                                v-if="!userLogs.length"
+                                class="p-10 text-center text-zinc-500"
+                            >
+                                Search user to see activity logs.
                             </div>
                         </div>
                     </div>

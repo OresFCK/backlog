@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\PayloadHelper as Payload;
-use App\Http\Controllers\Controller;
+use App\Models\Challenge;
 use App\Models\ShopItem;
 use App\Services\SteamService;
 use Illuminate\Http\RedirectResponse;
@@ -32,10 +32,41 @@ class ShopItemController extends Controller
                     : null,
             ]);
 
+        $shopItems = ShopItem::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (ShopItem $item) => [
+                'id' => $item->id,
+                'name' => $item->name,
+                'type' => $item->type,
+            ]);
+
+        $challenges = Challenge::query()
+            ->with('item')
+            ->latest()
+            ->get()
+            ->map(fn (Challenge $challenge) => [
+                'id' => $challenge->id,
+                'title' => $challenge->title,
+                'description' => $challenge->description,
+                'reward_xp' => $challenge->reward_xp,
+                'reward_coins' => $challenge->reward_coins,
+                'is_active' => $challenge->is_active,
+
+                'item' => $challenge->item ? [
+                    'id' => $challenge->item->id,
+                    'name' => $challenge->item->name,
+                    'type' => $challenge->item->type,
+                ] : null,
+            ]);
+
         return Inertia::render('admin/index', [
             ...Payload::pageData($steam),
 
             'items' => $items,
+            'shopItems' => $shopItems,
+            'challenges' => $challenges,
         ]);
     }
 

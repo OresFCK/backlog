@@ -78,4 +78,9 @@ class User extends Authenticatable
             ->withPivot('completed_at')
             ->withTimestamps();
     }
+
+    public function activityLogs(): HasMany
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
 }
