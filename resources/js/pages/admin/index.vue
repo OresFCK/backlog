@@ -222,9 +222,7 @@ const addCoins = () => {
             <Topbar :user="user" />
 
             <main class="flex-1 space-y-8 p-8">
-                <section
-                    class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8"
-                >
+                <section class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8">
                     <h1 class="text-3xl font-bold text-white">
                         Admin panel
                     </h1>
@@ -260,68 +258,37 @@ const addCoins = () => {
                             v-model="form.type"
                             class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
                         >
-                            <option value="profile_overlay">
-                                Profile overlay
-                            </option>
-
-                            <option value="badge">
-                                Badge
-                            </option>
-
-                            <option value="profile_banner">
-                                Profile banner
-                            </option>
-
-                            <option value="theme">
-                                Theme
-                            </option>
-
-                            <option value="user_title">
-                                User title
-                            </option>
-
-                            <option value="profile_showcase">
-                                Profile showcase
-                            </option>
-
-                            <option value="username_font">
-                                Username font
-                            </option>
+                            <option value="profile_overlay">Profile overlay</option>
+                            <option value="badge">Badge</option>
+                            <option value="profile_banner">Profile banner</option>
+                            <option value="theme">Theme</option>
+                            <option value="user_title">User title</option>
+                            <option value="profile_showcase">Profile showcase</option>
+                            <option value="username_font">Username font</option>
                         </select>
 
-                        <div
-                            class="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4"
-                        >
+                        <div class="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4">
                             <h3 class="mb-3 text-sm font-bold text-blue-300">
                                 Asset requirements
                             </h3>
 
                             <div class="space-y-2 text-sm">
                                 <div class="flex justify-between gap-4">
-                                    <span class="text-zinc-400">
-                                        Recommended size
-                                    </span>
-
+                                    <span class="text-zinc-400">Recommended size</span>
                                     <span class="text-right font-medium text-white">
                                         {{ typeInfo[form.type]?.size }}
                                     </span>
                                 </div>
 
                                 <div class="flex justify-between gap-4">
-                                    <span class="text-zinc-400">
-                                        Format
-                                    </span>
-
+                                    <span class="text-zinc-400">Format</span>
                                     <span class="text-right font-medium text-white">
                                         {{ typeInfo[form.type]?.format }}
                                     </span>
                                 </div>
 
                                 <div class="flex justify-between gap-4">
-                                    <span class="text-zinc-400">
-                                        Notes
-                                    </span>
-
+                                    <span class="text-zinc-400">Notes</span>
                                     <span class="text-right font-medium text-white">
                                         {{ typeInfo[form.type]?.notes }}
                                     </span>
@@ -350,21 +317,17 @@ const addCoins = () => {
                             v-else-if="form.type === 'user_title'"
                             class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-300"
                         >
-                            This item uses only text and does not require an
-                            image.
+                            This item uses only text and does not require an image.
                         </div>
 
                         <div
                             v-else-if="form.type === 'username_font'"
                             class="rounded-2xl border border-purple-500/20 bg-purple-500/5 p-4 text-sm text-purple-300"
                         >
-                            This item should store font information in metadata
-                            instead of an image.
+                            This item should store font information in metadata instead of an image.
                         </div>
 
-                        <label
-                            class="flex items-center gap-3 text-sm text-zinc-300"
-                        >
+                        <label class="flex items-center gap-3 text-sm text-zinc-300">
                             <input
                                 v-model="form.is_active"
                                 type="checkbox"
@@ -394,9 +357,7 @@ const addCoins = () => {
                         </div>
                     </form>
 
-                    <div
-                        class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
-                    >
+                    <div class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
                         <div class="border-b border-zinc-800 p-6">
                             <h2 class="text-xl font-bold text-white">
                                 Shop items
@@ -409,9 +370,7 @@ const addCoins = () => {
                                 :key="item.id"
                                 class="flex items-center gap-5 p-5"
                             >
-                                <div
-                                    class="flex h-20 w-28 items-center justify-center overflow-hidden rounded-2xl bg-zinc-800"
-                                >
+                                <div class="flex h-20 w-28 items-center justify-center overflow-hidden rounded-2xl bg-zinc-800">
                                     <img
                                         v-if="item.image_url"
                                         :src="item.image_url"
@@ -436,9 +395,7 @@ const addCoins = () => {
                                         {{ item.type }} · {{ item.price }} coins
                                     </p>
 
-                                    <p
-                                        class="mt-1 truncate text-sm text-zinc-500"
-                                    >
+                                    <p class="mt-1 truncate text-sm text-zinc-500">
                                         {{ item.description }}
                                     </p>
                                 </div>
@@ -490,62 +447,136 @@ const addCoins = () => {
                             Challenge creator
                         </h2>
 
-                        <input
-                            v-model="challengeForm.title"
-                            placeholder="Challenge title"
-                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
-                        />
+                        <div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                            <h3 class="mb-3 text-sm font-bold text-emerald-300">
+                                Challenge fields
+                            </h3>
 
-                        <textarea
-                            v-model="challengeForm.description"
-                            placeholder="Challenge description"
-                            rows="4"
-                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
-                        />
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between gap-4">
+                                    <span class="text-zinc-400">Title</span>
+                                    <span class="text-right font-medium text-white">
+                                        Name shown to users.
+                                    </span>
+                                </div>
 
-                        <input
-                            v-model="challengeForm.reward_xp"
-                            type="number"
-                            min="0"
-                            placeholder="Reward XP"
-                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
-                        />
+                                <div class="flex justify-between gap-4">
+                                    <span class="text-zinc-400">Description</span>
+                                    <span class="text-right font-medium text-white">
+                                        Explains what users need to do.
+                                    </span>
+                                </div>
 
-                        <input
-                            v-model="challengeForm.reward_coins"
-                            type="number"
-                            min="0"
-                            placeholder="Reward coins"
-                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
-                        />
+                                <div class="flex justify-between gap-4">
+                                    <span class="text-zinc-400">XP</span>
+                                    <span class="text-right font-medium text-white">
+                                        Adds experience and may level up the user.
+                                    </span>
+                                </div>
 
-                        <select
-                            v-model="challengeForm.shop_item_id"
-                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
-                        >
-                            <option value="">
-                                No item reward
-                            </option>
+                                <div class="flex justify-between gap-4">
+                                    <span class="text-zinc-400">Coins</span>
+                                    <span class="text-right font-medium text-white">
+                                        Currency added after completion.
+                                    </span>
+                                </div>
 
-                            <option
-                                v-for="item in shopItems"
-                                :key="item.id"
-                                :value="item.id"
+                                <div class="flex justify-between gap-4">
+                                    <span class="text-zinc-400">Item</span>
+                                    <span class="text-right font-medium text-white">
+                                        Optional shop reward.
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-white">
+                                Challenge title
+                            </label>
+
+                            <input
+                                v-model="challengeForm.title"
+                                placeholder="Example: Finish 3 backlog games"
+                                class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-white">
+                                Challenge description
+                            </label>
+
+                            <textarea
+                                v-model="challengeForm.description"
+                                placeholder="Example: Complete and mark 3 games as Finished this month."
+                                rows="4"
+                                class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-white">
+                                Reward XP
+                            </label>
+
+                            <input
+                                v-model="challengeForm.reward_xp"
+                                type="number"
+                                min="0"
+                                placeholder="Example: 250"
+                                class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-white">
+                                Reward coins
+                            </label>
+
+                            <input
+                                v-model="challengeForm.reward_coins"
+                                type="number"
+                                min="0"
+                                placeholder="Example: 500"
+                                class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-bold text-white">
+                                Reward item
+                            </label>
+
+
+                            <select
+                                v-model="challengeForm.shop_item_id"
+                                class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
                             >
-                                {{ item.name }} · {{ item.type }}
-                            </option>
-                        </select>
+                                <option value="">
+                                    No item reward
+                                </option>
 
-                        <label
-                            class="flex items-center gap-3 text-sm text-zinc-300"
-                        >
+                                <option
+                                    v-for="item in shopItems"
+                                    :key="item.id"
+                                    :value="item.id"
+                                >
+                                    {{ item.name }} · {{ item.type }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <label class="flex items-center gap-3 text-sm text-zinc-300">
                             <input
                                 v-model="challengeForm.is_active"
                                 type="checkbox"
                                 class="h-4 w-4 rounded border-zinc-700 bg-zinc-950"
                             />
 
-                            Active
+                            <span>
+                                Active
+                            </span>
                         </label>
 
                         <button
@@ -557,9 +588,7 @@ const addCoins = () => {
                         </button>
                     </form>
 
-                    <div
-                        class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
-                    >
+                    <div class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
                         <div class="border-b border-zinc-800 p-6">
                             <h2 class="text-xl font-bold text-white">
                                 Challenges
@@ -628,9 +657,7 @@ const addCoins = () => {
                 </section>
 
                 <section class="grid gap-8 xl:grid-cols-[420px_1fr]">
-                    <div
-                        class="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
-                    >
+                    <div class="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
                         <h2 class="text-xl font-bold text-white">
                             User tools
                         </h2>
@@ -716,9 +743,7 @@ const addCoins = () => {
                         </div>
                     </div>
 
-                    <div
-                        class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
-                    >
+                    <div class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
                         <div class="border-b border-zinc-800 p-6">
                             <h2 class="text-xl font-bold text-white">
                                 Activity logs
