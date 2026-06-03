@@ -28,8 +28,10 @@ class GameMetaService
                     'rating',
                     'status',
                 ]),
+
                 'recommended' => $request->boolean('recommended'),
                 'not_recommended' => $request->boolean('not_recommended'),
+                'show_on_public_profile' => $request->boolean('show_on_public_profile'),
             ]
         );
 
@@ -66,6 +68,7 @@ class GameMetaService
             'rating' => $meta->rating,
             'recommended' => $meta->recommended ?? false,
             'not_recommended' => $meta->not_recommended ?? false,
+            'show_on_public_profile' => $meta->show_on_public_profile ?? false,
             'updated_at' => $meta->updated_at?->diffForHumans(),
         ];
     }
@@ -79,6 +82,7 @@ class GameMetaService
             'rating' => null,
             'recommended' => false,
             'not_recommended' => false,
+            'show_on_public_profile' => false,
             'updated_at' => null,
         ];
     }

@@ -21,6 +21,8 @@ use App\Services\RecommendationService;
 use App\Services\SteamService;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use App\Models\User;
+use App\Models\UserGameMeta;
 use Inertia\Inertia;
 
 Route::redirect('/', '/home');
@@ -30,6 +32,36 @@ Route::inertia('/home', 'home')
 
 Route::inertia('/login', 'auth/login')
     ->name('login');
+
+Route::get('/u/{user:steam_id}', function (User $user) {
+    $showcaseItems = UserGameMeta::query()
+        ->where('user_id', $user->id)
+        ->where('show_on_public_profile', true)
+        ->latest('updated_at')
+        ->get()
+        ->map(fn ($meta) => [
+            'id' => $meta->game_id,
+            'title' => $meta->game_id,
+            'status' => $meta->status,
+            'note' => $meta->note,
+            'rating' => $meta->rating,
+            'recommended' => $meta->recommended,
+            'not_recommended' => $meta->not_recommended,
+            'updated_at' => $meta->updated_at?->diffForHumans(),
+        ])
+        ->values();
+
+    return Inertia::render('profile/public', [
+        'profileUser' => [
+            'name' => $user->name,
+            'steam_id' => $user->steam_id,
+            'avatar' => $user->steam_avatar_url,
+            'banner_url' => $user->banner_url,
+        ],
+
+        'showcaseItems' => $showcaseItems,
+    ]);
+})->name('profile.public');
 
 Route::controller(SteamAuthController::class)
     ->prefix('auth/steam')

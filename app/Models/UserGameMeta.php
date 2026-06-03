@@ -14,13 +14,15 @@ class UserGameMeta extends Model
         'note',
         'rating',
         'recommended',
+        'not_recommended',
         'status',
-        'not_recommended'
+        'show_on_public_profile',
     ];
 
     protected $casts = [
         'recommended' => 'boolean',
-        'rating' => 'integer',
         'not_recommended' => 'boolean',
+        'show_on_public_profile' => 'boolean',
+        'rating' => 'integer',
     ];
 }
