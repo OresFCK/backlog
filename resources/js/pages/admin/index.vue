@@ -7,6 +7,7 @@ import Topbar from '@/components/layout/Topbar.vue'
 import ShopItemsManager from '@/components/admin/ShopItemsManager.vue'
 import ChallengeManager from '@/components/admin/ChallengeManager.vue'
 import UserTools from '@/components/admin/UserTools.vue'
+import ReviewReportsManager from '@/components/admin/ReviewReportsManager.vue'
 
 defineProps({
     user: Object,
@@ -16,6 +17,11 @@ defineProps({
     challenges: Array,
 
     submissions: {
+        type: Array,
+        default: () => [],
+    },
+
+    reviewReports: {
         type: Array,
         default: () => [],
     },
@@ -32,15 +38,13 @@ const activeTab = ref('shop')
             <Topbar :user="user" />
 
             <main class="flex-1 space-y-8 p-8">
-                <section
-                    class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8"
-                >
+                <section class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8">
                     <h1 class="text-3xl font-bold text-white">
                         Admin panel
                     </h1>
 
                     <p class="mt-2 text-zinc-400">
-                        Manage shop items, challenges and user rewards.
+                        Manage shop items, challenges, user rewards and reports.
                     </p>
 
                     <div class="mt-6 flex flex-wrap gap-3">
@@ -82,6 +86,19 @@ const activeTab = ref('shop')
                         >
                             Users
                         </button>
+
+                        <button
+                            type="button"
+                            class="rounded-2xl px-5 py-3 text-sm font-bold transition"
+                            :class="
+                                activeTab === 'reports'
+                                    ? 'bg-white text-zinc-950'
+                                    : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                            "
+                            @click="activeTab = 'reports'"
+                        >
+                            Reports
+                        </button>
                     </div>
                 </section>
 
@@ -99,6 +116,11 @@ const activeTab = ref('shop')
 
                 <UserTools
                     v-if="activeTab === 'users'"
+                />
+
+                <ReviewReportsManager
+                    v-if="activeTab === 'reports'"
+                    :reports="reviewReports"
                 />
             </main>
         </div>

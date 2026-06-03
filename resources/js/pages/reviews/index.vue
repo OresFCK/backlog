@@ -94,15 +94,21 @@ const closeReviewModal = () => {
 const vote = (review, value) => {
     router.post(
         `/reviews/${review.id}/vote`,
-        { value },
-        { preserveScroll: true }
+        {
+            value,
+        },
+        {
+            preserveScroll: true,
+        }
     )
 }
 
 const removeVote = (review) => {
     router.delete(
         `/reviews/${review.id}/vote`,
-        { preserveScroll: true }
+        {
+            preserveScroll: true,
+        }
     )
 }
 
@@ -120,7 +126,29 @@ const toggleFeatured = (review) => {
     router.post(
         `/reviews/${review.id}/feature`,
         {},
-        { preserveScroll: true }
+        {
+            preserveScroll: true,
+        }
+    )
+}
+
+const reportReview = (review) => {
+    const reason = window.prompt(
+        'Why are you reporting this review?'
+    )
+
+    if (reason === null) {
+        return
+    }
+
+    router.post(
+        `/reviews/${review.id}/report`,
+        {
+            reason,
+        },
+        {
+            preserveScroll: true,
+        }
     )
 }
 </script>
@@ -158,6 +186,7 @@ const toggleFeatured = (review) => {
                         @read-more="openReviewModal"
                         @toggle-vote="toggleVote"
                         @toggle-featured="toggleFeatured"
+                        @report-review="reportReview"
                     />
 
                     <div

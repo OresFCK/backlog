@@ -2,10 +2,12 @@
 
 use App\Helpers\PayloadHelper as Payload;
 use App\Http\Controllers\AdminChallengeController;
+use App\Http\Controllers\AdminReviewReportController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\Auth\SteamAuthController;
 use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\PublicReviewController;
+use App\Http\Controllers\PublicReviewReportController;
 use App\Http\Controllers\PublicReviewVoteController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\ShopController;
@@ -17,12 +19,8 @@ use App\Http\Requests\StoreCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
-use App\Models\PublicReview;
 use App\Models\User;
-use App\Models\UserGameMeta;
-use App\Models\UserShopItem;
 use App\Services\SteamService;
-use App\Services\GameLibraryService;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -47,31 +45,23 @@ Route::controller(SteamAuthController::class)
     ->prefix('auth/steam')
     ->name('steam.')
     ->group(function () {
-        Route::get('/', 'redirect')
-            ->name('redirect');
-
-        Route::get('/callback', 'callback')
-            ->name('callback');
+        Route::get('/', 'redirect')->name('redirect');
+        Route::get('/callback', 'callback')->name('callback');
     });
 
 Route::get('/invite/{steamId}', function (
     string $steamId,
     SteamService $steam
 ) {
-    $profile = collect(
-        $steam->searchPlayer($steamId)
-    )->first();
+    $profile = collect($steam->searchPlayer($steamId))->first();
 
     if (! $profile) {
         abort(404);
     }
 
-    return Inertia::render(
-        'invite/show',
-        [
-            'profile' => $profile,
-        ]
-    );
+    return Inertia::render('invite/show', [
+        'profile' => $profile,
+    ]);
 })->name('invite.show');
 
 Route::middleware('auth')->group(function () {
@@ -79,43 +69,27 @@ Route::middleware('auth')->group(function () {
         SteamService $steam,
         \App\Services\RecommendationService $recommendations
     ) {
-        return Inertia::render(
-            'dashboard',
-            [
-                ...Payload::pageData($steam),
-
-                'friendsRanking' => $recommendations->friendsRanking(),
-                'globalRanking' => $recommendations->globalRanking(),
-            ]
-        );
+        return Inertia::render('dashboard', [
+            ...Payload::pageData($steam),
+            'friendsRanking' => $recommendations->friendsRanking(),
+            'globalRanking' => $recommendations->globalRanking(),
+        ]);
     })->name('dashboard');
 
     Route::get('/backlog', fn (SteamService $steam) =>
-        Inertia::render(
-            'backlog/index',
-            Payload::backlogPageData($steam)
-        )
+        Inertia::render('backlog/index', Payload::backlogPageData($steam))
     )->name('backlog.index');
 
     Route::get('/playing', fn (SteamService $steam) =>
-        Inertia::render(
-            'playing/index',
-            Payload::playingPageData($steam)
-        )
+        Inertia::render('playing/index', Payload::playingPageData($steam))
     )->name('playing.index');
 
     Route::get('/finished', fn (SteamService $steam) =>
-        Inertia::render(
-            'finished/index',
-            Payload::finishedPageData($steam)
-        )
+        Inertia::render('finished/index', Payload::finishedPageData($steam))
     )->name('finished.index');
 
     Route::get('/wishlist', fn (SteamService $steam) =>
-        Inertia::render(
-            'wishlist/index',
-            Payload::wishlistPageData($steam)
-        )
+        Inertia::render('wishlist/index', Payload::wishlistPageData($steam))
     )->name('wishlist.index');
 
     Route::get('/recommendations', [
@@ -124,47 +98,36 @@ Route::middleware('auth')->group(function () {
     ])->name('recommendations.index');
 
     Route::get('/games/create', fn (SteamService $steam) =>
-        Inertia::render(
-            'games/create',
-            Payload::pageData($steam)
-        )
+        Inertia::render('games/create', Payload::pageData($steam))
     )->name('games.create');
 
     Route::post('/games', fn (
         StoreCustomGameRequest $request
-    ) => Payload::storeCustomGame($request))
-        ->name('games.store');
+    ) => Payload::storeCustomGame($request))->name('games.store');
 
     Route::post('/statuses', fn (
         StoreCustomStatusRequest $request
-    ) => Payload::storeStatus($request))
-        ->name('statuses.store');
+    ) => Payload::storeStatus($request))->name('statuses.store');
 
     Route::post('/games/{game}/meta', fn (
         UpdateGameMetaRequest $request,
         string $game
-    ) => Payload::storeMeta($request, $game))
-        ->name('games.meta');
+    ) => Payload::storeMeta($request, $game))->name('games.meta');
 
     Route::get('/steam/search', fn (
         SteamService $steam
-    ) => Payload::steamSearch($steam))
-        ->name('steam.search');
+    ) => Payload::steamSearch($steam))->name('steam.search');
 
     Route::get('/settings/labels', fn () =>
-        Inertia::render(
-            'settings/labels',
-            [
-                'user' => Payload::currentUser(),
-                'labels' => Payload::customLabels(),
-            ]
-        )
+        Inertia::render('settings/labels', [
+            'user' => Payload::currentUser(),
+            'labels' => Payload::customLabels(),
+        ])
     )->name('settings.labels');
 
     Route::post('/settings/labels', fn (
         StoreCustomLabelRequest $request
-    ) => Payload::storeCustomLabel($request))
-        ->name('settings.labels.store');
+    ) => Payload::storeCustomLabel($request))->name('settings.labels.store');
 
     Route::get('/games/{game}', fn (
         string $game,
@@ -188,11 +151,7 @@ Route::middleware('auth')->group(function () {
 
         if ($user->banner_url) {
             Storage::disk('public')->delete(
-                str_replace(
-                    '/storage/',
-                    '',
-                    $user->banner_url
-                )
+                str_replace('/storage/', '', $user->banner_url)
             );
         }
 
@@ -208,10 +167,7 @@ Route::middleware('auth')->group(function () {
     })->name('profile.banner.update');
 
     Route::get('/dropped', fn (SteamService $steam) =>
-        Inertia::render(
-            'dropped/index',
-            Payload::droppedPageData($steam)
-        )
+        Inertia::render('dropped/index', Payload::droppedPageData($steam))
     )->name('dropped.index');
 
     Route::post('/reviews/public', [
@@ -228,6 +184,11 @@ Route::middleware('auth')->group(function () {
         PublicReviewController::class,
         'toggleFeatured',
     ])->name('reviews.feature');
+
+    Route::post('/reviews/{review}/report', [
+        PublicReviewReportController::class,
+        'store',
+    ])->name('reviews.report');
 
     Route::post('/reviews/{review}/vote', [
         PublicReviewVoteController::class,
@@ -339,4 +300,14 @@ Route::middleware(['auth', 'admin'])
 
         Route::post('/challenge-submissions/{submission}/reject', [AdminChallengeController::class, 'reject'])
             ->name('challenge-submissions.reject');
+
+        Route::patch('/review-reports/{report}/resolve', [
+            AdminReviewReportController::class,
+            'resolve',
+        ])->name('review-reports.resolve');
+
+        Route::delete('/review-reports/{report}/review', [
+            AdminReviewReportController::class,
+            'destroyReview',
+        ])->name('review-reports.review.destroy');
     });

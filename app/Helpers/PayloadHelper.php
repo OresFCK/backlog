@@ -7,6 +7,7 @@ use App\Http\Requests\StoreCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Models\PublicReview;
+use App\Models\PublicReviewReport;
 use App\Models\User;
 use App\Models\UserGameMeta;
 use App\Models\UserShopItem;
@@ -148,6 +149,47 @@ class PayloadHelper
                 'image_url' => $ownedItem->item->image_path
                     ? Storage::url($ownedItem->item->image_path)
                     : null,
+            ])
+            ->values()
+            ->toArray();
+    }
+
+    public static function reviewReports(): array
+    {
+        return PublicReviewReport::query()
+            ->with([
+                'review.user',
+                'reporter',
+            ])
+            ->latest()
+            ->get()
+            ->map(fn (PublicReviewReport $report) => [
+                'id' => $report->id,
+                'reason' => $report->reason,
+                'status' => $report->status,
+                'created_at' => $report->created_at?->diffForHumans(),
+
+                'reporter' => [
+                    'id' => $report->reporter?->id,
+                    'name' => $report->reporter?->name,
+                    'avatar' => $report->reporter?->steam_avatar_url,
+                ],
+
+                'review' => $report->review ? [
+                    'id' => $report->review->id,
+                    'title' => $report->review->title,
+                    'body' => $report->review->body,
+                    'game_title' => $report->review->game_title,
+                    'rating' => $report->review->rating,
+                    'recommended' => $report->review->recommended,
+                    'not_recommended' => $report->review->not_recommended,
+
+                    'user' => [
+                        'id' => $report->review->user?->id,
+                        'name' => $report->review->user?->name,
+                        'avatar' => $report->review->user?->steam_avatar_url,
+                    ],
+                ] : null,
             ])
             ->values()
             ->toArray();

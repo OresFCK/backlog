@@ -1,5 +1,5 @@
 <script setup>
-import { Star } from 'lucide-vue-next'
+import { Flag, Star } from 'lucide-vue-next'
 
 defineProps({
     review: {
@@ -12,6 +12,7 @@ defineEmits([
     'read-more',
     'toggle-vote',
     'toggle-featured',
+    'report-review',
 ])
 
 const shouldTruncate = (body) => {
@@ -133,6 +134,16 @@ const truncatedBody = (body) => {
                                 ? 'Featured on Profile'
                                 : 'Feature on Profile'
                         }}
+                    </button>
+
+                    <button
+                        v-if="!review.is_owner"
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-1 text-sm font-bold text-zinc-300 transition hover:border-red-500/60 hover:text-red-300"
+                        @click="$emit('report-review', review)"
+                    >
+                        <Flag class="h-4 w-4" />
+                        Report
                     </button>
                 </div>
 

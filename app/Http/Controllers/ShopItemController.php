@@ -103,6 +103,7 @@ class ShopItemController extends Controller
             'shopItems' => $shopItems,
             'challenges' => $challenges,
             'submissions' => $submissions,
+            'reviewReports' => Payload::reviewReports(),
         ]);
     }
 
