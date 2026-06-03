@@ -17,11 +17,13 @@ class PublicReview extends Model
         'rating',
         'recommended',
         'not_recommended',
+        'is_featured_on_profile',
     ];
 
     protected $casts = [
         'recommended' => 'boolean',
         'not_recommended' => 'boolean',
+        'is_featured_on_profile' => 'boolean',
         'rating' => 'integer',
     ];
 

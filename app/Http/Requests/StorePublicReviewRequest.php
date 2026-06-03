@@ -19,11 +19,12 @@ class StorePublicReviewRequest extends FormRequest
                 'string',
                 'max:255',
             ],
+
             'game_title' => [
                 'required',
                 'string',
             ],
-            
+
             'title' => [
                 'nullable',
                 'string',
@@ -47,7 +48,12 @@ class StorePublicReviewRequest extends FormRequest
             'recommended' => [
                 'boolean',
             ],
+
             'not_recommended' => [
+                'boolean',
+            ],
+
+            'is_featured_on_profile' => [
                 'boolean',
             ],
         ];

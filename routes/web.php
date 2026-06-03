@@ -1,28 +1,30 @@
 <?php
 
 use App\Helpers\PayloadHelper as Payload;
-use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\AdminChallengeController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\Auth\SteamAuthController;
+use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\PublicReviewController;
 use App\Http\Controllers\PublicReviewVoteController;
 use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\ShopController;
+use App\Http\Controllers\ShopItemController;
 use App\Http\Controllers\UserConnectionController;
+use App\Http\Controllers\WardrobeController;
 use App\Http\Requests\StoreCustomGameRequest;
 use App\Http\Requests\StoreCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
-use App\Http\Controllers\ShopController;
-use App\Http\Controllers\ShopItemController;
-use App\Http\Controllers\WardrobeController;
-use App\Http\Controllers\AdminUserController;
-use App\Services\RecommendationService;
-use App\Services\SteamService;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
+use App\Models\PublicReview;
 use App\Models\User;
 use App\Models\UserGameMeta;
+use App\Models\UserShopItem;
+use App\Services\SteamService;
+use App\Services\GameLibraryService;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 Route::redirect('/', '/home');
@@ -33,41 +35,18 @@ Route::inertia('/home', 'home')
 Route::inertia('/login', 'auth/login')
     ->name('login');
 
-Route::get('/u/{user:steam_id}', function (User $user) {
-    $showcaseItems = UserGameMeta::query()
-        ->where('user_id', $user->id)
-        ->where('show_on_public_profile', true)
-        ->latest('updated_at')
-        ->get()
-        ->map(fn ($meta) => [
-            'id' => $meta->game_id,
-            'title' => $meta->game_id,
-            'status' => $meta->status,
-            'note' => $meta->note,
-            'rating' => $meta->rating,
-            'recommended' => $meta->recommended,
-            'not_recommended' => $meta->not_recommended,
-            'updated_at' => $meta->updated_at?->diffForHumans(),
-        ])
-        ->values();
-
-    return Inertia::render('profile/public', [
-        'profileUser' => [
-            'name' => $user->name,
-            'steam_id' => $user->steam_id,
-            'avatar' => $user->steam_avatar_url,
-            'banner_url' => $user->banner_url,
-        ],
-
-        'showcaseItems' => $showcaseItems,
-    ]);
-})->name('profile.public');
+Route::get('/u/{user:steam_id}', fn (
+    User $user,
+    SteamService $steam
+) => Inertia::render(
+    'profile/public',
+    Payload::publicProfilePageData($user, $steam)
+))->name('profile.public');
 
 Route::controller(SteamAuthController::class)
     ->prefix('auth/steam')
     ->name('steam.')
     ->group(function () {
-
         Route::get('/', 'redirect')
             ->name('redirect');
 
@@ -79,7 +58,6 @@ Route::get('/invite/{steamId}', function (
     string $steamId,
     SteamService $steam
 ) {
-
     $profile = collect(
         $steam->searchPlayer($steamId)
     )->first();
@@ -97,21 +75,20 @@ Route::get('/invite/{steamId}', function (
 })->name('invite.show');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', function (
+        SteamService $steam,
+        \App\Services\RecommendationService $recommendations
+    ) {
+        return Inertia::render(
+            'dashboard',
+            [
+                ...Payload::pageData($steam),
 
-Route::get('/dashboard', function (
-    SteamService $steam,
-    \App\Services\RecommendationService $recommendations
-) {
-    return Inertia::render(
-        'dashboard',
-        [
-            ...Payload::pageData($steam),
-
-            'friendsRanking' => $recommendations->friendsRanking(),
-            'globalRanking' => $recommendations->globalRanking(),
-        ]
-    );
-})->name('dashboard');
+                'friendsRanking' => $recommendations->friendsRanking(),
+                'globalRanking' => $recommendations->globalRanking(),
+            ]
+        );
+    })->name('dashboard');
 
     Route::get('/backlog', fn (SteamService $steam) =>
         Inertia::render(
@@ -207,11 +184,9 @@ Route::get('/dashboard', function (
     Route::post('/profile/banner', function (
         UpdateProfileBannerRequest $request
     ) {
-
         $user = $request->user();
 
         if ($user->banner_url) {
-
             Storage::disk('public')->delete(
                 str_replace(
                     '/storage/',
@@ -248,6 +223,11 @@ Route::get('/dashboard', function (
         PublicReviewController::class,
         'index',
     ])->name('reviews.index');
+
+    Route::post('/reviews/{review}/feature', [
+        PublicReviewController::class,
+        'toggleFeatured',
+    ])->name('reviews.feature');
 
     Route::post('/reviews/{review}/vote', [
         PublicReviewVoteController::class,
@@ -306,6 +286,9 @@ Route::get('/dashboard', function (
 
     Route::delete('/wardrobe/{item}/equip', [WardrobeController::class, 'unequip'])
         ->name('wardrobe.unequip');
+
+    Route::post('/wardrobe/{item}/feature', [WardrobeController::class, 'toggleFeatured'])
+        ->name('wardrobe.feature');
 
     Route::get('/challenges', [ChallengeController::class, 'index'])
         ->name('challenges.index');

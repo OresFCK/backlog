@@ -1,9 +1,26 @@
 <script setup>
-defineProps({
+import { ref } from 'vue'
+import { Check, Copy } from 'lucide-vue-next'
+
+const props = defineProps({
     user: Object,
     equippedByType: Object,
     usernameFontStyle: Object,
 })
+
+const copied = ref(false)
+
+const copyPublicProfileLink = async () => {
+    const url = `${window.location.origin}/u/${props.user?.steam_id}`
+
+    await navigator.clipboard.writeText(url)
+
+    copied.value = true
+
+    setTimeout(() => {
+        copied.value = false
+    }, 2000)
+}
 </script>
 
 <template>
@@ -89,6 +106,24 @@ defineProps({
                     >
                         Open Wardrobe
                     </a>
+
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900/80 px-5 py-3 text-sm font-medium text-white backdrop-blur transition hover:border-zinc-500 hover:bg-zinc-800"
+                        @click="copyPublicProfileLink"
+                    >
+                        <Check
+                            v-if="copied"
+                            class="h-4 w-4 text-emerald-300"
+                        />
+
+                        <Copy
+                            v-else
+                            class="h-4 w-4"
+                        />
+
+                        {{ copied ? 'Copied!' : 'Copy Public Link' }}
+                    </button>
                 </div>
             </div>
         </div>

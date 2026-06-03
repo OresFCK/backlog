@@ -5,8 +5,7 @@ import {
 } from 'vue'
 
 import { router } from '@inertiajs/vue3'
-
-import { X } from 'lucide-vue-next'
+import { Star, X } from 'lucide-vue-next'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
@@ -32,14 +31,8 @@ const filters = ref({
     recommendation: '',
 })
 
-const isReviewModalOpen = computed(
-    () => selectedReview.value !== null
-)
-
 const filteredReviews = computed(() => {
-
     return props.reviews.filter((review) => {
-
         const userName = String(
             review.user?.name ?? ''
         ).toLowerCase()
@@ -52,38 +45,31 @@ const filteredReviews = computed(() => {
 
         const matchesUser =
             !filters.value.user ||
-
             userName.includes(
                 filters.value.user.toLowerCase()
             )
 
         const matchesGame =
             !filters.value.game ||
-
             gameTitle.includes(
                 filters.value.game.toLowerCase()
             )
 
         const matchesRating =
             !filters.value.rating ||
-
             Number(review.rating) ===
             Number(filters.value.rating)
 
         const matchesRecommendation =
             !filters.value.recommendation ||
-
             (
                 filters.value.recommendation ===
                 'recommended' &&
-
                 review.recommended
             ) ||
-
             (
                 filters.value.recommendation ===
                 'not_recommended' &&
-
                 review.not_recommended
             )
 
@@ -97,7 +83,6 @@ const filteredReviews = computed(() => {
 })
 
 const clearFilters = () => {
-
     filters.value = {
         user: '',
         game: '',
@@ -119,7 +104,6 @@ const shouldTruncate = (body) => {
 }
 
 const truncatedBody = (body) => {
-
     const text = String(body ?? '')
 
     if (text.length <= 420) {
@@ -130,7 +114,6 @@ const truncatedBody = (body) => {
 }
 
 const vote = (review, value) => {
-
     router.post(
         `/reviews/${review.id}/vote`,
         {
@@ -143,7 +126,6 @@ const vote = (review, value) => {
 }
 
 const removeVote = (review) => {
-
     router.delete(
         `/reviews/${review.id}/vote`,
         {
@@ -156,17 +138,23 @@ const toggleVote = (
     review,
     value
 ) => {
-
-    if (
-        review.user_vote === value
-    ) {
-
+    if (review.user_vote === value) {
         removeVote(review)
 
         return
     }
 
     vote(review, value)
+}
+
+const toggleFeatured = (review) => {
+    router.post(
+        `/reviews/${review.id}/feature`,
+        {},
+        {
+            preserveScroll: true,
+        }
+    )
 }
 </script>
 
@@ -188,12 +176,8 @@ const toggleVote = (
                     </p>
                 </div>
 
-                <div
-                    class="mb-6 rounded-3xl border border-zinc-800 bg-zinc-900 p-5"
-                >
-                    <div
-                        class="grid gap-4 md:grid-cols-4"
-                    >
+                <div class="mb-6 rounded-3xl border border-zinc-800 bg-zinc-900 p-5">
+                    <div class="grid gap-4 md:grid-cols-4">
                         <input
                             v-model="filters.user"
                             type="text"
@@ -243,15 +227,9 @@ const toggleVote = (
                         </select>
                     </div>
 
-                    <div
-                        class="mt-4 flex items-center justify-between gap-3"
-                    >
+                    <div class="mt-4 flex items-center justify-between gap-3">
                         <p class="text-sm text-zinc-500">
-                            Showing
-                            {{ filteredReviews.length }}
-                            of
-                            {{ reviews.length }}
-                            reviews
+                            Showing {{ filteredReviews.length }} of {{ reviews.length }} reviews
                         </p>
 
                         <button
@@ -278,21 +256,12 @@ const toggleVote = (
                             />
 
                             <div class="min-w-0 flex-1">
-                                <div
-                                    class="flex flex-wrap items-center gap-3"
-                                >
-                                    <h2
-                                        class="text-lg font-bold text-white"
-                                    >
-                                        {{
-                                            review.user?.name ??
-                                            'Unknown user'
-                                        }}
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <h2 class="text-lg font-bold text-white">
+                                        {{ review.user?.name ?? 'Unknown user' }}
                                     </h2>
 
-                                    <span
-                                        class="text-sm text-zinc-500"
-                                    >
+                                    <span class="text-sm text-zinc-500">
                                         {{ review.created_at }}
                                     </span>
 
@@ -318,40 +287,20 @@ const toggleVote = (
                                     </span>
                                 </div>
 
-                                <p
-                                    class="mt-4 text-sm font-bold text-indigo-300"
-                                >
-                                    {{
-                                        review.game_title ||
-                                        'Unknown game'
-                                    }}
+                                <p class="mt-4 text-sm font-bold text-indigo-300">
+                                    {{ review.game_title || 'Unknown game' }}
                                 </p>
 
-                                <h3
-                                    class="mt-1 text-2xl font-black text-white"
-                                >
-                                    {{
-                                        review.title ||
-                                        'Untitled review'
-                                    }}
+                                <h3 class="mt-1 text-2xl font-black text-white">
+                                    {{ review.title || 'Untitled review' }}
                                 </h3>
 
-                                <p
-                                    class="mt-4 whitespace-pre-line text-zinc-300"
-                                >
-                                    {{
-                                        truncatedBody(
-                                            review.body
-                                        )
-                                    }}
+                                <p class="mt-4 whitespace-pre-line text-zinc-300">
+                                    {{ truncatedBody(review.body) }}
                                 </p>
 
-                                <div
-                                    class="mt-5 flex flex-wrap items-center gap-3"
-                                >
-                                    <template
-                                        v-if="review.can_vote"
-                                    >
+                                <div class="mt-5 flex flex-wrap items-center gap-3">
+                                    <template v-if="review.can_vote">
                                         <button
                                             type="button"
                                             class="rounded-xl border px-3 py-1 text-sm font-bold transition"
@@ -360,12 +309,7 @@ const toggleVote = (
                                                     ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300'
                                                     : 'border-zinc-700 bg-zinc-950 text-zinc-300 hover:text-white'
                                             "
-                                            @click="
-                                                toggleVote(
-                                                    review,
-                                                    1
-                                                )
-                                            "
+                                            @click="toggleVote(review, 1)"
                                         >
                                             +1
                                         </button>
@@ -378,41 +322,42 @@ const toggleVote = (
                                                     ? 'border-red-500 bg-red-500/10 text-red-300'
                                                     : 'border-zinc-700 bg-zinc-950 text-zinc-300 hover:text-white'
                                             "
-                                            @click="
-                                                toggleVote(
-                                                    review,
-                                                    -1
-                                                )
-                                            "
+                                            @click="toggleVote(review, -1)"
                                         >
                                             -1
                                         </button>
                                     </template>
 
-                                    <span
-                                        class="text-sm font-bold text-zinc-400"
-                                    >
-                                        Score:
-                                        {{
-                                            review.votes_score ??
-                                            0
-                                        }}
+                                    <span class="text-sm font-bold text-zinc-400">
+                                        Score: {{ review.votes_score ?? 0 }}
                                     </span>
+
+                                    <button
+                                        v-if="review.is_owner"
+                                        type="button"
+                                        class="inline-flex items-center gap-2 rounded-xl border px-3 py-1 text-sm font-bold transition"
+                                        :class="
+                                            review.is_featured_on_profile
+                                                ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-300'
+                                                : 'border-zinc-700 bg-zinc-950 text-zinc-300 hover:text-white'
+                                        "
+                                        @click="toggleFeatured(review)"
+                                    >
+                                        <Star class="h-4 w-4" />
+
+                                        {{
+                                            review.is_featured_on_profile
+                                                ? 'Featured on Profile'
+                                                : 'Feature on Profile'
+                                        }}
+                                    </button>
                                 </div>
 
                                 <button
-                                    v-if="
-                                        shouldTruncate(
-                                            review.body
-                                        )
-                                    "
+                                    v-if="shouldTruncate(review.body)"
                                     type="button"
                                     class="mt-4 text-sm font-bold text-white underline underline-offset-4 transition hover:text-zinc-300"
-                                    @click="
-                                        openReviewModal(
-                                            review
-                                        )
-                                    "
+                                    @click="openReviewModal(review)"
                                 >
                                     Read more
                                 </button>
@@ -424,20 +369,47 @@ const toggleVote = (
                         v-if="!filteredReviews.length"
                         class="rounded-3xl border border-dashed border-zinc-800 p-16 text-center"
                     >
-                        <h2
-                            class="text-2xl font-black text-white"
-                        >
+                        <h2 class="text-2xl font-black text-white">
                             No reviews found
                         </h2>
 
-                        <p
-                            class="mt-3 text-zinc-400"
-                        >
+                        <p class="mt-3 text-zinc-400">
                             Try changing your filters.
                         </p>
                     </div>
                 </div>
             </main>
+        </div>
+
+        <div
+            v-if="selectedReview"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+        >
+            <div class="w-full max-w-3xl rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-bold text-indigo-300">
+                            {{ selectedReview.game_title }}
+                        </p>
+
+                        <h2 class="mt-1 text-2xl font-black text-white">
+                            {{ selectedReview.title || 'Untitled review' }}
+                        </h2>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="rounded-xl p-2 text-zinc-400 transition hover:bg-zinc-900 hover:text-white"
+                        @click="closeReviewModal"
+                    >
+                        <X class="h-5 w-5" />
+                    </button>
+                </div>
+
+                <p class="mt-6 whitespace-pre-line text-zinc-300">
+                    {{ selectedReview.body }}
+                </p>
+            </div>
         </div>
     </div>
 </template>

@@ -31,6 +31,7 @@ class WardrobeController extends Controller
                 'type' => $ownedItem->item->type,
                 'price' => $ownedItem->item->price,
                 'is_equipped' => $ownedItem->is_equipped,
+                'is_featured_on_profile' => $ownedItem->is_featured_on_profile,
 
                 'image_url' => $ownedItem->item->image_path
                     ? Storage::url($ownedItem->item->image_path)
@@ -86,6 +87,23 @@ class WardrobeController extends Controller
             ->update([
                 'is_equipped' => false,
             ]);
+
+        return back();
+    }
+
+    public function toggleFeatured(
+        Request $request,
+        ShopItem $item
+    ): RedirectResponse {
+        $ownedItem = UserShopItem::query()
+            ->where('user_id', $request->user()->id)
+            ->where('shop_item_id', $item->id)
+            ->firstOrFail();
+
+        $ownedItem->update([
+            'is_featured_on_profile' =>
+                ! $ownedItem->is_featured_on_profile,
+        ]);
 
         return back();
     }

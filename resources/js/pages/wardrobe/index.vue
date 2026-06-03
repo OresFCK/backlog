@@ -1,5 +1,6 @@
 <script setup>
 import { router } from '@inertiajs/vue3'
+import { Star } from 'lucide-vue-next'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
@@ -24,6 +25,12 @@ const unequipItem = (item) => {
         preserveScroll: true,
     })
 }
+
+const toggleFeatured = (item) => {
+    router.post(`/wardrobe/${item.id}/feature`, {}, {
+        preserveScroll: true,
+    })
+}
 </script>
 
 <template>
@@ -34,15 +41,13 @@ const unequipItem = (item) => {
             <Topbar :user="user" />
 
             <main class="flex-1 space-y-8 p-8">
-                <section
-                    class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8"
-                >
+                <section class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8">
                     <h1 class="text-3xl font-bold text-white">
                         Wardrobe
                     </h1>
 
                     <p class="mt-2 text-zinc-400">
-                        Manage and equip your owned cosmetics.
+                        Manage, equip and feature your owned cosmetics.
                     </p>
                 </section>
 
@@ -55,9 +60,7 @@ const unequipItem = (item) => {
                         :key="item.id"
                         class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
                     >
-                        <div
-                            class="flex h-44 items-center justify-center bg-zinc-800"
-                        >
+                        <div class="flex h-44 items-center justify-center bg-zinc-800">
                             <img
                                 v-if="item.image_url"
                                 :src="item.image_url"
@@ -75,21 +78,15 @@ const unequipItem = (item) => {
 
                         <div class="space-y-4 p-5">
                             <div>
-                                <p
-                                    class="text-xs uppercase tracking-widest text-zinc-500"
-                                >
+                                <p class="text-xs uppercase tracking-widest text-zinc-500">
                                     {{ item.type }}
                                 </p>
 
-                                <h2
-                                    class="mt-1 text-lg font-bold text-white"
-                                >
+                                <h2 class="mt-1 text-lg font-bold text-white">
                                     {{ item.name }}
                                 </h2>
 
-                                <p
-                                    class="mt-2 line-clamp-2 text-sm text-zinc-400"
-                                >
+                                <p class="mt-2 line-clamp-2 text-sm text-zinc-400">
                                     {{ item.description }}
                                 </p>
                             </div>
@@ -110,6 +107,25 @@ const unequipItem = (item) => {
                                 @click="unequipItem(item)"
                             >
                                 Unequip
+                            </button>
+
+                            <button
+                                type="button"
+                                class="flex w-full items-center justify-center gap-2 rounded-2xl border px-5 py-3 text-sm font-bold transition"
+                                :class="
+                                    item.is_featured_on_profile
+                                        ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-300'
+                                        : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:text-white'
+                                "
+                                @click="toggleFeatured(item)"
+                            >
+                                <Star class="h-4 w-4" />
+
+                                {{
+                                    item.is_featured_on_profile
+                                        ? 'Featured on Profile'
+                                        : 'Add to Showcase'
+                                }}
                             </button>
                         </div>
                     </article>
