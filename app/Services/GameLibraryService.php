@@ -101,6 +101,7 @@ class GameLibraryService
                     'playtime_forever' => 0,
                     'is_custom' => true,
                     'source' => $game->source ?? 'manual',
+                    'platform' => $game->platform,
                     ...$this->existingMetaForUser($user, $gameId),
                 ];
             })

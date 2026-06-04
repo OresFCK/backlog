@@ -60,11 +60,29 @@ class StatsController extends Controller
     private function platformBreakdown(Collection $games): array
     {
         return $games
-            ->groupBy(fn ($game) => ($game['is_custom'] ?? false) ? 'Custom' : 'Steam')
-            ->map(fn ($items, $platform) => [
-                'platform' => $platform,
-                'count' => $items->count(),
-            ])
+            ->groupBy(function ($game) {
+
+                if ($game['is_custom'] ?? false) {
+
+                    $platform = trim(
+                        (string) ($game['platform'] ?? '')
+                    );
+
+                    return $platform !== ''
+                        ? $platform
+                        : 'Custom';
+                }
+
+                return 'Steam';
+            })
+            ->map(function ($items, $platform) {
+
+                return [
+                    'platform' => $platform,
+                    'count' => $items->count(),
+                ];
+            })
+            ->sortByDesc('count')
             ->values()
             ->toArray();
     }
