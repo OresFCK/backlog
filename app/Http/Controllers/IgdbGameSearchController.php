@@ -16,27 +16,37 @@ class IgdbGameSearchController extends Controller
             return response()->json([]);
         }
 
+        $normalizedQuery = $this->normalize($query);
+
         $games = Game::query()
             ->where('source', 'igdb')
-            ->where(function ($builder) use ($query) {
+            ->where(function ($builder) use ($query, $normalizedQuery) {
                 $builder
                     ->where('title', 'ilike', "%{$query}%")
-                    ->orWhere('normalized_title', 'ilike', "%{$this->normalize($query)}%");
+                    ->orWhere(
+                        'normalized_title',
+                        'ilike',
+                        "%{$normalizedQuery}%"
+                    );
             })
+            ->orderByRaw('igdb_cover_url IS NULL')
             ->orderByRaw("
                 CASE
                     WHEN lower(title) = lower(?) THEN 0
                     WHEN lower(title) LIKE lower(?) THEN 1
                     ELSE 2
                 END
-            ", [$query, "{$query}%"])
+            ", [
+                $query,
+                "{$query}%"
+            ])
             ->limit(15)
             ->get([
                 'id',
                 'igdb_id',
                 'title',
                 'slug',
-                'cover_url',
+                'igdb_cover_url',
                 'release_date',
             ])
             ->map(fn (Game $game) => [
@@ -44,7 +54,7 @@ class IgdbGameSearchController extends Controller
                 'igdb_id' => $game->igdb_id,
                 'title' => $game->title,
                 'slug' => $game->slug,
-                'cover_url' => $game->cover_url,
+                'cover_url' => $game->igdb_cover_url,
                 'release_date' => $game->release_date?->format('Y-m-d'),
             ])
             ->values();
@@ -58,7 +68,10 @@ class IgdbGameSearchController extends Controller
             ->lower()
             ->ascii()
             ->replaceMatches('/[^a-z0-9]+/', ' ')
-            ->replaceMatches('/\b(the|game|edition|standard|deluxe|ultimate|complete)\b/', '')
+            ->replaceMatches(
+                '/\b(the|game|edition|standard|deluxe|ultimate|complete)\b/',
+                ''
+            )
             ->squish()
             ->toString();
     }

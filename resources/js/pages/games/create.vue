@@ -4,6 +4,9 @@ import { router } from '@inertiajs/vue3'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
+import GameAddHeader from '@/components/game/GameAddHeader.vue'
+import GameSearchResults from '@/components/game/GameSearchResults.vue'
+import GameManualForm from '@/components/game/GameManualForm.vue'
 
 const props = defineProps({
     user: {
@@ -56,6 +59,8 @@ const duplicate = computed(() => {
     })
 })
 
+const loading = computed(() => loadingSteam.value || loadingIgdb.value)
+
 let timeout = null
 
 watch(title, (value) => {
@@ -106,8 +111,8 @@ function selectSteamGame(game) {
 
 function selectIgdbGame(game) {
     title.value = game.title
-    coverUrl.value = game.cover_url ?? ''
-    headerImageUrl.value = game.cover_url ?? ''
+    coverUrl.value = game.igdb_cover_url ?? game.cover_url ?? ''
+    headerImageUrl.value = game.igdb_cover_url ?? game.cover_url ?? ''
     steamAppId.value = null
     igdbId.value = game.igdb_id
     source.value = 'igdb'
@@ -139,18 +144,17 @@ function submit() {
             <Topbar :user="user" />
 
             <main class="mx-auto w-full max-w-5xl flex-1 p-8">
-                <div class="mb-10">
-                    <h1 class="text-4xl font-bold text-white">
-                        Add New Game
-                    </h1>
-
-                    <p class="mt-2 text-zinc-400">
-                        Search Steam first. If the game is not there, use IGDB or add it manually.
-                    </p>
-                </div>
+                <GameAddHeader />
 
                 <div class="grid gap-8 lg:grid-cols-[1fr_360px]">
-                    <section class="space-y-6">
+                    <GameSearchResults
+                        :steam-results="steamResults"
+                        :igdb-results="igdbResults"
+                        :loading="loading"
+                        :duplicate="duplicate"
+                        @select-steam="selectSteamGame"
+                        @select-igdb="selectIgdbGame"
+                    >
                         <div>
                             <label class="mb-2 block text-sm font-medium text-zinc-300">
                                 Game title
@@ -162,173 +166,18 @@ function submit() {
                                 placeholder="e.g. Pokémon Shield"
                                 class="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
                             />
-
-                            <p
-                                v-if="duplicate"
-                                class="mt-3 text-sm font-medium text-red-400"
-                            >
-                                This game already exists in your library.
-                            </p>
                         </div>
+                    </GameSearchResults>
 
-                        <div
-                            v-if="steamResults.length"
-                            class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-5"
-                        >
-                            <h2 class="mb-4 text-lg font-bold text-white">
-                                Steam matches
-                            </h2>
-
-                            <div class="space-y-3">
-                                <button
-                                    v-for="game in steamResults"
-                                    :key="game.appid"
-                                    type="button"
-                                    class="flex w-full items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-left transition hover:border-zinc-600"
-                                    @click="selectSteamGame(game)"
-                                >
-                                    <img
-                                        :src="game.cover_url"
-                                        :alt="game.title"
-                                        class="h-16 w-28 rounded-xl object-cover"
-                                    />
-
-                                    <div>
-                                        <p class="font-semibold text-white">
-                                            {{ game.title }}
-                                        </p>
-
-                                        <p class="text-sm text-zinc-500">
-                                            Steam App ID: {{ game.appid }}
-                                        </p>
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div
-                            v-if="igdbResults.length"
-                            class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-5"
-                        >
-                            <h2 class="mb-4 text-lg font-bold text-white">
-                                IGDB matches
-                            </h2>
-
-                            <div class="space-y-3">
-                                <button
-                                    v-for="game in igdbResults"
-                                    :key="game.igdb_id"
-                                    type="button"
-                                    class="flex w-full items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-left transition hover:border-zinc-600"
-                                    @click="selectIgdbGame(game)"
-                                >
-                                    <div
-                                        class="flex h-16 w-28 items-center justify-center rounded-xl bg-zinc-800 text-xs text-zinc-500"
-                                    >
-                                        IGDB
-                                    </div>
-
-                                    <div>
-                                        <p class="font-semibold text-white">
-                                            {{ game.title }}
-                                        </p>
-
-                                        <p class="text-sm text-zinc-500">
-                                            IGDB ID: {{ game.igdb_id }}
-                                        </p>
-
-                                        <p
-                                            v-if="game.release_date"
-                                            class="text-xs text-zinc-600"
-                                        >
-                                            {{ game.release_date }}
-                                        </p>
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
-
-                        <p
-                            v-if="loadingSteam || loadingIgdb"
-                            class="text-sm text-zinc-500"
-                        >
-                            Searching Steam and IGDB...
-                        </p>
-                    </section>
-
-                    <aside class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6">
-                        <h2 class="text-xl font-bold text-white">
-                            Manual details
-                        </h2>
-
-                        <div class="mt-6 space-y-5">
-                            <div>
-                                <label class="mb-2 block text-sm font-medium text-zinc-300">
-                                    Title
-                                </label>
-
-                                <input
-                                    v-model="title"
-                                    type="text"
-                                    class="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none focus:border-zinc-600"
-                                />
-                            </div>
-
-                            <div>
-                                <label class="mb-2 block text-sm font-medium text-zinc-300">
-                                    Publisher
-                                </label>
-
-                                <input
-                                    v-model="publisher"
-                                    type="text"
-                                    placeholder="e.g. Nintendo"
-                                    class="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
-                                />
-                            </div>
-
-                            <div>
-                                <label class="mb-2 block text-sm font-medium text-zinc-300">
-                                    Cover URL
-                                </label>
-
-                                <input
-                                    v-model="coverUrl"
-                                    type="text"
-                                    class="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none focus:border-zinc-600"
-                                />
-                            </div>
-
-                            <img
-                                v-if="coverUrl"
-                                :src="coverUrl"
-                                class="h-48 w-full rounded-2xl object-cover"
-                            />
-
-                            <div
-                                v-if="steamAppId"
-                                class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300"
-                            >
-                                Selected Steam game: {{ steamAppId }}
-                            </div>
-
-                            <div
-                                v-if="igdbId"
-                                class="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-3 text-sm text-indigo-300"
-                            >
-                                Selected IGDB game: {{ igdbId }}
-                            </div>
-
-                            <button
-                                type="button"
-                                :disabled="duplicate || !title"
-                                class="w-full rounded-xl bg-white px-5 py-3 text-sm font-bold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
-                                @click="submit"
-                            >
-                                Add game
-                            </button>
-                        </div>
-                    </aside>
+                    <GameManualForm
+                        v-model:title="title"
+                        v-model:publisher="publisher"
+                        v-model:cover-url="coverUrl"
+                        :steam-app-id="steamAppId"
+                        :igdb-id="igdbId"
+                        :duplicate="duplicate"
+                        @submit="submit"
+                    />
                 </div>
             </main>
         </div>
