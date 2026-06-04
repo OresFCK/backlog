@@ -27,21 +27,41 @@ class GameDetailsService
 
         return [
             'id' => $gameId,
+            'custom_game_id' => $customGame->id,
             'appid' => null,
+
             'title' => $customGame->title,
             'publisher' => $customGame->publisher,
+            'developer' => $customGame->developer,
+
             'cover_url' => $customGame->cover_url,
-            'header_image' => $customGame->cover_url,
-            'description' => null,
-            'about' => null,
-            'developers' => [],
+            'header_image' => $customGame->header_image_url ?: $customGame->cover_url,
+            'header_image_url' => $customGame->header_image_url,
+
+            'description' => $customGame->description,
+            'about' => $customGame->description,
+
+            'developers' => $customGame->developer ? [$customGame->developer] : [],
             'publishers' => $customGame->publisher ? [$customGame->publisher] : [],
+
             'genres' => [],
             'screenshots' => [],
             'platforms' => [],
-            'release_date' => null,
+
+            'release_date' => $customGame->release_date?->format('Y-m-d'),
+
             'steam_url' => null,
+            'igdb_id' => $customGame->igdb_id,
+            'igdb_slug' => $customGame->igdb_slug,
+            'igdb_url' => $customGame->igdb_url,
+
+            'playtime_hours' => null,
+            'achievements_unlocked' => null,
+            'achievements_total' => null,
+
             'is_custom' => true,
+            'source' => $customGame->source ?? 'manual',
+
             ...$this->meta->metaPayload($meta),
         ];
     }
@@ -64,23 +84,33 @@ class GameDetailsService
             'appid' => $gameId,
             'title' => $details['name'] ?? 'Unknown game',
             'publisher' => $details['publishers'][0] ?? null,
+            'developer' => $details['developers'][0] ?? null,
+
             'cover_url' => $details['capsule_imagev5']
                 ?? $details['header_image']
                 ?? $this->steamCoverUrl($gameId),
+
             'header_image' => $details['header_image'] ?? null,
             'description' => strip_tags($details['short_description'] ?? ''),
             'about' => strip_tags($details['about_the_game'] ?? ''),
+
             'developers' => $details['developers'] ?? [],
             'publishers' => $details['publishers'] ?? [],
             'genres' => $this->genreNames($details),
             'screenshots' => $this->screenshotUrls($details),
             'platforms' => $details['platforms'] ?? [],
+
             'release_date' => $details['release_date']['date'] ?? null,
             'steam_url' => "https://store.steampowered.com/app/{$gameId}",
+            'igdb_url' => null,
+
             'playtime_hours' => $this->playtimeHours($ownedGame),
             'achievements_unlocked' => $achievements['unlocked'] ?? null,
             'achievements_total' => $achievements['total'] ?? null,
+
             'is_custom' => false,
+            'source' => 'steam',
+
             ...$this->meta->metaPayload($meta),
         ];
     }

@@ -107,6 +107,11 @@ Route::middleware('auth')->group(function () {
         StoreCustomGameRequest $request
     ) => Payload::storeCustomGame($request))->name('games.store');
 
+    Route::patch('/custom-games/{customGame}', [
+        \App\Http\Controllers\CustomGameController::class,
+        'update',
+    ])->name('custom-games.update');
+
     Route::post('/statuses', fn (
         StoreCustomStatusRequest $request
     ) => Payload::storeStatus($request))->name('statuses.store');

@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Helpers\GameTitleNormalizer;
 use App\Http\Requests\StoreCustomGameRequest;
 use App\Models\CustomGame;
 use App\Models\User;
 use App\Models\UserGameMeta;
-use App\Helpers\GameTitleNormalizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -88,10 +88,16 @@ class GameLibraryService
                     'id' => $gameId,
                     'appid' => null,
                     'igdb_id' => $game->igdb_id,
+                    'igdb_slug' => $game->igdb_slug,
+                    'igdb_url' => $game->igdb_url,
                     'name' => $game->title,
                     'title' => $game->title,
                     'publisher' => $game->publisher,
+                    'developer' => $game->developer,
+                    'description' => $game->description,
+                    'release_date' => $game->release_date?->format('Y-m-d'),
                     'cover_url' => $game->cover_url,
+                    'header_image_url' => $game->header_image_url,
                     'playtime_forever' => 0,
                     'is_custom' => true,
                     'source' => $game->source ?? 'manual',
@@ -159,22 +165,38 @@ class GameLibraryService
             })
             ->first();
 
+        $payload = [
+            'igdb_id' => $validated['igdb_id'] ?? null,
+            'igdb_slug' => $validated['igdb_slug'] ?? null,
+            'igdb_url' => $validated['igdb_url'] ?? null,
+            'title' => $validated['title'],
+            'normalized_title' => $normalizedTitle,
+            'publisher' => $validated['publisher'] ?? null,
+            'developer' => $validated['developer'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'release_date' => $validated['release_date'] ?? null,
+            'cover_url' => $validated['cover_url'] ?? null,
+            'header_image_url' => $validated['header_image_url'] ?? null,
+            'source' => $validated['source'] ?? 'manual',
+        ];
+
         if (! $existingGame) {
             $existingGame = CustomGame::create([
                 'user_id' => Auth::id(),
-                'igdb_id' => $validated['igdb_id'] ?? null,
-                'title' => $validated['title'],
-                'normalized_title' => $normalizedTitle,
-                'publisher' => $validated['publisher'] ?? null,
-                'cover_url' => $validated['cover_url'] ?? null,
-                'source' => $validated['source'] ?? 'manual',
+                ...$payload,
             ]);
         } else {
             $existingGame->fill([
-                'igdb_id' => $existingGame->igdb_id ?? ($validated['igdb_id'] ?? null),
-                'publisher' => $existingGame->publisher ?? ($validated['publisher'] ?? null),
-                'cover_url' => $existingGame->cover_url ?? ($validated['cover_url'] ?? null),
-                'source' => $existingGame->source ?? ($validated['source'] ?? 'manual'),
+                'igdb_id' => $existingGame->igdb_id ?? $payload['igdb_id'],
+                'igdb_slug' => $existingGame->igdb_slug ?? $payload['igdb_slug'],
+                'igdb_url' => $existingGame->igdb_url ?? $payload['igdb_url'],
+                'publisher' => $existingGame->publisher ?? $payload['publisher'],
+                'developer' => $existingGame->developer ?? $payload['developer'],
+                'description' => $existingGame->description ?? $payload['description'],
+                'release_date' => $existingGame->release_date ?? $payload['release_date'],
+                'cover_url' => $existingGame->cover_url ?? $payload['cover_url'],
+                'header_image_url' => $existingGame->header_image_url ?? $payload['header_image_url'],
+                'source' => $existingGame->source ?? $payload['source'],
             ])->save();
         }
 

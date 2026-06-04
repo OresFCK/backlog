@@ -12,6 +12,7 @@ import GameStats from '@/components/games/GameStats.vue'
 import GameGallery from '@/components/games/GameGallery.vue'
 import GameInfoSidebar from '@/components/games/GameInfoSidebar.vue'
 import PublicReviewModal from '@/components/games/PublicReviewModal.vue'
+import CustomGameDetailsEditor from '@/components/games/CustomGameDetailsEditor.vue'
 
 const props = defineProps({
     user: {
@@ -128,6 +129,11 @@ const toggleNotRecommended = () => {
                                         @toggle-not-recommended="toggleNotRecommended"
                                     />
                                 </div>
+
+                                <CustomGameDetailsEditor
+    v-if="game.is_custom"
+    :game="game"
+/>
 
                                 <GameStats :game="game" />
                             </div>

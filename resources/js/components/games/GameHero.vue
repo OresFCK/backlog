@@ -39,7 +39,7 @@ defineEmits(['create-review'])
                 </p>
             </div>
 
-            <div class="mt-8">
+            <div class="mt-8 flex flex-wrap gap-3">
                 <button
                     type="button"
                     class="rounded-xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
@@ -47,6 +47,26 @@ defineEmits(['create-review'])
                 >
                     Create public review
                 </button>
+
+                <a
+                    v-if="game.igdb_url"
+                    :href="game.igdb_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="rounded-xl border border-zinc-700 bg-zinc-950/80 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-900"
+                >
+                    Check on IGDB
+                </a>
+
+                <a
+                    v-if="game.steam_url"
+                    :href="game.steam_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="rounded-xl border border-zinc-700 bg-zinc-950/80 px-5 py-3 text-sm font-bold text-white transition hover:bg-zinc-900"
+                >
+                    Open on Steam
+                </a>
             </div>
         </div>
     </div>
