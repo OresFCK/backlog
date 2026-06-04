@@ -11,17 +11,50 @@ const props = defineProps({
 
 const isOpen = ref(false)
 
+const platforms = [
+    'Steam',
+    'Epic Games',
+    'GOG',
+    'Battle.net',
+    'Ubisoft Connect',
+    'EA App',
+    'Xbox Series X/S',
+    'Xbox One',
+    'Xbox 360',
+    'PlayStation 5',
+    'PlayStation 4',
+    'PlayStation 3',
+    'Nintendo Switch',
+    'Nintendo Switch 2',
+    'Nintendo Wii U',
+    'Nintendo Wii',
+    'Nintendo 3DS',
+    'Nintendo DS',
+    'Game Boy Advance',
+    'PS Vita',
+    'PSP',
+    'Android',
+    'iOS',
+    'Browser',
+    'Arcade',
+    'Physical',
+    'Other',
+]
+
 const form = ref({
     title: props.game.title ?? '',
     publisher: props.game.publisher ?? '',
     developer: props.game.developer ?? '',
+    platform: props.game.platform ?? '',
     description: props.game.description ?? '',
     release_date: props.game.release_date ?? '',
-    playtime_hours: props.game.playtime_hours ?? '',
     cover_url: props.game.cover_url ?? '',
-    header_image_url: props.game.header_image_url ?? props.game.header_image ?? '',
+    header_image_url:
+        props.game.header_image_url ??
+        props.game.header_image ??
+        '',
     igdb_url: props.game.igdb_url ?? '',
-    platform: props.game.platform ?? '',
+    playtime_hours: props.game.playtime_hours ?? '',
 })
 
 const save = () => {
@@ -101,28 +134,12 @@ const save = () => {
 
                 <div>
                     <label class="mb-2 block text-sm font-medium text-zinc-300">
-                        Playtime hours
-                    </label>
-
-                    <input
-                        v-model="form.playtime_hours"
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        placeholder="e.g. 12.5"
-                        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
-                    />
-                </div>
-
-                <div>
-                    <label class="mb-2 block text-sm font-medium text-zinc-300">
                         Developer
                     </label>
 
                     <input
                         v-model="form.developer"
-                        placeholder="e.g. Game Freak"
-                        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
+                        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     />
                 </div>
 
@@ -133,33 +150,31 @@ const save = () => {
 
                     <input
                         v-model="form.publisher"
-                        placeholder="e.g. Nintendo"
-                        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
+                        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     />
                 </div>
 
-                <div>
+                <div class="md:col-span-2">
                     <label class="mb-2 block text-sm font-medium text-zinc-300">
                         Platform
                     </label>
 
-                    <input
+                    <select
                         v-model="form.platform"
-                        placeholder="e.g. Nintendo Switch"
-                        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
-                    />
-                </div>
+                        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
+                    >
+                        <option value="">
+                            Select platform
+                        </option>
 
-                <div>
-                    <label class="mb-2 block text-sm font-medium text-zinc-300">
-                        IGDB URL
-                    </label>
-
-                    <input
-                        v-model="form.igdb_url"
-                        placeholder="https://www.igdb.com/games/..."
-                        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
-                    />
+                        <option
+                            v-for="platform in platforms"
+                            :key="platform"
+                            :value="platform"
+                        >
+                            {{ platform }}
+                        </option>
+                    </select>
                 </div>
 
                 <div class="md:col-span-2">
@@ -180,6 +195,17 @@ const save = () => {
 
                     <input
                         v-model="form.header_image_url"
+                        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
+                    />
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="mb-2 block text-sm font-medium text-zinc-300">
+                        IGDB URL
+                    </label>
+
+                    <input
+                        v-model="form.igdb_url"
                         class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     />
                 </div>
