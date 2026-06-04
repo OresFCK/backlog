@@ -28,6 +28,38 @@ defineProps({
 })
 
 const activeTab = ref('shop')
+
+const igdbDump = ref(null)
+const igdbLoading = ref(false)
+
+const fetchIgdbDump = async () => {
+    igdbLoading.value = true
+
+    try {
+        const response = await fetch('/admin/igdb/dumps/games', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    ?.getAttribute('content'),
+            },
+        })
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`)
+        }
+
+        igdbDump.value = await response.json()
+
+        console.log('IGDB dump', igdbDump.value)
+    } catch (error) {
+        console.error(error)
+        alert('Błąd pobierania dumpa IGDB')
+    } finally {
+        igdbLoading.value = false
+    }
+}
 </script>
 
 <template>
@@ -99,6 +131,33 @@ const activeTab = ref('shop')
                         >
                             Reports
                         </button>
+
+                        <button
+                            type="button"
+                            class="rounded-2xl bg-indigo-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-400"
+                            @click="fetchIgdbDump"
+                        >
+                            {{
+                                igdbLoading
+                                    ? 'Pobieranie...'
+                                    : 'Pobierz strukturę IGDB games CSV'
+                            }}
+                        </button>
+                    </div>
+
+                    <div
+                        v-if="igdbDump"
+                        class="mt-6 overflow-hidden rounded-2xl border border-zinc-800 bg-black"
+                    >
+                        <div class="border-b border-zinc-800 px-4 py-3">
+                            <h3 class="font-bold text-white">
+                                IGDB Games Dump
+                            </h3>
+                        </div>
+
+                        <pre
+                            class="max-h-[500px] overflow-auto p-4 text-xs text-green-400"
+                        >{{ JSON.stringify(igdbDump, null, 2) }}</pre>
                     </div>
                 </section>
 

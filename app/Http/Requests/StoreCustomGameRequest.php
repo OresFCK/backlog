@@ -14,22 +14,21 @@ class StoreCustomGameRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => [
-                'required',
-                'string',
-                'max:255',
-            ],
+            'title' => ['required', 'string', 'max:255'],
 
-            'publisher' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
+            'igdb_id' => ['nullable', 'integer'],
+
+            'publisher' => ['nullable', 'string', 'max:255'],
 
             'cover_url' => [
                 'nullable',
                 'string',
                 'max:2000',
+            ],
+
+            'source' => [
+                'nullable',
+                'in:manual,igdb',
             ],
         ];
     }

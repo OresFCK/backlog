@@ -20,46 +20,75 @@ const props = defineProps({
 const title = ref('')
 const publisher = ref('')
 const coverUrl = ref('')
-const results = ref([])
-const loading = ref(false)
+const headerImageUrl = ref('')
+const steamAppId = ref(null)
+const igdbId = ref(null)
+const source = ref('manual')
+
+const steamResults = ref([])
+const loadingSteam = ref(false)
+
+const normalizeTitle = (value) => {
+    return String(value || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\b(the|game|edition|standard|deluxe|ultimate)\b/g, '')
+        .trim()
+        .replace(/\s+/g, ' ')
+}
 
 const duplicate = computed(() => {
+    const current = normalizeTitle(title.value)
+
+    if (!current) {
+        return false
+    }
+
     return props.games.some((game) => {
         const existingTitle = game.name ?? game.title ?? ''
 
-        return (
-            existingTitle.toLowerCase().trim() ===
-            title.value.toLowerCase().trim()
-        )
+        return normalizeTitle(existingTitle) === current
     })
 })
 
-let timeout = null
+let steamTimeout = null
 
 watch(title, (value) => {
-    clearTimeout(timeout)
+    clearTimeout(steamTimeout)
+
+    steamAppId.value = null
+    igdbId.value = null
+    source.value = 'manual'
 
     if (!value || value.length < 2) {
-        results.value = []
+        steamResults.value = []
         return
     }
 
-    timeout = setTimeout(async () => {
-        loading.value = true
+    steamTimeout = setTimeout(async () => {
+        loadingSteam.value = true
 
-        const response = await fetch(
-            `/steam/search?q=${encodeURIComponent(value)}`
-        )
+        try {
+            const response = await fetch(
+                `/steam/search?q=${encodeURIComponent(value)}`
+            )
 
-        results.value = await response.json()
-
-        loading.value = false
+            steamResults.value = await response.json()
+        } finally {
+            loadingSteam.value = false
+        }
     }, 350)
 })
 
-function selectGame(game) {
+function selectSteamGame(game) {
     title.value = game.title
     coverUrl.value = game.cover_url
+    headerImageUrl.value = game.header_image_url ?? game.cover_url
+    steamAppId.value = game.appid
+    igdbId.value = null
+    source.value = 'steam'
 }
 
 function submit() {
@@ -72,6 +101,10 @@ function submit() {
         title: title.value,
         publisher: publisher.value,
         cover_url: coverUrl.value,
+        header_image_url: headerImageUrl.value,
+        steam_app_id: steamAppId.value,
+        igdb_id: igdbId.value,
+        source: source.value,
     })
 }
 </script>
@@ -90,7 +123,7 @@ function submit() {
                     </h1>
 
                     <p class="mt-2 text-zinc-400">
-                        Search Steam first to avoid adding duplicates.
+                        Search Steam first. If the game is not there, add it manually.
                     </p>
                 </div>
 
@@ -104,7 +137,7 @@ function submit() {
                             <input
                                 v-model="title"
                                 type="text"
-                                placeholder="e.g. Hades"
+                                placeholder="e.g. Pokémon Shield"
                                 class="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
                             />
 
@@ -117,7 +150,7 @@ function submit() {
                         </div>
 
                         <div
-                            v-if="results.length"
+                            v-if="steamResults.length"
                             class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-5"
                         >
                             <h2 class="mb-4 text-lg font-bold text-white">
@@ -126,11 +159,11 @@ function submit() {
 
                             <div class="space-y-3">
                                 <button
-                                    v-for="game in results"
+                                    v-for="game in steamResults"
                                     :key="game.appid"
                                     type="button"
                                     class="flex w-full items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-left transition hover:border-zinc-600"
-                                    @click="selectGame(game)"
+                                    @click="selectSteamGame(game)"
                                 >
                                     <img
                                         :src="game.cover_url"
@@ -152,7 +185,7 @@ function submit() {
                         </div>
 
                         <p
-                            v-if="loading"
+                            v-if="loadingSteam"
                             class="text-sm text-zinc-500"
                         >
                             Searching Steam...
@@ -185,7 +218,7 @@ function submit() {
                                 <input
                                     v-model="publisher"
                                     type="text"
-                                    placeholder="e.g. Valve"
+                                    placeholder="e.g. Nintendo"
                                     class="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
                                 />
                             </div>
@@ -207,6 +240,13 @@ function submit() {
                                 :src="coverUrl"
                                 class="h-48 w-full rounded-2xl object-cover"
                             />
+
+                            <div
+                                v-if="steamAppId"
+                                class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300"
+                            >
+                                Selected Steam game: {{ steamAppId }}
+                            </div>
 
                             <button
                                 type="button"

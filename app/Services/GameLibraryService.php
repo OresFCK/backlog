@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCustomGameRequest;
 use App\Models\CustomGame;
 use App\Models\User;
 use App\Models\UserGameMeta;
+use App\Helpers\GameTitleNormalizer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -61,6 +62,7 @@ class GameLibraryService
                     'title' => $game['name'] ?? null,
                     'cover_url' => $this->steamCoverUrl($gameId),
                     'is_custom' => false,
+                    'source' => 'steam',
                     ...$this->existingMetaForUser($user, $gameId),
                 ];
             })
@@ -85,12 +87,14 @@ class GameLibraryService
                 return [
                     'id' => $gameId,
                     'appid' => null,
+                    'igdb_id' => $game->igdb_id,
                     'name' => $game->title,
                     'title' => $game->title,
                     'publisher' => $game->publisher,
                     'cover_url' => $game->cover_url,
                     'playtime_forever' => 0,
                     'is_custom' => true,
+                    'source' => $game->source ?? 'manual',
                     ...$this->existingMetaForUser($user, $gameId),
                 ];
             })
@@ -140,14 +144,39 @@ class GameLibraryService
 
     public function storeCustomGame(StoreCustomGameRequest $request): RedirectResponse
     {
-        CustomGame::create([
-            'user_id' => Auth::id(),
-            ...$request->safe()->only([
-                'title',
-                'publisher',
-                'cover_url',
-            ]),
-        ]);
+        $validated = $request->validated();
+
+        $normalizedTitle = GameTitleNormalizer::normalize($validated['title']);
+
+        $existingGame = CustomGame::query()
+            ->where('user_id', Auth::id())
+            ->where(function ($query) use ($validated, $normalizedTitle) {
+                $query->where('normalized_title', $normalizedTitle);
+
+                if (! empty($validated['igdb_id'])) {
+                    $query->orWhere('igdb_id', $validated['igdb_id']);
+                }
+            })
+            ->first();
+
+        if (! $existingGame) {
+            $existingGame = CustomGame::create([
+                'user_id' => Auth::id(),
+                'igdb_id' => $validated['igdb_id'] ?? null,
+                'title' => $validated['title'],
+                'normalized_title' => $normalizedTitle,
+                'publisher' => $validated['publisher'] ?? null,
+                'cover_url' => $validated['cover_url'] ?? null,
+                'source' => $validated['source'] ?? 'manual',
+            ]);
+        } else {
+            $existingGame->fill([
+                'igdb_id' => $existingGame->igdb_id ?? ($validated['igdb_id'] ?? null),
+                'publisher' => $existingGame->publisher ?? ($validated['publisher'] ?? null),
+                'cover_url' => $existingGame->cover_url ?? ($validated['cover_url'] ?? null),
+                'source' => $existingGame->source ?? ($validated['source'] ?? 'manual'),
+            ])->save();
+        }
 
         return redirect()->route('dashboard');
     }
