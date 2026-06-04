@@ -18,34 +18,31 @@ class IgdbGameSearchController extends Controller
 
         $normalizedQuery = $this->normalize($query);
 
+        $lowerQuery = mb_strtolower($query);
+        $lowerNormalizedQuery = mb_strtolower($normalizedQuery);
+
         $games = Game::query()
             ->where('source', 'igdb')
-            ->where(function ($builder) use ($query, $normalizedQuery) {
+            ->where(function ($builder) use ($lowerQuery, $lowerNormalizedQuery) {
                 $builder
-                    ->where('title', 'ilike', "%{$query}%")
-                    ->orWhere(
-                        'normalized_title',
-                        'ilike',
-                        "%{$normalizedQuery}%"
-                    );
+                    ->whereRaw('LOWER(title) LIKE ?', ['%' . $lowerQuery . '%'])
+                    ->orWhereRaw('LOWER(normalized_title) LIKE ?', ['%' . $lowerNormalizedQuery . '%']);
             })
             ->orderByRaw('igdb_cover_url IS NULL')
             ->orderByRaw("
                 CASE
-                    WHEN lower(title) = lower(?) THEN 0
-                    WHEN lower(title) LIKE lower(?) THEN 1
+                    WHEN LOWER(title) = LOWER(?) THEN 0
+                    WHEN LOWER(title) LIKE LOWER(?) THEN 1
                     ELSE 2
                 END
-            ", [
-                $query,
-                "{$query}%"
-            ])
+            ", [$query, "{$query}%"])
             ->limit(15)
             ->get([
                 'id',
                 'igdb_id',
                 'title',
                 'slug',
+                'summary',
                 'igdb_cover_url',
                 'release_date',
             ])
@@ -54,7 +51,12 @@ class IgdbGameSearchController extends Controller
                 'igdb_id' => $game->igdb_id,
                 'title' => $game->title,
                 'slug' => $game->slug,
+                'description' => $game->summary,
+                'igdb_url' => $game->slug
+                    ? 'https://www.igdb.com/games/' . $game->slug
+                    : null,
                 'cover_url' => $game->igdb_cover_url,
+                'header_image_url' => $game->igdb_cover_url,
                 'release_date' => $game->release_date?->format('Y-m-d'),
             ])
             ->values();
@@ -68,10 +70,7 @@ class IgdbGameSearchController extends Controller
             ->lower()
             ->ascii()
             ->replaceMatches('/[^a-z0-9]+/', ' ')
-            ->replaceMatches(
-                '/\b(the|game|edition|standard|deluxe|ultimate|complete)\b/',
-                ''
-            )
+            ->replaceMatches('/\b(the|game|edition|standard|deluxe|ultimate|complete)\b/', '')
             ->squish()
             ->toString();
     }
