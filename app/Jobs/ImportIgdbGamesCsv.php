@@ -22,14 +22,15 @@ class ImportIgdbGamesCsv implements ShouldQueue
         $handle = fopen($dump['s3_url'], 'r');
 
         if (! $handle) {
-            throw new \RuntimeException('Unable to open IGDB CSV stream.');
+            throw new \RuntimeException('Unable to open IGDB games CSV stream.');
         }
 
         $headers = fgetcsv($handle);
 
         if (! $headers) {
             fclose($handle);
-            throw new \RuntimeException('Invalid CSV headers.');
+
+            throw new \RuntimeException('Invalid IGDB games CSV headers.');
         }
 
         $batch = [];
@@ -54,9 +55,15 @@ class ImportIgdbGamesCsv implements ShouldQueue
                 'slug' => $data['slug'] ?? null,
                 'summary' => $data['summary'] ?? null,
                 'source' => 'igdb',
+
+                'igdb_cover_id' => ! empty($data['cover'])
+                    ? (int) $data['cover']
+                    : null,
+
                 'release_date' => ! empty($data['first_release_date'])
                     ? date('Y-m-d', (int) $data['first_release_date'])
                     : null,
+
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -88,8 +95,9 @@ class ImportIgdbGamesCsv implements ShouldQueue
                 'normalized_title',
                 'slug',
                 'summary',
-                'release_date',
                 'source',
+                'igdb_cover_id',
+                'release_date',
                 'updated_at',
             ]
         );

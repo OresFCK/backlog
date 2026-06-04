@@ -319,6 +319,11 @@ Route::middleware(['auth', 'admin'])
         ])->name('igdb.dumps.show');
         
         Route::post('/igdb/games/import', [IgdbDumpController::class, 'importGames']);
+
+        Route::post('/igdb/sync', [
+            \App\Http\Controllers\IgdbDumpController::class,
+        'syncCatalog',
+    ]);
     });
 
 Route::get('/igdb/search', [IgdbGameSearchController::class, 'index'])

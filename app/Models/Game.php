@@ -17,6 +17,11 @@ class Game extends Model
         'slug',
         'summary',
         'source',
+
+        'igdb_cover_id',
+        'igdb_cover_image_id',
+        'igdb_cover_url',
+
         'cover_url',
         'header_image_url',
         'release_date',

@@ -29,14 +29,13 @@ defineProps({
 
 const activeTab = ref('shop')
 
-const igdbDump = ref(null)
 const igdbLoading = ref(false)
 
-const fetchIgdbDump = async () => {
+const syncIgdb = async () => {
     igdbLoading.value = true
 
     try {
-        const response = await fetch('/admin/igdb/dumps/games', {
+        const response = await fetch('/admin/igdb/sync', {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -46,16 +45,13 @@ const fetchIgdbDump = async () => {
             },
         })
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`)
-        }
+        const data = await response.json()
 
-        igdbDump.value = await response.json()
-
-        console.log('IGDB dump', igdbDump.value)
+        alert(data.message)
     } catch (error) {
         console.error(error)
-        alert('Błąd pobierania dumpa IGDB')
+
+        alert('Failed to start IGDB sync.')
     } finally {
         igdbLoading.value = false
     }
@@ -135,30 +131,16 @@ const fetchIgdbDump = async () => {
                         <button
                             type="button"
                             class="rounded-2xl bg-indigo-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-400"
-                            @click="fetchIgdbDump"
+                            @click="syncIgdb"
                         >
                             {{
                                 igdbLoading
-                                    ? 'Pobieranie...'
-                                    : 'Pobierz strukturę IGDB games CSV'
+                                    ? 'Synchronizacja...'
+                                    : 'Aktualizuj katalog IGDB'
                             }}
                         </button>
                     </div>
 
-                    <div
-                        v-if="igdbDump"
-                        class="mt-6 overflow-hidden rounded-2xl border border-zinc-800 bg-black"
-                    >
-                        <div class="border-b border-zinc-800 px-4 py-3">
-                            <h3 class="font-bold text-white">
-                                IGDB Games Dump
-                            </h3>
-                        </div>
-
-                        <pre
-                            class="max-h-[500px] overflow-auto p-4 text-xs text-green-400"
-                        >{{ JSON.stringify(igdbDump, null, 2) }}</pre>
-                    </div>
                 </section>
 
                 <ShopItemsManager
