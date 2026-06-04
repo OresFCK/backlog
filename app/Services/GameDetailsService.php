@@ -56,6 +56,7 @@ class GameDetailsService
             'igdb_id' => $customGame->igdb_id,
             'igdb_slug' => $customGame->igdb_slug,
             'igdb_url' => $customGame->igdb_url,
+            'platform' => $customGame->platform,
 
             'playtime_hours' => $customGame->playtime_minutes !== null
                 ? round($customGame->playtime_minutes / 60, 1)

@@ -21,6 +21,7 @@ use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
 use App\Http\Controllers\IgdbDumpController;
 use App\Http\Controllers\IgdbGameSearchController;
+use App\Http\Controllers\StatsController;
 use App\Models\User;
 use App\Services\SteamService;
 use Illuminate\Support\Facades\Route;
@@ -266,6 +267,9 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/challenges/{challenge}/submit', [ChallengeController::class, 'submit'])
         ->name('challenges.submit');
+        
+    Route::get('/stats', [StatsController::class, 'index'])
+        ->name('stats.index');
 });
 
 Route::middleware(['auth', 'admin'])

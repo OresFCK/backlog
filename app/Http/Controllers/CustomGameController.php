@@ -22,6 +22,7 @@ class CustomGameController extends Controller
             'header_image_url' => ['nullable', 'string', 'max:2000'],
             'igdb_url' => ['nullable', 'string', 'max:2000'],
             'playtime_hours' => ['nullable', 'numeric', 'min:0', 'max:100000'],
+            'platform' => ['nullable', 'string', 'max:255'],
         ]);
 
         if (array_key_exists('playtime_hours', $validated)) {

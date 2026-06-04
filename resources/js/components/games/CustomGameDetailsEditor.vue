@@ -21,6 +21,7 @@ const form = ref({
     cover_url: props.game.cover_url ?? '',
     header_image_url: props.game.header_image_url ?? props.game.header_image ?? '',
     igdb_url: props.game.igdb_url ?? '',
+    platform: props.game.platform ?? '',
 })
 
 const save = () => {
@@ -133,6 +134,18 @@ const save = () => {
                     <input
                         v-model="form.publisher"
                         placeholder="e.g. Nintendo"
+                        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
+                    />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-zinc-300">
+                        Platform
+                    </label>
+
+                    <input
+                        v-model="form.platform"
+                        placeholder="e.g. Nintendo Switch"
                         class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
                     />
                 </div>

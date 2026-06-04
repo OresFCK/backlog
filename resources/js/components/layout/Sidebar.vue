@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import {
     Link,
@@ -21,29 +21,50 @@ import {
     Trophy,
     MessageSquareText,
     ShoppingBag,
-    Shirt
+    Shirt,
+    BarChart3,
 } from 'lucide-vue-next'
 
 const page = usePage()
 
-const isCollectionOpen = ref(
-    ['/backlog', '/playing', '/finished', '/dropped']
-        .some(route => page.url.startsWith(route))
-)
+const initialSection = computed(() => {
+    if (
+        ['/backlog', '/playing', '/finished', '/dropped', '/stats']
+            .some(route => page.url.startsWith(route))
+    ) {
+        return 'collection'
+    }
 
-const isCommunityOpen = ref(
-    ['/reviews', '/challenges', '/people']
-        .some(route => page.url.startsWith(route))
-)
+    if (
+        ['/reviews', '/challenges', '/people']
+            .some(route => page.url.startsWith(route))
+    ) {
+        return 'community'
+    }
 
-const isToolsOpen = ref(
-    ['/games/create', '/shop', '/wardrobe']
-        .some(route => page.url.startsWith(route))
-)
+    if (
+        ['/games/create', '/shop', '/wardrobe']
+            .some(route => page.url.startsWith(route))
+    ) {
+        return 'tools'
+    }
 
-const isSettingsOpen = ref(
-    page.url.startsWith('/settings')
-)
+    if (page.url.startsWith('/settings')) {
+        return 'settings'
+    }
+
+    return null
+})
+
+const activeSection = ref(initialSection.value)
+
+const toggleSection = (section) => {
+    activeSection.value = activeSection.value === section
+        ? null
+        : section
+}
+
+const isSectionOpen = (section) => activeSection.value === section
 
 const navItemClass = (href) =>
     page.url.startsWith(href)
@@ -87,6 +108,11 @@ const collectionItems = [
         href: '/dropped',
         icon: Ban,
     },
+    {
+        label: 'Stats',
+        href: '/stats',
+        icon: BarChart3,
+    },
 ]
 
 const communityItems = [
@@ -104,7 +130,7 @@ const communityItems = [
         label: 'People',
         href: '/people',
         icon: Users,
-    }
+    },
 ]
 
 const toolItems = [
@@ -122,7 +148,7 @@ const toolItems = [
         label: 'Wardrobe',
         href: '/wardrobe',
         icon: Shirt,
-    }
+    },
 ]
 
 const settingsItems = [
@@ -135,12 +161,8 @@ const settingsItems = [
 </script>
 
 <template>
-    <aside
-        class="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-zinc-800 bg-zinc-950"
-    >
-        <div
-            class="flex h-[89px] flex-col justify-center border-b border-zinc-800 px-6"
-        >
+    <aside class="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-zinc-800 bg-zinc-950">
+        <div class="flex h-[89px] flex-col justify-center border-b border-zinc-800 px-6">
             <h1 class="text-2xl font-bold tracking-tight text-white">
                 Curator.gg
             </h1>
@@ -151,8 +173,6 @@ const settingsItems = [
         </div>
 
         <nav class="flex-1 overflow-y-auto px-4 py-5">
-            <!-- Main -->
-
             <div class="space-y-2">
                 <Link
                     v-for="item in mainItems"
@@ -170,19 +190,17 @@ const settingsItems = [
                 </Link>
             </div>
 
-            <!-- Collection -->
-
             <div class="mt-8">
                 <button
                     type="button"
                     :class="sectionButtonClass"
-                    @click="isCollectionOpen = !isCollectionOpen"
+                    @click="toggleSection('collection')"
                 >
                     <span>Collection</span>
 
                     <ChevronDown
                         class="h-4 w-4 transition-transform duration-200"
-                        :class="isCollectionOpen ? 'rotate-180' : ''"
+                        :class="isSectionOpen('collection') ? 'rotate-180' : ''"
                     />
                 </button>
 
@@ -195,7 +213,7 @@ const settingsItems = [
                     leave-to-class="opacity-0 -translate-y-1"
                 >
                     <div
-                        v-if="isCollectionOpen"
+                        v-if="isSectionOpen('collection')"
                         class="space-y-2 border-l border-zinc-800 pl-3"
                     >
                         <Link
@@ -216,19 +234,17 @@ const settingsItems = [
                 </Transition>
             </div>
 
-            <!-- Community -->
-
             <div class="mt-8">
                 <button
                     type="button"
                     :class="sectionButtonClass"
-                    @click="isCommunityOpen = !isCommunityOpen"
+                    @click="toggleSection('community')"
                 >
                     <span>Community</span>
 
                     <ChevronDown
                         class="h-4 w-4 transition-transform duration-200"
-                        :class="isCommunityOpen ? 'rotate-180' : ''"
+                        :class="isSectionOpen('community') ? 'rotate-180' : ''"
                     />
                 </button>
 
@@ -241,7 +257,7 @@ const settingsItems = [
                     leave-to-class="opacity-0 -translate-y-1"
                 >
                     <div
-                        v-if="isCommunityOpen"
+                        v-if="isSectionOpen('community')"
                         class="space-y-2 border-l border-zinc-800 pl-3"
                     >
                         <Link
@@ -262,19 +278,17 @@ const settingsItems = [
                 </Transition>
             </div>
 
-            <!-- Tools -->
-
             <div class="mt-8">
                 <button
                     type="button"
                     :class="sectionButtonClass"
-                    @click="isToolsOpen = !isToolsOpen"
+                    @click="toggleSection('tools')"
                 >
                     <span>Tools</span>
 
                     <ChevronDown
                         class="h-4 w-4 transition-transform duration-200"
-                        :class="isToolsOpen ? 'rotate-180' : ''"
+                        :class="isSectionOpen('tools') ? 'rotate-180' : ''"
                     />
                 </button>
 
@@ -287,7 +301,7 @@ const settingsItems = [
                     leave-to-class="opacity-0 -translate-y-1"
                 >
                     <div
-                        v-if="isToolsOpen"
+                        v-if="isSectionOpen('tools')"
                         class="space-y-2 border-l border-zinc-800 pl-3"
                     >
                         <Link
@@ -308,13 +322,11 @@ const settingsItems = [
                 </Transition>
             </div>
 
-            <!-- Settings -->
-
             <div class="mt-8 pb-6">
                 <button
                     type="button"
                     :class="sectionButtonClass"
-                    @click="isSettingsOpen = !isSettingsOpen"
+                    @click="toggleSection('settings')"
                 >
                     <div class="flex items-center gap-2">
                         <Settings class="h-4 w-4" />
@@ -323,7 +335,7 @@ const settingsItems = [
 
                     <ChevronDown
                         class="h-4 w-4 transition-transform duration-200"
-                        :class="isSettingsOpen ? 'rotate-180' : ''"
+                        :class="isSectionOpen('settings') ? 'rotate-180' : ''"
                     />
                 </button>
 
@@ -336,7 +348,7 @@ const settingsItems = [
                     leave-to-class="opacity-0 -translate-y-1"
                 >
                     <div
-                        v-if="isSettingsOpen"
+                        v-if="isSectionOpen('settings')"
                         class="space-y-2 border-l border-zinc-800 pl-3"
                     >
                         <Link

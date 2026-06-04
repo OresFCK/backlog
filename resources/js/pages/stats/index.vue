@@ -1,0 +1,223 @@
+<script setup>
+import Sidebar from '@/components/layout/Sidebar.vue'
+import Topbar from '@/components/layout/Topbar.vue'
+
+defineProps({
+    user: Object,
+
+    stats: {
+        type: Object,
+        required: true,
+    },
+})
+</script>
+
+<template>
+    <div class="flex min-h-screen bg-zinc-950">
+        <Sidebar />
+
+        <div class="flex flex-1 flex-col">
+            <Topbar :user="user" />
+
+            <main class="flex-1 space-y-8 p-8">
+                <section class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8">
+                    <h1 class="text-3xl font-bold text-white">
+                        Stats
+                    </h1>
+
+                    <p class="mt-2 text-zinc-400">
+                        Your backlog, playtime and completion overview.
+                    </p>
+                </section>
+
+                <section class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                    <div class="rounded-3xl border border-zinc-800 bg-black p-6">
+                        <p class="text-sm font-bold uppercase tracking-wide text-zinc-500">
+                            Total games
+                        </p>
+
+                        <p class="mt-4 text-4xl font-black text-white">
+                            {{ stats.total_games }}
+                        </p>
+                    </div>
+
+                    <div class="rounded-3xl border border-zinc-800 bg-black p-6">
+                        <p class="text-sm font-bold uppercase tracking-wide text-zinc-500">
+                            Played games
+                        </p>
+
+                        <p class="mt-4 text-4xl font-black text-white">
+                            {{ stats.played_games }}
+                        </p>
+                    </div>
+
+                    <div class="rounded-3xl border border-zinc-800 bg-black p-6">
+                        <p class="text-sm font-bold uppercase tracking-wide text-zinc-500">
+                            Total playtime
+                        </p>
+
+                        <p class="mt-4 text-4xl font-black text-white">
+                            {{ stats.total_playtime_hours }}h
+                        </p>
+                    </div>
+
+                    <div class="rounded-3xl border border-zinc-800 bg-black p-6">
+                        <p class="text-sm font-bold uppercase tracking-wide text-zinc-500">
+                            Average playtime
+                        </p>
+
+                        <p class="mt-4 text-4xl font-black text-white">
+                            {{ stats.average_playtime_hours }}h
+                        </p>
+                    </div>
+                </section>
+
+                <section class="grid gap-8 xl:grid-cols-2">
+                    <div class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6">
+                        <h2 class="text-xl font-bold text-white">
+                            Backlog progress
+                        </h2>
+
+                        <div class="mt-6 space-y-5">
+                            <div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-zinc-400">Finished</span>
+                                    <span class="font-bold text-white">
+                                        {{ stats.completion_summary.finished_percent }}%
+                                    </span>
+                                </div>
+
+                                <div class="mt-2 h-3 overflow-hidden rounded-full bg-zinc-800">
+                                    <div
+                                        class="h-full rounded-full bg-emerald-400"
+                                        :style="{ width: `${stats.completion_summary.finished_percent}%` }"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-zinc-400">Playing</span>
+                                    <span class="font-bold text-white">
+                                        {{ stats.completion_summary.playing_percent }}%
+                                    </span>
+                                </div>
+
+                                <div class="mt-2 h-3 overflow-hidden rounded-full bg-zinc-800">
+                                    <div
+                                        class="h-full rounded-full bg-indigo-400"
+                                        :style="{ width: `${stats.completion_summary.playing_percent}%` }"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-zinc-400">Dropped</span>
+                                    <span class="font-bold text-white">
+                                        {{ stats.completion_summary.dropped_percent }}%
+                                    </span>
+                                </div>
+
+                                <div class="mt-2 h-3 overflow-hidden rounded-full bg-zinc-800">
+                                    <div
+                                        class="h-full rounded-full bg-red-400"
+                                        :style="{ width: `${stats.completion_summary.dropped_percent}%` }"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6">
+                        <h2 class="text-xl font-bold text-white">
+                            Status breakdown
+                        </h2>
+
+                        <div class="mt-6 space-y-3">
+                            <div
+                                v-for="item in stats.status_breakdown"
+                                :key="item.status"
+                                class="flex items-center justify-between rounded-2xl border border-zinc-800 bg-black px-4 py-3"
+                            >
+                                <span class="font-medium text-zinc-300">
+                                    {{ item.status }}
+                                </span>
+
+                                <span class="font-black text-white">
+                                    {{ item.count }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="grid gap-8 xl:grid-cols-[1fr_360px]">
+                    <div class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6">
+                        <h2 class="text-xl font-bold text-white">
+                            Top playtime games
+                        </h2>
+
+                        <div class="mt-6 space-y-3">
+                            <div
+                                v-for="game in stats.top_playtime_games"
+                                :key="game.id"
+                                class="flex items-center gap-4 rounded-2xl border border-zinc-800 bg-black p-3"
+                            >
+                                <img
+                                    v-if="game.cover_url"
+                                    :src="game.cover_url"
+                                    :alt="game.title"
+                                    class="h-16 w-28 rounded-xl object-cover"
+                                />
+
+                                <div
+                                    v-else
+                                    class="flex h-16 w-28 items-center justify-center rounded-xl bg-zinc-800 text-xs text-zinc-500"
+                                >
+                                    No cover
+                                </div>
+
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate font-bold text-white">
+                                        {{ game.title }}
+                                    </p>
+
+                                    <p class="text-sm text-zinc-500">
+                                        {{ game.platform }}
+                                    </p>
+                                </div>
+
+                                <p class="text-lg font-black text-white">
+                                    {{ game.playtime_hours }}h
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-6">
+                        <h2 class="text-xl font-bold text-white">
+                            Platforms
+                        </h2>
+
+                        <div class="mt-6 space-y-3">
+                            <div
+                                v-for="item in stats.platform_breakdown"
+                                :key="item.platform"
+                                class="flex items-center justify-between rounded-2xl border border-zinc-800 bg-black px-4 py-3"
+                            >
+                                <span class="font-medium text-zinc-300">
+                                    {{ item.platform }}
+                                </span>
+
+                                <span class="font-black text-white">
+                                    {{ item.count }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+</template>

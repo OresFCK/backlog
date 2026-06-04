@@ -178,6 +178,7 @@ class GameLibraryService
             'cover_url' => $validated['cover_url'] ?? null,
             'header_image_url' => $validated['header_image_url'] ?? null,
             'source' => $validated['source'] ?? 'manual',
+            'platform' => $validated['platform'] ?? null,
         ];
 
         if (! $existingGame) {
@@ -197,6 +198,7 @@ class GameLibraryService
                 'cover_url' => $existingGame->cover_url ?? $payload['cover_url'],
                 'header_image_url' => $existingGame->header_image_url ?? $payload['header_image_url'],
                 'source' => $existingGame->source ?? $payload['source'],
+                'platform' => $existingGame->platform ?? $payload['platform'],
             ])->save();
         }
 

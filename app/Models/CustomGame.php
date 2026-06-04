@@ -23,6 +23,7 @@ class CustomGame extends Model
         'header_image_url',
         'source',
         'playtime_minutes',
+        'platform',
     ];
 
     protected $casts = [
