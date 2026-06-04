@@ -26,7 +26,10 @@ const igdbId = ref(null)
 const source = ref('manual')
 
 const steamResults = ref([])
+const igdbResults = ref([])
+
 const loadingSteam = ref(false)
+const loadingIgdb = ref(false)
 
 const normalizeTitle = (value) => {
     return String(value || '')
@@ -34,7 +37,7 @@ const normalizeTitle = (value) => {
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]+/g, ' ')
-        .replace(/\b(the|game|edition|standard|deluxe|ultimate)\b/g, '')
+        .replace(/\b(the|game|edition|standard|deluxe|ultimate|complete)\b/g, '')
         .trim()
         .replace(/\s+/g, ' ')
 }
@@ -53,10 +56,10 @@ const duplicate = computed(() => {
     })
 })
 
-let steamTimeout = null
+let timeout = null
 
 watch(title, (value) => {
-    clearTimeout(steamTimeout)
+    clearTimeout(timeout)
 
     steamAppId.value = null
     igdbId.value = null
@@ -64,20 +67,30 @@ watch(title, (value) => {
 
     if (!value || value.length < 2) {
         steamResults.value = []
+        igdbResults.value = []
         return
     }
 
-    steamTimeout = setTimeout(async () => {
+    timeout = setTimeout(async () => {
         loadingSteam.value = true
+        loadingIgdb.value = true
 
         try {
-            const response = await fetch(
-                `/steam/search?q=${encodeURIComponent(value)}`
-            )
+            const [steamResponse, igdbResponse] = await Promise.all([
+                fetch(`/steam/search?q=${encodeURIComponent(value)}`),
+                fetch(`/igdb/search?q=${encodeURIComponent(value)}`),
+            ])
 
-            steamResults.value = await response.json()
+            steamResults.value = steamResponse.ok
+                ? await steamResponse.json()
+                : []
+
+            igdbResults.value = igdbResponse.ok
+                ? await igdbResponse.json()
+                : []
         } finally {
             loadingSteam.value = false
+            loadingIgdb.value = false
         }
     }, 350)
 })
@@ -89,6 +102,15 @@ function selectSteamGame(game) {
     steamAppId.value = game.appid
     igdbId.value = null
     source.value = 'steam'
+}
+
+function selectIgdbGame(game) {
+    title.value = game.title
+    coverUrl.value = game.cover_url ?? ''
+    headerImageUrl.value = game.cover_url ?? ''
+    steamAppId.value = null
+    igdbId.value = game.igdb_id
+    source.value = 'igdb'
 }
 
 function submit() {
@@ -123,7 +145,7 @@ function submit() {
                     </h1>
 
                     <p class="mt-2 text-zinc-400">
-                        Search Steam first. If the game is not there, add it manually.
+                        Search Steam first. If the game is not there, use IGDB or add it manually.
                     </p>
                 </div>
 
@@ -184,11 +206,53 @@ function submit() {
                             </div>
                         </div>
 
+                        <div
+                            v-if="igdbResults.length"
+                            class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-5"
+                        >
+                            <h2 class="mb-4 text-lg font-bold text-white">
+                                IGDB matches
+                            </h2>
+
+                            <div class="space-y-3">
+                                <button
+                                    v-for="game in igdbResults"
+                                    :key="game.igdb_id"
+                                    type="button"
+                                    class="flex w-full items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-left transition hover:border-zinc-600"
+                                    @click="selectIgdbGame(game)"
+                                >
+                                    <div
+                                        class="flex h-16 w-28 items-center justify-center rounded-xl bg-zinc-800 text-xs text-zinc-500"
+                                    >
+                                        IGDB
+                                    </div>
+
+                                    <div>
+                                        <p class="font-semibold text-white">
+                                            {{ game.title }}
+                                        </p>
+
+                                        <p class="text-sm text-zinc-500">
+                                            IGDB ID: {{ game.igdb_id }}
+                                        </p>
+
+                                        <p
+                                            v-if="game.release_date"
+                                            class="text-xs text-zinc-600"
+                                        >
+                                            {{ game.release_date }}
+                                        </p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
                         <p
-                            v-if="loadingSteam"
+                            v-if="loadingSteam || loadingIgdb"
                             class="text-sm text-zinc-500"
                         >
-                            Searching Steam...
+                            Searching Steam and IGDB...
                         </p>
                     </section>
 
@@ -246,6 +310,13 @@ function submit() {
                                 class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300"
                             >
                                 Selected Steam game: {{ steamAppId }}
+                            </div>
+
+                            <div
+                                v-if="igdbId"
+                                class="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-3 text-sm text-indigo-300"
+                            >
+                                Selected IGDB game: {{ igdbId }}
                             </div>
 
                             <button

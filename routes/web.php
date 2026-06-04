@@ -20,6 +20,7 @@ use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
 use App\Http\Controllers\IgdbDumpController;
+use App\Http\Controllers\IgdbGameSearchController;
 use App\Models\User;
 use App\Services\SteamService;
 use Illuminate\Support\Facades\Route;
@@ -319,3 +320,6 @@ Route::middleware(['auth', 'admin'])
         
         Route::post('/igdb/games/import', [IgdbDumpController::class, 'importGames']);
     });
+
+Route::get('/igdb/search', [IgdbGameSearchController::class, 'index'])
+    ->name('igdb.search');
