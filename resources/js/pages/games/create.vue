@@ -22,10 +22,18 @@ const props = defineProps({
 
 const title = ref('')
 const publisher = ref('')
+const developer = ref('')
+const description = ref('')
+const releaseDate = ref('')
+
 const coverUrl = ref('')
 const headerImageUrl = ref('')
+
 const steamAppId = ref(null)
 const igdbId = ref(null)
+const igdbSlug = ref(null)
+const igdbUrl = ref(null)
+
 const source = ref('manual')
 
 const steamResults = ref([])
@@ -33,6 +41,8 @@ const igdbResults = ref([])
 
 const loadingSteam = ref(false)
 const loadingIgdb = ref(false)
+
+const selectingResult = ref(false)
 
 const normalizeTitle = (value) => {
     return String(value || '')
@@ -61,14 +71,27 @@ const duplicate = computed(() => {
 
 const loading = computed(() => loadingSteam.value || loadingIgdb.value)
 
+const resetExternalSelection = () => {
+    steamAppId.value = null
+
+    igdbId.value = null
+    igdbSlug.value = null
+    igdbUrl.value = null
+
+    source.value = 'manual'
+}
+
 let timeout = null
 
 watch(title, (value) => {
     clearTimeout(timeout)
 
-    steamAppId.value = null
-    igdbId.value = null
-    source.value = 'manual'
+    if (selectingResult.value) {
+        selectingResult.value = false
+        return
+    }
+
+    resetExternalSelection()
 
     if (!value || value.length < 2) {
         steamResults.value = []
@@ -101,20 +124,46 @@ watch(title, (value) => {
 })
 
 function selectSteamGame(game) {
+    selectingResult.value = true
+
     title.value = game.title
     coverUrl.value = game.cover_url
     headerImageUrl.value = game.header_image_url ?? game.cover_url
+
     steamAppId.value = game.appid
+
     igdbId.value = null
+    igdbSlug.value = null
+    igdbUrl.value = null
+
+    description.value = ''
+    releaseDate.value = ''
+    developer.value = ''
+
     source.value = 'steam'
 }
 
 function selectIgdbGame(game) {
+    selectingResult.value = true
+
     title.value = game.title
-    coverUrl.value = game.igdb_cover_url ?? game.cover_url ?? ''
-    headerImageUrl.value = game.igdb_cover_url ?? game.cover_url ?? ''
+
+    coverUrl.value = game.cover_url ?? ''
+    headerImageUrl.value = game.header_image_url ?? game.cover_url ?? ''
+
     steamAppId.value = null
+
     igdbId.value = game.igdb_id
+    igdbSlug.value = game.slug ?? game.igdb_slug ?? null
+    igdbUrl.value =
+        game.igdb_url ??
+        (igdbSlug.value ? `https://www.igdb.com/games/${igdbSlug.value}` : null)
+
+    description.value = game.description ?? ''
+    releaseDate.value = game.release_date ?? ''
+    developer.value = game.developer ?? ''
+    publisher.value = game.publisher ?? publisher.value
+
     source.value = 'igdb'
 }
 
@@ -126,11 +175,21 @@ function submit() {
 
     router.post('/games', {
         title: title.value,
+
         publisher: publisher.value,
+        developer: developer.value,
+        description: description.value,
+        release_date: releaseDate.value,
+
         cover_url: coverUrl.value,
         header_image_url: headerImageUrl.value,
+
         steam_app_id: steamAppId.value,
+
         igdb_id: igdbId.value,
+        igdb_slug: igdbSlug.value,
+        igdb_url: igdbUrl.value,
+
         source: source.value,
     })
 }

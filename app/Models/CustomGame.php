@@ -22,11 +22,13 @@ class CustomGame extends Model
         'cover_url',
         'header_image_url',
         'source',
+        'playtime_minutes',
     ];
 
     protected $casts = [
         'igdb_id' => 'integer',
         'release_date' => 'date',
+        'playtime_minutes' => 'integer',
     ];
 
     protected static function booted(): void

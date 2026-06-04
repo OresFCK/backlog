@@ -48,14 +48,18 @@ class GameDetailsService
             'screenshots' => [],
             'platforms' => [],
 
-            'release_date' => $customGame->release_date?->format('Y-m-d'),
+            'release_date' => $customGame->release_date
+                ? $customGame->release_date->translatedFormat('M j, Y')
+                : null,
 
             'steam_url' => null,
             'igdb_id' => $customGame->igdb_id,
             'igdb_slug' => $customGame->igdb_slug,
             'igdb_url' => $customGame->igdb_url,
 
-            'playtime_hours' => null,
+            'playtime_hours' => $customGame->playtime_minutes !== null
+                ? round($customGame->playtime_minutes / 60, 1)
+                : null,
             'achievements_unlocked' => null,
             'achievements_total' => null,
 

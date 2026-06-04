@@ -21,7 +21,16 @@ class CustomGameController extends Controller
             'cover_url' => ['nullable', 'string', 'max:2000'],
             'header_image_url' => ['nullable', 'string', 'max:2000'],
             'igdb_url' => ['nullable', 'string', 'max:2000'],
+            'playtime_hours' => ['nullable', 'numeric', 'min:0', 'max:100000'],
         ]);
+
+        if (array_key_exists('playtime_hours', $validated)) {
+            $validated['playtime_minutes'] = filled($validated['playtime_hours'])
+                ? (int) round(((float) $validated['playtime_hours']) * 60)
+                : null;
+
+            unset($validated['playtime_hours']);
+        }
 
         $customGame->update($validated);
 
