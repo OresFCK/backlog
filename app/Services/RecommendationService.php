@@ -10,45 +10,30 @@ use Illuminate\Support\Facades\Auth;
 
 class RecommendationService
 {
-    /**
-     * Games user already owns but should play from backlog
-     */
+    private ?Collection $recommendationsCache = null;
+    private ?Collection $ownedGameIdsCache = null;
+    private ?Collection $friendIdsCache = null;
+
     public function backlogRecommendations(): array
     {
-        $userId = Auth::id();
-
-        $ownedGameIds = UserGameMeta::where('user_id', $userId)
-            ->pluck('game_id');
-
         return $this->buildRecommendations()
-            ->whereIn('game_id', $ownedGameIds)
+            ->whereIn('game_id', $this->ownedGameIds())
             ->sortByDesc('score')
             ->take(10)
             ->values()
             ->toArray();
     }
 
-    /**
-     * Games user does NOT own yet
-     */
     public function steamRecommendations(): array
     {
-        $userId = Auth::id();
-
-        $ownedGameIds = UserGameMeta::where('user_id', $userId)
-            ->pluck('game_id');
-
         return $this->buildRecommendations()
-            ->whereNotIn('game_id', $ownedGameIds)
+            ->whereNotIn('game_id', $this->ownedGameIds())
             ->sortByDesc('score')
             ->take(10)
             ->values()
             ->toArray();
     }
 
-    /**
-     * Ranking based only on friends recommendations
-     */
     public function friendsRanking(): array
     {
         return $this->buildRecommendations()
@@ -59,9 +44,6 @@ class RecommendationService
             ->toArray();
     }
 
-    /**
-     * Overall global ranking
-     */
     public function globalRanking(): array
     {
         return $this->buildRecommendations()
@@ -71,45 +53,41 @@ class RecommendationService
             ->toArray();
     }
 
-    /**
-     * Main recommendation engine
-     */
     private function buildRecommendations(): Collection
     {
+        if ($this->recommendationsCache !== null) {
+            return $this->recommendationsCache;
+        }
+
         $userId = Auth::id();
+        $friendIds = $this->friendIds();
 
-        $friendIds = $this->friendIds($userId);
-
-        return PublicReview::query()
-            ->with(['user', 'votes'])
-
-            // Exclude current user reviews
+        return $this->recommendationsCache = PublicReview::query()
+            ->with('votes:id,public_review_id,value')
             ->where('user_id', '!=', $userId)
-
-            ->where('recommended', true)
-            ->get()
-
+            ->where(function ($query) {
+                $query
+                    ->where('recommended', true)
+                    ->orWhere('not_recommended', true);
+            })
+            ->get([
+                'id',
+                'user_id',
+                'game_id',
+                'game_title',
+                'rating',
+                'recommended',
+                'not_recommended',
+            ])
             ->groupBy('game_id')
-
-            ->map(function ($reviews, $gameId) use ($friendIds) {
-
+            ->map(function (Collection $reviews, string $gameId) use ($friendIds) {
                 $review = $reviews->first();
 
-                /**
-                 * Friend reviews
-                 */
-                $friendReviews = $reviews->whereIn(
-                    'user_id',
-                    $friendIds
-                );
-
-                $friendRecommendations = $friendReviews
+                $friendRecommendations = $reviews
+                    ->whereIn('user_id', $friendIds)
                     ->where('recommended', true)
                     ->count();
 
-                /**
-                 * Global stats
-                 */
                 $globalRecommendations = $reviews
                     ->where('recommended', true)
                     ->count();
@@ -119,22 +97,16 @@ class RecommendationService
                     ->count();
 
                 $averageRating = round(
-                    $reviews
+                    (float) $reviews
                         ->whereNotNull('rating')
                         ->avg('rating'),
                     1
                 );
 
-                /**
-                 * Community votes score
-                 */
-                $votesScore = $reviews->sum(function ($review) {
-                    return $review->votes->sum('value');
-                });
+                $votesScore = $reviews->sum(
+                    fn ($review) => $review->votes->sum('value')
+                );
 
-                /**
-                 * Final recommendation score
-                 */
                 $score =
                     ($friendRecommendations * 40) +
                     ($globalRecommendations * 8) +
@@ -144,34 +116,17 @@ class RecommendationService
 
                 return [
                     'game_id' => $gameId,
-
                     'score' => $score,
-
-                    'friend_recommendations' =>
-                        $friendRecommendations,
-
-                    'global_recommendations' =>
-                        $globalRecommendations,
-
-                    'not_recommended_count' =>
-                        $negativeRecommendations,
-
-                    'average_rating' =>
-                        $averageRating,
-
-                    'votes_score' =>
-                        $votesScore,
+                    'friend_recommendations' => $friendRecommendations,
+                    'global_recommendations' => $globalRecommendations,
+                    'not_recommended_count' => $negativeRecommendations,
+                    'average_rating' => $averageRating,
+                    'votes_score' => $votesScore,
 
                     'game' => [
                         'id' => $gameId,
-
-                        'title' =>
-                            $review->game_title
-                            ?? $review->game?->title
-                            ?? "Game {$gameId}",
-
-                        'header_image_url' =>
-                            "https://cdn.cloudflare.steamstatic.com/steam/apps/{$gameId}/header.jpg",
+                        'title' => $review->game_title ?? "Game {$gameId}",
+                        'header_image_url' => $this->steamHeaderUrl($gameId),
                     ],
 
                     'reason' => $this->reasonText(
@@ -181,81 +136,63 @@ class RecommendationService
                     ),
                 ];
             })
-
             ->sortByDesc('score')
             ->values();
     }
 
-    /**
-     * Get all friend/followed user IDs
-     */
-    private function friendIds(int $userId): Collection
+    private function ownedGameIds(): Collection
     {
-        return UserConnection::query()
+        return $this->ownedGameIdsCache
+            ??= UserGameMeta::query()
+                ->where('user_id', Auth::id())
+                ->pluck('game_id')
+                ->map(fn ($id) => (string) $id);
+    }
 
+    private function friendIds(): Collection
+    {
+        if ($this->friendIdsCache !== null) {
+            return $this->friendIdsCache;
+        }
+
+        $userId = Auth::id();
+
+        return $this->friendIdsCache = UserConnection::query()
             ->where(function ($query) use ($userId) {
-
-                /**
-                 * Accepted friend requests sent by user
-                 */
-                $query->where(function ($query) use ($userId) {
-
-                    $query
-                        ->where('type', 'friend')
-                        ->where('status', 'accepted')
-                        ->where('sender_id', $userId);
-                })
-
-                /**
-                 * Accepted friend requests received by user
-                 */
-                ->orWhere(function ($query) use ($userId) {
-
-                    $query
-                        ->where('type', 'friend')
-                        ->where('status', 'accepted')
-                        ->where('receiver_id', $userId);
-                })
-
-                /**
-                 * Followed users
-                 */
-                ->orWhere(function ($query) use ($userId) {
-
-                    $query
-                        ->where('type', 'follow')
-                        ->where('sender_id', $userId);
-                });
+                $query
+                    ->where(function ($query) use ($userId) {
+                        $query
+                            ->where('type', 'friend')
+                            ->where('status', 'accepted')
+                            ->where('sender_id', $userId);
+                    })
+                    ->orWhere(function ($query) use ($userId) {
+                        $query
+                            ->where('type', 'friend')
+                            ->where('status', 'accepted')
+                            ->where('receiver_id', $userId);
+                    })
+                    ->orWhere(function ($query) use ($userId) {
+                        $query
+                            ->where('type', 'follow')
+                            ->where('sender_id', $userId);
+                    });
             })
-
-            ->get()
-
-            ->flatMap(function ($connection) {
-
-                return [
-                    $connection->sender_id,
-                    $connection->receiver_id,
-                ];
-            })
-
-            /**
-             * Remove current user from friend IDs
-             */
-            ->reject(fn ($id) => $id === $userId)
-
+            ->get(['sender_id', 'receiver_id'])
+            ->flatMap(fn ($connection) => [
+                $connection->sender_id,
+                $connection->receiver_id,
+            ])
+            ->reject(fn ($id) => (int) $id === (int) $userId)
             ->unique()
             ->values();
     }
 
-    /**
-     * Human-readable recommendation reason
-     */
     private function reasonText(
         int $friendRecommendations,
         int $globalRecommendations,
         float $averageRating
     ): string {
-
         if ($friendRecommendations >= 3) {
             return 'Your friends highly recommend this game.';
         }
@@ -269,5 +206,10 @@ class RecommendationService
         }
 
         return 'Trending in the community.';
+    }
+
+    private function steamHeaderUrl(string $gameId): string
+    {
+        return "https://cdn.cloudflare.steamstatic.com/steam/apps/{$gameId}/header.jpg";
     }
 }

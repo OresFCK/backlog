@@ -17,20 +17,36 @@ class ChallengeController extends Controller
     {
         $user = Auth::user();
 
+        $joinedChallenges = $user
+            ->challenges()
+            ->get(['challenges.id'])
+            ->keyBy('id');
+
+        $submissions = ChallengeSubmission::query()
+            ->where('user_id', $user->id)
+            ->get([
+                'challenge_id',
+                'status',
+                'admin_note',
+            ])
+            ->keyBy('challenge_id');
+
         $challenges = Challenge::query()
-            ->with('item')
+            ->with('item:id,name,type')
             ->where('is_active', true)
             ->latest()
-            ->get()
-            ->map(function (Challenge $challenge) use ($user) {
-                $joinedChallenge = $user->challenges()
-                    ->where('challenge_id', $challenge->id)
-                    ->first();
-
-                $submission = ChallengeSubmission::query()
-                    ->where('challenge_id', $challenge->id)
-                    ->where('user_id', $user->id)
-                    ->first();
+            ->get([
+                'id',
+                'shop_item_id',
+                'title',
+                'description',
+                'game_name',
+                'reward_xp',
+                'reward_coins',
+            ])
+            ->map(function (Challenge $challenge) use ($joinedChallenges, $submissions) {
+                $joinedChallenge = $joinedChallenges->get($challenge->id);
+                $submission = $submissions->get($challenge->id);
 
                 return [
                     'id' => $challenge->id,
@@ -88,7 +104,7 @@ class ChallengeController extends Controller
             ->file('screenshot')
             ->store('challenge-submissions', 'public');
 
-        ChallengeSubmission::updateOrCreate(
+        ChallengeSubmission::query()->updateOrCreate(
             [
                 'challenge_id' => $challenge->id,
                 'user_id' => $user->id,

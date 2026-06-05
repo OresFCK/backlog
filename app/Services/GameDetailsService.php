@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Auth;
 
 class GameDetailsService
 {
+    private array $appDetailsCache = [];
+    private array $ownedGamesCache = [];
+    private array $achievementsCache = [];
+
     public function __construct(
         private GameMetaService $meta
     ) {}
@@ -74,14 +78,14 @@ class GameDetailsService
     public function steamGameDetails(string $gameId, SteamService $steam): array
     {
         $user = Auth::user();
-        $details = $steam->getAppDetails($gameId);
+        $steamId = (string) $user->steam_id;
+
+        $details = $this->cachedAppDetails($steam, $gameId);
 
         abort_if(! $details, 404);
 
-        $ownedGame = collect($steam->getOwnedGames($user->steam_id))
-            ->firstWhere('appid', (int) $gameId);
-
-        $achievements = $steam->getPlayerAchievements($user->steam_id, $gameId);
+        $ownedGame = $this->ownedGame($steam, $steamId, $gameId);
+        $achievements = $this->cachedAchievements($steam, $steamId, $gameId);
         $meta = $this->meta->metaFor($gameId);
 
         return [
@@ -118,6 +122,36 @@ class GameDetailsService
 
             ...$this->meta->metaPayload($meta),
         ];
+    }
+
+    private function cachedAppDetails(SteamService $steam, string $gameId): ?array
+    {
+        return $this->appDetailsCache[$gameId]
+            ??= $steam->getAppDetails($gameId);
+    }
+
+    private function ownedGame(
+        SteamService $steam,
+        string $steamId,
+        string $gameId
+    ): ?array {
+        $games = $this->ownedGamesCache[$steamId]
+            ??= collect($steam->getOwnedGames($steamId))
+                ->keyBy(fn (array $game) => (string) $game['appid'])
+                ->all();
+
+        return $games[(string) $gameId] ?? null;
+    }
+
+    private function cachedAchievements(
+        SteamService $steam,
+        string $steamId,
+        string $gameId
+    ): array {
+        $cacheKey = "{$steamId}:{$gameId}";
+
+        return $this->achievementsCache[$cacheKey]
+            ??= $steam->getPlayerAchievements($steamId, $gameId);
     }
 
     private function genreNames(array $details): array

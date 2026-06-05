@@ -9,17 +9,24 @@ use Illuminate\Support\Facades\Auth;
 
 class StatusService
 {
+    private ?array $statusesCache = null;
+    private ?array $statusColorsCache = null;
+
     public function statuses(): array
     {
+        if ($this->statusesCache !== null) {
+            return $this->statusesCache;
+        }
+
         $user = Auth::user();
 
         if (! $user->customStatuses()->exists()) {
             $user->customStatuses()->createMany($this->defaultStatuses());
         }
 
-        return $user
+        return $this->statusesCache = $user
             ->customStatuses()
-            ->get()
+            ->get(['id', 'name', 'color'])
             ->map(fn ($status) => [
                 'id' => $status->id,
                 'name' => $status->name,
@@ -30,15 +37,14 @@ class StatusService
 
     public function customLabels(): array
     {
-        return Auth::user()
-            ->customStatuses()
-            ->latest()
-            ->get()
+        return collect($this->statuses())
+            ->sortByDesc('id')
             ->map(fn ($status) => [
-                'id' => $status->id,
-                'title' => $status->name,
-                'color' => $status->color,
+                'id' => $status['id'],
+                'title' => $status['name'],
+                'color' => $status['color'],
             ])
+            ->values()
             ->toArray();
     }
 
@@ -47,6 +53,8 @@ class StatusService
         Auth::user()
             ->customStatuses()
             ->create($request->validated());
+
+        $this->clearCache();
 
         return back();
     }
@@ -60,17 +68,39 @@ class StatusService
                 'color' => $request->color,
             ]);
 
+        $this->clearCache();
+
         return back();
     }
 
     public function statusColor(?string $statusName): string
     {
-        $status = collect($this->statuses())
-            ->first(fn ($status) =>
-                strtolower($status['name']) === strtolower($statusName ?? '')
-            );
+        $name = strtolower(trim($statusName ?? ''));
 
-        return $status['color'] ?? '#71717a';
+        if ($name === '') {
+            return '#71717a';
+        }
+
+        return $this->statusColors()[$name] ?? '#71717a';
+    }
+
+    private function statusColors(): array
+    {
+        if ($this->statusColorsCache !== null) {
+            return $this->statusColorsCache;
+        }
+
+        return $this->statusColorsCache = collect($this->statuses())
+            ->mapWithKeys(fn ($status) => [
+                strtolower($status['name']) => $status['color'],
+            ])
+            ->toArray();
+    }
+
+    private function clearCache(): void
+    {
+        $this->statusesCache = null;
+        $this->statusColorsCache = null;
     }
 
     private function defaultStatuses(): array

@@ -26,8 +26,15 @@ class PayloadHelper
     public static function pageData(SteamService $steam): array
     {
         return [
-            'user' => self::currentUser(),
+            ...self::basePageData(),
             'games' => self::library()->allGames($steam),
+        ];
+    }
+
+    private static function basePageData(): array
+    {
+        return [
+            'user' => self::currentUser(),
             'statuses' => self::statuses(),
         ];
     }
@@ -57,7 +64,7 @@ class PayloadHelper
     public static function backlogPageData(SteamService $steam): array
     {
         return [
-            ...self::pageData($steam),
+            ...self::basePageData(),
             'games' => self::library()->gamesByStatus($steam, 'Backlog'),
         ];
     }
@@ -65,7 +72,7 @@ class PayloadHelper
     public static function playingPageData(SteamService $steam): array
     {
         return [
-            ...self::pageData($steam),
+            ...self::basePageData(),
             'games' => self::library()->gamesByStatus($steam, 'Playing'),
         ];
     }
@@ -73,7 +80,7 @@ class PayloadHelper
     public static function finishedPageData(SteamService $steam): array
     {
         return [
-            ...self::pageData($steam),
+            ...self::basePageData(),
             'games' => self::library()->gamesByStatus($steam, 'Finished'),
         ];
     }
@@ -81,7 +88,7 @@ class PayloadHelper
     public static function droppedPageData(SteamService $steam): array
     {
         return [
-            ...self::pageData($steam),
+            ...self::basePageData(),
             'games' => self::library()->gamesByStatus($steam, 'Dropped'),
         ];
     }
@@ -89,7 +96,7 @@ class PayloadHelper
     public static function wishlistPageData(SteamService $steam): array
     {
         return [
-            ...self::pageData($steam),
+            ...self::basePageData(),
             'games' => self::library()->wishlistGames($steam),
         ];
     }
@@ -162,6 +169,7 @@ class PayloadHelper
                 'reporter',
             ])
             ->latest()
+            ->limit(50)
             ->get()
             ->map(fn (PublicReviewReport $report) => [
                 'id' => $report->id,
@@ -250,6 +258,7 @@ class PayloadHelper
             ->where('user_id', $user->id)
             ->where('show_on_public_profile', true)
             ->latest('updated_at')
+            ->limit(6)
             ->get()
             ->map(function ($meta) use ($games) {
                 $game = $games->get((string) $meta->game_id);
@@ -278,6 +287,7 @@ class PayloadHelper
             ->where('user_id', $user->id)
             ->where('is_featured_on_profile', true)
             ->latest('updated_at')
+            ->limit(6)
             ->get()
             ->map(fn ($review) => [
                 'id' => $review->id,
@@ -300,6 +310,7 @@ class PayloadHelper
             ->where('user_id', $user->id)
             ->where('is_featured_on_profile', true)
             ->latest('updated_at')
+            ->limit(6)
             ->get()
             ->map(fn ($ownedItem) => [
                 'id' => $ownedItem->item->id,

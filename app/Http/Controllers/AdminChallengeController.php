@@ -10,6 +10,7 @@ use App\Models\ShopItem;
 use App\Models\UserShopItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,15 +20,22 @@ class AdminChallengeController extends Controller
     public function index(): Response
     {
         return Inertia::render('admin/challenges', [
-            'challenges' => Challenge::with('item')->latest()->get(),
-            'shopItems' => ShopItem::where('is_active', true)->get(),
+            'challenges' => Challenge::query()
+                ->with('item:id,name')
+                ->latest()
+                ->get(),
+
+            'shopItems' => ShopItem::query()
+                ->where('is_active', true)
+                ->get(['id', 'name', 'type', 'image_path']),
+
             'submissions' => $this->submissionsPayload(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        Challenge::create($request->validate([
+        Challenge::query()->create($request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'game_name' => ['required', 'string', 'max:255'],
@@ -46,42 +54,44 @@ class AdminChallengeController extends Controller
             return back();
         }
 
-        $submission->load(['challenge', 'user']);
+        $submission->load([
+            'challenge:id,title,reward_xp,reward_coins,shop_item_id',
+            'user:id,xp,coins,level',
+        ]);
 
         $user = $submission->user;
         $challenge = $submission->challenge;
 
-        $user->increment('xp', $challenge->reward_xp);
-        $user->increment('coins', $challenge->reward_coins);
+        DB::transaction(function () use ($submission, $user, $challenge) {
+            $newXp = $user->xp + $challenge->reward_xp;
 
-        $user->update([
-            'level' => LevelSystem::levelFromXp($user->fresh()->xp),
-        ]);
-
-        if ($challenge->shop_item_id) {
-            UserShopItem::firstOrCreate([
-                'user_id' => $user->id,
-                'shop_item_id' => $challenge->shop_item_id,
-            ], [
-                'is_equipped' => false,
+            $user->update([
+                'xp' => $newXp,
+                'coins' => $user->coins + $challenge->reward_coins,
+                'level' => LevelSystem::levelFromXp($newXp),
             ]);
-        }
 
-        $user->challenges()->syncWithoutDetaching([
-            $challenge->id,
-        ]);
+            if ($challenge->shop_item_id) {
+                UserShopItem::query()->firstOrCreate([
+                    'user_id' => $user->id,
+                    'shop_item_id' => $challenge->shop_item_id,
+                ], [
+                    'is_equipped' => false,
+                ]);
+            }
 
-        $user->challenges()->updateExistingPivot($challenge->id, [
-            'completed_at' => now(),
-        ]);
+            $user->challenges()->syncWithoutDetaching([
+                $challenge->id => [
+                    'completed_at' => now(),
+                ],
+            ]);
 
-        $submission->update([
-            'status' => 'approved',
-            'reviewed_at' => now(),
-        ]);
+            $submission->update([
+                'status' => 'approved',
+                'reviewed_at' => now(),
+            ]);
 
-        if (class_exists(ActivityLog::class)) {
-            ActivityLog::create([
+            ActivityLog::query()->create([
                 'user_id' => $user->id,
                 'type' => 'challenge_approved',
                 'message' => "Challenge approved: {$challenge->title}",
@@ -92,13 +102,15 @@ class AdminChallengeController extends Controller
                     'shop_item_id' => $challenge->shop_item_id,
                 ],
             ]);
-        }
+        });
 
         return back();
     }
 
-    public function reject(Request $request, ChallengeSubmission $submission): RedirectResponse
-    {
+    public function reject(
+        Request $request,
+        ChallengeSubmission $submission
+    ): RedirectResponse {
         $data = $request->validate([
             'admin_note' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -122,9 +134,23 @@ class AdminChallengeController extends Controller
     private function submissionsPayload()
     {
         return ChallengeSubmission::query()
-            ->with(['challenge.item', 'user'])
+            ->with([
+                'challenge:id,title,game_name,reward_xp,reward_coins,shop_item_id',
+                'challenge.item:id,name',
+                'user:id,name,email,steam_avatar_url',
+            ])
             ->latest()
-            ->get()
+            ->limit(100)
+            ->get([
+                'id',
+                'challenge_id',
+                'user_id',
+                'status',
+                'admin_note',
+                'screenshot_path',
+                'created_at',
+                'reviewed_at',
+            ])
             ->map(fn (ChallengeSubmission $submission) => [
                 'id' => $submission->id,
                 'status' => $submission->status,
@@ -132,23 +158,25 @@ class AdminChallengeController extends Controller
                 'created_at' => $submission->created_at?->format('Y-m-d H:i'),
                 'reviewed_at' => $submission->reviewed_at?->format('Y-m-d H:i'),
 
-                'screenshot_url' => Storage::url($submission->screenshot_path),
+                'screenshot_url' => $submission->screenshot_path
+                    ? Storage::url($submission->screenshot_path)
+                    : null,
 
                 'user' => [
-                    'id' => $submission->user->id,
-                    'name' => $submission->user->name,
-                    'email' => $submission->user->email,
-                    'avatar' => $submission->user->steam_avatar_url,
+                    'id' => $submission->user?->id,
+                    'name' => $submission->user?->name,
+                    'email' => $submission->user?->email,
+                    'avatar' => $submission->user?->steam_avatar_url,
                 ],
 
                 'challenge' => [
-                    'id' => $submission->challenge->id,
-                    'title' => $submission->challenge->title,
-                    'game_name' => $submission->challenge->game_name,
-                    'reward_xp' => $submission->challenge->reward_xp,
-                    'reward_coins' => $submission->challenge->reward_coins,
+                    'id' => $submission->challenge?->id,
+                    'title' => $submission->challenge?->title,
+                    'game_name' => $submission->challenge?->game_name,
+                    'reward_xp' => $submission->challenge?->reward_xp,
+                    'reward_coins' => $submission->challenge?->reward_coins,
 
-                    'item' => $submission->challenge->item ? [
+                    'item' => $submission->challenge?->item ? [
                         'id' => $submission->challenge->item->id,
                         'name' => $submission->challenge->item->name,
                     ] : null,

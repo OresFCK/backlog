@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 
 class GameLibraryService
 {
+    private array $metaCache = [];
+
     public function __construct(
         private GameMetaService $meta,
         private StatusService $statuses
@@ -20,19 +22,16 @@ class GameLibraryService
 
     public function allGames(SteamService $steam): array
     {
-        return $this->allGamesForUser(
-            Auth::user(),
-            $steam
-        );
+        return $this->allGamesForUser(Auth::user(), $steam);
     }
 
-    public function allGamesForUser(
-        User $user,
-        SteamService $steam
-    ): array {
+    public function allGamesForUser(User $user, SteamService $steam): array
+    {
+        $metas = $this->metasForUser($user);
+
         return [
-            ...$this->steamLibraryGamesForUser($user, $steam),
-            ...$this->customGamesForUser($user),
+            ...$this->steamLibraryGamesForUser($user, $steam, $metas),
+            ...$this->customGamesForUser($user, $metas),
         ];
     }
 
@@ -40,20 +39,24 @@ class GameLibraryService
     {
         return $this->steamLibraryGamesForUser(
             Auth::user(),
-            $steam
+            $steam,
+            $this->metasForUser(Auth::user())
         );
     }
 
     public function steamLibraryGamesForUser(
         User $user,
-        SteamService $steam
+        SteamService $steam,
+        ?Collection $metas = null
     ): array {
         if (! $user->steam_id) {
             return [];
         }
 
+        $metas ??= $this->metasForUser($user);
+
         return collect($steam->getOwnedGames($user->steam_id))
-            ->map(function (array $game) use ($user) {
+            ->map(function (array $game) use ($game = null, $metas) {
                 $gameId = (string) $game['appid'];
 
                 return [
@@ -63,7 +66,7 @@ class GameLibraryService
                     'cover_url' => $this->steamCoverUrl($gameId),
                     'is_custom' => false,
                     'source' => 'steam',
-                    ...$this->existingMetaForUser($user, $gameId),
+                    ...$this->metaPayloadFromCollection($metas, $gameId),
                 ];
             })
             ->toArray();
@@ -71,17 +74,24 @@ class GameLibraryService
 
     public function customGames(): array
     {
+        $user = Auth::user();
+
         return $this->customGamesForUser(
-            Auth::user()
+            $user,
+            $this->metasForUser($user)
         );
     }
 
-    public function customGamesForUser(User $user): array
-    {
+    public function customGamesForUser(
+        User $user,
+        ?Collection $metas = null
+    ): array {
+        $metas ??= $this->metasForUser($user);
+
         return $user
             ->customGames()
             ->get()
-            ->map(function ($game) use ($user) {
+            ->map(function ($game) use ($metas) {
                 $gameId = $this->customGameId($game->id);
 
                 return [
@@ -102,7 +112,7 @@ class GameLibraryService
                     'is_custom' => true,
                     'source' => $game->source ?? 'manual',
                     'platform' => $game->platform,
-                    ...$this->existingMetaForUser($user, $gameId),
+                    ...$this->metaPayloadFromCollection($metas, $gameId),
                 ];
             })
             ->toArray();
@@ -123,10 +133,11 @@ class GameLibraryService
         SteamService $steam,
         string $status
     ): array {
+        $normalizedStatus = $this->normalizedStatus($status);
+
         return collect($this->allGames($steam))
             ->filter(fn ($game) =>
-                $this->normalizedStatus($game['status'] ?? null)
-                    === $this->normalizedStatus($status)
+                $this->normalizedStatus($game['status'] ?? null) === $normalizedStatus
             )
             ->values()
             ->toArray();
@@ -139,11 +150,13 @@ class GameLibraryService
         $games = collect($this->allGamesForUser($user, $steam))
             ->keyBy(fn ($game) => (string) $game['id']);
 
-        return UserGameMeta::where('user_id', $user->id)
+        return UserGameMeta::query()
+            ->where('user_id', $user->id)
             ->latest('updated_at')
-            ->take(10)
+            ->limit(30)
             ->get()
             ->filter(fn ($meta) => $this->hasVisibleActivity($meta))
+            ->take(10)
             ->map(fn ($meta) => $this->activityPayload($meta, $games))
             ->values()
             ->toArray();
@@ -152,7 +165,6 @@ class GameLibraryService
     public function storeCustomGame(StoreCustomGameRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-
         $normalizedTitle = GameTitleNormalizer::normalize($validated['title']);
 
         $existingGame = CustomGame::query()
@@ -183,7 +195,7 @@ class GameLibraryService
         ];
 
         if (! $existingGame) {
-            $existingGame = CustomGame::create([
+            CustomGame::create([
                 'user_id' => Auth::id(),
                 ...$payload,
             ]);
@@ -206,13 +218,26 @@ class GameLibraryService
         return redirect()->route('dashboard');
     }
 
-    public function existingMetaForUser(
-        User $user,
-        string $gameId
-    ): array {
-        $meta = UserGameMeta::where('user_id', $user->id)
-            ->where('game_id', $gameId)
-            ->first();
+    public function existingMetaForUser(User $user, string $gameId): array
+    {
+        return $this->metaPayloadFromCollection(
+            $this->metasForUser($user),
+            $gameId
+        );
+    }
+
+    private function metasForUser(User $user): Collection
+    {
+        return $this->metaCache[$user->id]
+            ??= UserGameMeta::query()
+                ->where('user_id', $user->id)
+                ->get()
+                ->keyBy(fn ($meta) => (string) $meta->game_id);
+    }
+
+    private function metaPayloadFromCollection(Collection $metas, string $gameId): array
+    {
+        $meta = $metas->get((string) $gameId);
 
         return $meta
             ? $this->meta->metaPayload($meta)

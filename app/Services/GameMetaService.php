@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Auth;
 
 class GameMetaService
 {
+    private array $emptyMetaCache = [];
+
     public function __construct(
         private StatusService $statuses
     ) {}
@@ -38,28 +40,30 @@ class GameMetaService
         return back();
     }
 
-    public function metaFor(string $gameId): UserGameMeta
+    public function metaFor(string $gameId): ?UserGameMeta
     {
-        return UserGameMeta::firstOrCreate([
-            'user_id' => Auth::id(),
-            'game_id' => $gameId,
-        ]);
+        return UserGameMeta::query()
+            ->where('user_id', Auth::id())
+            ->where('game_id', $gameId)
+            ->first();
     }
 
     public function existingMetaFor(string $gameId): array
     {
-        $meta = UserGameMeta::where('user_id', Auth::id())
-            ->where('game_id', $gameId)
-            ->first();
+        $meta = $this->metaFor($gameId);
 
         return $meta
             ? $this->metaPayload($meta)
             : $this->emptyMeta();
     }
 
-    public function metaPayload(UserGameMeta $meta): array
+    public function metaPayload(?UserGameMeta $meta): array
     {
-        $status = $meta->status ?? 'Backlog';
+        if (! $meta) {
+            return $this->emptyMeta();
+        }
+
+        $status = $meta->status ?: 'Backlog';
 
         return [
             'status' => $status,
@@ -75,15 +79,16 @@ class GameMetaService
 
     public function emptyMeta(): array
     {
-        return [
-            'status' => 'Backlog',
-            'status_color' => $this->statuses->statusColor('Backlog'),
-            'note' => null,
-            'rating' => null,
-            'recommended' => false,
-            'not_recommended' => false,
-            'show_on_public_profile' => false,
-            'updated_at' => null,
-        ];
+        return $this->emptyMetaCache['Backlog']
+            ??= [
+                'status' => 'Backlog',
+                'status_color' => $this->statuses->statusColor('Backlog'),
+                'note' => null,
+                'rating' => null,
+                'recommended' => false,
+                'not_recommended' => false,
+                'show_on_public_profile' => false,
+                'updated_at' => null,
+            ];
     }
 }
