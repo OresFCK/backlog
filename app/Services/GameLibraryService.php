@@ -56,7 +56,7 @@ class GameLibraryService
         $metas ??= $this->metasForUser($user);
 
         return collect($steam->getOwnedGames($user->steam_id))
-            ->map(function (array $game) use ($game = null, $metas) {
+            ->map(function (array $game) use ($metas) {
                 $gameId = (string) $game['appid'];
 
                 return [
