@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
@@ -54,7 +54,26 @@ const form = ref({
         props.game.header_image ??
         '',
     igdb_url: props.game.igdb_url ?? '',
-    playtime_hours: props.game.playtime_hours ?? '',
+
+    playtime_hours:
+        props.game.playtime_hours ?? '',
+
+    achievements_unlocked:
+        props.game.achievements_unlocked ?? '',
+
+    achievements_total:
+        props.game.achievements_total ?? '',
+})
+
+const achievementPercent = computed(() => {
+    const unlocked = Number(form.value.achievements_unlocked)
+    const total = Number(form.value.achievements_total)
+
+    if (!total) {
+        return 0
+    }
+
+    return Math.round((unlocked / total) * 100)
 })
 
 const save = () => {
@@ -175,6 +194,58 @@ const save = () => {
                             {{ platform }}
                         </option>
                     </select>
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-zinc-300">
+                        Playtime (hours)
+                    </label>
+
+                    <input
+                        v-model="form.playtime_hours"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
+                    />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-zinc-300">
+                        Completion %
+                    </label>
+
+                    <div
+                        class="flex h-[50px] items-center rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-white"
+                    >
+                        {{ achievementPercent }}%
+                    </div>
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-zinc-300">
+                        Achievements unlocked
+                    </label>
+
+                    <input
+                        v-model="form.achievements_unlocked"
+                        type="number"
+                        min="0"
+                        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
+                    />
+                </div>
+
+                <div>
+                    <label class="mb-2 block text-sm font-medium text-zinc-300">
+                        Achievements total
+                    </label>
+
+                    <input
+                        v-model="form.achievements_total"
+                        type="number"
+                        min="0"
+                        class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
+                    />
                 </div>
 
                 <div class="md:col-span-2">

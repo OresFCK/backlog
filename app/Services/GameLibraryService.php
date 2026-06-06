@@ -38,10 +38,12 @@ class GameLibraryService
 
     public function steamLibraryGames(SteamService $steam): array
     {
+        $user = Auth::user();
+
         return $this->steamLibraryGamesForUser(
-            Auth::user(),
+            $user,
             $steam,
-            $this->metasForUser(Auth::user())
+            $this->metasForUser($user)
         );
     }
 
@@ -105,8 +107,16 @@ class GameLibraryService
         return $user
             ->customGames()
             ->get()
-            ->map(function ($game) use ($metas) {
+            ->map(function (CustomGame $game) use ($metas) {
                 $gameId = $this->customGameId($game->id);
+
+                $achievementsUnlocked = $game->achievements_unlocked !== null
+                    ? (int) $game->achievements_unlocked
+                    : null;
+
+                $achievementsTotal = $game->achievements_total !== null
+                    ? (int) $game->achievements_total
+                    : null;
 
                 return [
                     'id' => $gameId,
@@ -122,10 +132,23 @@ class GameLibraryService
                     'release_date' => $game->release_date?->format('Y-m-d'),
                     'cover_url' => $game->cover_url,
                     'header_image_url' => $game->header_image_url,
-                    'playtime_forever' => 0,
+
+                    'playtime_forever' => (int) ($game->playtime_minutes ?? 0),
+                    'playtime_hours' => $game->playtime_minutes !== null
+                        ? round($game->playtime_minutes / 60, 1)
+                        : null,
+
+                    'achievements_unlocked' => $achievementsUnlocked,
+                    'achievements_total' => $achievementsTotal,
+                    'achievement_percent' => $achievementsTotal
+                        ? (int) round(($achievementsUnlocked / max($achievementsTotal, 1)) * 100)
+                        : 0,
+
                     'is_custom' => true,
                     'source' => $game->source ?? 'manual',
                     'platform' => $game->platform,
+                    'custom_game_id' => $game->id,
+
                     ...$this->metaPayloadFromCollection($metas, $gameId),
                 ];
             })

@@ -29,6 +29,14 @@ class GameDetailsService
 
         $meta = $this->meta->metaFor($gameId);
 
+        $achievementsUnlocked = $customGame->achievements_unlocked !== null
+            ? (int) $customGame->achievements_unlocked
+            : null;
+
+        $achievementsTotal = $customGame->achievements_total !== null
+            ? (int) $customGame->achievements_total
+            : null;
+
         return [
             'id' => $gameId,
             'custom_game_id' => $customGame->id,
@@ -62,11 +70,16 @@ class GameDetailsService
             'igdb_url' => $customGame->igdb_url,
             'platform' => $customGame->platform,
 
+            'playtime_forever' => (int) ($customGame->playtime_minutes ?? 0),
             'playtime_hours' => $customGame->playtime_minutes !== null
                 ? round($customGame->playtime_minutes / 60, 1)
                 : null,
-            'achievements_unlocked' => null,
-            'achievements_total' => null,
+
+            'achievements_unlocked' => $achievementsUnlocked,
+            'achievements_total' => $achievementsTotal,
+            'achievement_percent' => $achievementsTotal
+                ? (int) round(($achievementsUnlocked / max($achievementsTotal, 1)) * 100)
+                : 0,
 
             'is_custom' => true,
             'source' => $customGame->source ?? 'manual',
@@ -87,6 +100,10 @@ class GameDetailsService
         $ownedGame = $this->ownedGame($steam, $steamId, $gameId);
         $achievements = $this->cachedAchievements($steam, $steamId, $gameId);
         $meta = $this->meta->metaFor($gameId);
+
+        $achievementPercent = ! empty($achievements['total'])
+            ? (int) round(((int) ($achievements['unlocked'] ?? 0) / max((int) $achievements['total'], 1)) * 100)
+            : 0;
 
         return [
             'id' => $gameId,
@@ -116,6 +133,7 @@ class GameDetailsService
             'playtime_hours' => $this->playtimeHours($ownedGame),
             'achievements_unlocked' => $achievements['unlocked'] ?? null,
             'achievements_total' => $achievements['total'] ?? null,
+            'achievement_percent' => $achievementPercent,
 
             'is_custom' => false,
             'source' => 'steam',

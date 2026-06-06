@@ -21,8 +21,11 @@ class CustomGameController extends Controller
             'cover_url' => ['nullable', 'string', 'max:2000'],
             'header_image_url' => ['nullable', 'string', 'max:2000'],
             'igdb_url' => ['nullable', 'string', 'max:2000'],
-            'playtime_hours' => ['nullable', 'numeric', 'min:0', 'max:100000'],
             'platform' => ['nullable', 'string', 'max:255'],
+
+            'playtime_hours' => ['nullable', 'numeric', 'min:0', 'max:100000'],
+            'achievements_unlocked' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'achievements_total' => ['nullable', 'integer', 'min:0', 'max:100000'],
         ]);
 
         if (array_key_exists('playtime_hours', $validated)) {
@@ -31,6 +34,16 @@ class CustomGameController extends Controller
                 : null;
 
             unset($validated['playtime_hours']);
+        }
+
+        if (
+            filled($validated['achievements_unlocked'] ?? null) &&
+            filled($validated['achievements_total'] ?? null) &&
+            (int) $validated['achievements_unlocked'] > (int) $validated['achievements_total']
+        ) {
+            return back()->withErrors([
+                'achievements_unlocked' => 'Unlocked achievements cannot be greater than total achievements.',
+            ]);
         }
 
         $customGame->update($validated);
