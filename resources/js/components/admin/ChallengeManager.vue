@@ -25,6 +25,8 @@ const challengeForm = useForm({
     title: '',
     description: '',
     game_id: '',
+    game_title: '',
+    game_cover_url: '',
     reward_xp: '',
     reward_coins: '',
     shop_item_id: '',
@@ -57,6 +59,8 @@ watch(gameSearch, (value) => {
 
     selectedGame.value = null
     challengeForm.game_id = ''
+    challengeForm.game_title = ''
+    challengeForm.game_cover_url = ''
 
     if (!value || value.length < 2) {
         steamResults.value = []
@@ -91,7 +95,10 @@ watch(gameSearch, (value) => {
 const selectGame = (game) => {
     selectedGame.value = game
     gameSearch.value = game.title
-    challengeForm.game_id = game.id
+
+    challengeForm.game_id = game.id ?? game.appid ?? game.steam_app_id ?? game.igdb_id ?? ''
+    challengeForm.game_title = game.title
+    challengeForm.game_cover_url = game.cover_url ?? game.igdb_cover_url ?? ''
 
     steamResults.value = []
     igdbResults.value = []
@@ -112,6 +119,8 @@ const createChallenge = () => {
             challengeForm.reward_coins = ''
             challengeForm.shop_item_id = ''
             challengeForm.game_id = ''
+            challengeForm.game_title = ''
+            challengeForm.game_cover_url = ''
             challengeForm.is_active = true
 
             gameSearch.value = ''

@@ -6,12 +6,14 @@ use App\Helpers\LevelSystem;
 use App\Models\ActivityLog;
 use App\Models\Challenge;
 use App\Models\ChallengeSubmission;
+use App\Models\Game;
 use App\Models\ShopItem;
 use App\Models\UserShopItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -41,16 +43,35 @@ class AdminChallengeController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'game_id' => ['required', 'exists:games,id'],
+            'game_id' => ['required', 'integer'],
+            'game_title' => ['required', 'string', 'max:255'],
+            'game_cover_url' => ['nullable', 'string', 'max:2048'],
             'reward_xp' => ['required', 'integer', 'min:0'],
             'reward_coins' => ['required', 'integer', 'min:0'],
             'shop_item_id' => ['nullable', 'exists:shop_items,id'],
             'is_active' => ['boolean'],
         ]);
 
-        $game = \App\Models\Game::query()->findOrFail($data['game_id']);
+        $game = Game::query()
+            ->where('id', $data['game_id'])
+            ->orWhere('steam_app_id', $data['game_id'])
+            ->orWhere('igdb_id', $data['game_id'])
+            ->first();
 
+        if (! $game) {
+            $game = Game::query()->create([
+                'title' => $data['game_title'],
+                'slug' => $this->uniqueGameSlug($data['game_title']),
+                'cover_url' => $data['game_cover_url'] ?? null,
+                'steam_app_id' => $data['game_id'],
+                'source' => 'steam',
+            ]);
+        }
+
+        $data['game_id'] = $game->id;
         $data['game_name'] = $game->title;
+
+        unset($data['game_title'], $data['game_cover_url']);
 
         Challenge::query()->create($data);
 
@@ -138,6 +159,20 @@ class AdminChallengeController extends Controller
         $challenge->delete();
 
         return back();
+    }
+
+    private function uniqueGameSlug(string $title): string
+    {
+        $baseSlug = Str::slug($title) ?: 'game';
+        $slug = $baseSlug;
+        $counter = 2;
+
+        while (Game::query()->where('slug', $slug)->exists()) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
     }
 
     private function submissionsPayload()
