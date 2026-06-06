@@ -110,7 +110,7 @@ onMounted(() => {
             <div
                 class="hidden items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-bold text-white lg:flex"
             >
-                <Coins class="h-4 w-4 text-yellow-400" />
+                <Coins class="h-4 w-4"/>
 
                 <span>{{ coins }}</span>
             </div>
