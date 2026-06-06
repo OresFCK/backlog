@@ -18,24 +18,17 @@ class IgdbGameSearchController extends Controller
 
         $normalizedQuery = $this->normalize($query);
 
-        $lowerQuery = mb_strtolower($query);
-        $lowerNormalizedQuery = mb_strtolower($normalizedQuery);
-
         $games = Game::query()
             ->where('source', 'igdb')
-            ->where(function ($builder) use ($lowerQuery, $lowerNormalizedQuery) {
-                $builder
-                    ->whereRaw('LOWER(title) LIKE ?', ['%' . $lowerQuery . '%'])
-                    ->orWhereRaw('LOWER(normalized_title) LIKE ?', ['%' . $lowerNormalizedQuery . '%']);
-            })
+            ->where('normalized_title', 'LIKE', $normalizedQuery . '%')
             ->orderByRaw('igdb_cover_url IS NULL')
             ->orderByRaw("
                 CASE
-                    WHEN LOWER(title) = LOWER(?) THEN 0
-                    WHEN LOWER(title) LIKE LOWER(?) THEN 1
+                    WHEN normalized_title = ? THEN 0
+                    WHEN normalized_title LIKE ? THEN 1
                     ELSE 2
                 END
-            ", [$query, "{$query}%"])
+            ", [$normalizedQuery, $normalizedQuery . '%'])
             ->limit(15)
             ->get([
                 'id',
