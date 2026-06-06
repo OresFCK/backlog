@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -39,33 +40,63 @@ class SteamService
         string $steamId,
         int|string $appId
     ): array {
-        $response = Http::get(
-            'https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/',
-            [
-                'key' => config('services.steam.key'),
-                'steamid' => $steamId,
-                'appid' => $appId,
-                'l' => 'english',
-            ]
-        );
+        return Cache::remember(
+            "steam-achievements:{$steamId}:{$appId}",
+            now()->addHours(6),
+            function () use ($steamId, $appId) {
+                $response = Http::get(
+                    'https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/',
+                    [
+                        'key' => config('services.steam.key'),
+                        'steamid' => $steamId,
+                        'appid' => $appId,
+                        'l' => 'english',
+                    ]
+                );
 
-        if (! $response->successful()) {
+                if (! $response->successful()) {
+                    return [
+                        'unlocked' => null,
+                        'total' => null,
+                    ];
+                }
+
+                $achievements =
+                    $response->json('playerstats.achievements')
+                    ?? [];
+
+                return [
+                    'unlocked' => collect($achievements)
+                        ->where('achieved', 1)
+                        ->count(),
+
+                    'total' => count($achievements),
+                ];
+            }
+        );
+    }
+
+    public function achievementStats(
+        string $steamId,
+        int|string $appId
+    ): array {
+        $achievements = $this->getPlayerAchievements($steamId, $appId);
+
+        $unlocked = $achievements['unlocked'];
+        $total = $achievements['total'];
+
+        if (! $total || $unlocked === null) {
             return [
-                'unlocked' => null,
-                'total' => null,
+                'unlocked' => 0,
+                'total' => 0,
+                'percent' => 0,
             ];
         }
 
-        $achievements =
-            $response->json('playerstats.achievements')
-            ?? [];
-
         return [
-            'unlocked' => collect($achievements)
-                ->where('achieved', 1)
-                ->count(),
-
-            'total' => count($achievements),
+            'unlocked' => $unlocked,
+            'total' => $total,
+            'percent' => (int) round(($unlocked / $total) * 100),
         ];
     }
 

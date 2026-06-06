@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Helpers\GameTitleNormalizer;
 use App\Http\Requests\StoreCustomGameRequest;
 use App\Models\CustomGame;
+use App\Models\SteamGameAchievementCache;
 use App\Models\User;
 use App\Models\UserGameMeta;
 use Illuminate\Http\RedirectResponse;
@@ -55,17 +56,30 @@ class GameLibraryService
 
         $metas ??= $this->metasForUser($user);
 
+        $achievementCache = SteamGameAchievementCache::query()
+            ->where('user_id', $user->id)
+            ->get()
+            ->keyBy(fn ($row) => (string) $row->steam_app_id);
+
         return collect($steam->getOwnedGames($user->steam_id))
-            ->map(function (array $game) use ($metas) {
+            ->map(function (array $game) use ($metas, $achievementCache) {
                 $gameId = (string) $game['appid'];
+                $achievement = $achievementCache->get($gameId);
 
                 return [
                     ...$game,
+
                     'id' => $game['appid'],
                     'title' => $game['name'] ?? null,
                     'cover_url' => $this->steamCoverUrl($gameId),
+
                     'is_custom' => false,
                     'source' => 'steam',
+
+                    'achievements_unlocked' => $achievement?->unlocked ?? 0,
+                    'achievements_total' => $achievement?->total ?? 0,
+                    'achievement_percent' => $achievement?->percent ?? 0,
+
                     ...$this->metaPayloadFromCollection($metas, $gameId),
                 ];
             })
