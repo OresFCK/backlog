@@ -37,6 +37,7 @@ class AdminUserController extends Controller
     {
         return response()->json(
             $user->activityLogs()
+                ->where('type', 'not like', 'admin_%')
                 ->latest()
                 ->limit(30)
                 ->get()

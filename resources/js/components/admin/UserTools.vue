@@ -480,34 +480,38 @@ const completeChallenge = () => {
         </div>
 
         <div class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
-            <div class="border-b border-zinc-800 p-6">
-                <h2 class="text-xl font-bold text-white">
-                    Activity logs
-                </h2>
-            </div>
+    <div class="border-b border-zinc-800 p-6">
+        <h2 class="text-xl font-bold text-white">
+            User activity
+        </h2>
 
-            <div class="divide-y divide-zinc-800">
-                <div
-                    v-for="log in userLogs"
-                    :key="log.id"
-                    class="p-5"
-                >
-                    <p class="font-bold text-white">
-                        {{ log.message }}
-                    </p>
+        <p class="mt-1 text-sm text-zinc-500">
+            Shows actions performed by the selected user.
+        </p>
+    </div>
 
-                    <p class="mt-1 text-sm text-zinc-500">
-                        {{ log.type }} · {{ log.created_at }}
-                    </p>
-                </div>
+    <div class="divide-y divide-zinc-800">
+        <div
+            v-for="log in userLogs"
+            :key="log.id"
+            class="p-5"
+        >
+            <p class="font-bold text-white">
+                {{ log.message }}
+            </p>
 
-                <div
-                    v-if="!userLogs.length"
-                    class="p-10 text-center text-zinc-500"
-                >
-                    Search user to see activity logs.
-                </div>
-            </div>
+            <p class="mt-1 text-sm text-zinc-500">
+                {{ log.created_at }}
+            </p>
         </div>
+
+        <div
+            v-if="!userLogs.length"
+            class="p-10 text-center text-zinc-500"
+        >
+            Search user to see their activity.
+        </div>
+    </div>
+</div>
     </section>
 </template>

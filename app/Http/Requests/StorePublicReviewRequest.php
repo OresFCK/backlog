@@ -34,7 +34,6 @@ class StorePublicReviewRequest extends FormRequest
             'body' => [
                 'required',
                 'string',
-                'min:10',
                 'max:5000',
             ],
 

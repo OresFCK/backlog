@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePublicReviewRequest;
+use App\Models\ActivityLog;
 use App\Models\PublicReview;
 use App\Models\UserConnection;
 use Illuminate\Http\RedirectResponse;
@@ -75,7 +76,7 @@ class PublicReviewController extends Controller
     public function store(
         StorePublicReviewRequest $request
     ): RedirectResponse {
-        PublicReview::updateOrCreate(
+        $review = PublicReview::updateOrCreate(
             [
                 'user_id' => $request->user()->id,
                 'game_id' => $request->game_id,
@@ -95,6 +96,18 @@ class PublicReviewController extends Controller
                 'is_public' => true,
             ]
         );
+
+        ActivityLog::query()->create([
+            'user_id' => $request->user()->id,
+            'type' => 'review_created',
+            'message' => "Created review for {$review->game_title}",
+            'metadata' => [
+                'review_id' => $review->id,
+                'game_id' => $review->game_id,
+                'game_title' => $review->game_title,
+                'rating' => $review->rating,
+            ],
+        ]);
 
         return back();
     }
