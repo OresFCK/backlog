@@ -1,11 +1,11 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { router, useForm } from '@inertiajs/vue3'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
 
-defineProps({
+const props = defineProps({
     user: Object,
 
     challenges: {
@@ -15,6 +15,73 @@ defineProps({
 })
 
 const selectedChallenge = ref(null)
+const challengeFilter = ref('open')
+
+const filteredChallenges = computed(() => {
+    switch (challengeFilter.value) {
+        case 'joined':
+            return props.challenges.filter(
+                (challenge) =>
+                    challenge.joined &&
+                    !challenge.completed &&
+                    challenge.submission_status !== 'pending'
+            )
+
+        case 'pending':
+            return props.challenges.filter(
+                (challenge) => challenge.submission_status === 'pending'
+            )
+
+        case 'completed':
+            return props.challenges.filter(
+                (challenge) => challenge.completed
+            )
+
+        case 'all':
+            return props.challenges
+
+        case 'open':
+        default:
+            return props.challenges.filter(
+                (challenge) =>
+                    !challenge.joined ||
+                    (
+                        challenge.joined &&
+                        !challenge.completed &&
+                        challenge.submission_status !== 'pending'
+                    )
+            )
+    }
+})
+
+const counts = computed(() => ({
+    open: props.challenges.filter(
+        (challenge) =>
+            !challenge.joined ||
+            (
+                challenge.joined &&
+                !challenge.completed &&
+                challenge.submission_status !== 'pending'
+            )
+    ).length,
+
+    joined: props.challenges.filter(
+        (challenge) =>
+            challenge.joined &&
+            !challenge.completed &&
+            challenge.submission_status !== 'pending'
+    ).length,
+
+    pending: props.challenges.filter(
+        (challenge) => challenge.submission_status === 'pending'
+    ).length,
+
+    completed: props.challenges.filter(
+        (challenge) => challenge.completed
+    ).length,
+
+    all: props.challenges.length,
+}))
 
 const proofForm = useForm({
     screenshots: [],
@@ -76,11 +143,68 @@ const submitProof = () => {
                     <p class="mt-2 text-zinc-400">
                         Join challenges, submit proof and earn XP, coins or shop items after admin approval.
                     </p>
+
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <button
+                            type="button"
+                            class="rounded-2xl px-4 py-2 text-sm font-bold transition"
+                            :class="challengeFilter === 'open'
+                                ? 'bg-white text-zinc-950'
+                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'"
+                            @click="challengeFilter = 'open'"
+                        >
+                            Open ({{ counts.open }})
+                        </button>
+
+                        <button
+                            type="button"
+                            class="rounded-2xl px-4 py-2 text-sm font-bold transition"
+                            :class="challengeFilter === 'joined'
+                                ? 'bg-white text-zinc-950'
+                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'"
+                            @click="challengeFilter = 'joined'"
+                        >
+                            Joined ({{ counts.joined }})
+                        </button>
+
+                        <button
+                            type="button"
+                            class="rounded-2xl px-4 py-2 text-sm font-bold transition"
+                            :class="challengeFilter === 'pending'
+                                ? 'bg-white text-zinc-950'
+                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'"
+                            @click="challengeFilter = 'pending'"
+                        >
+                            Pending ({{ counts.pending }})
+                        </button>
+
+                        <button
+                            type="button"
+                            class="rounded-2xl px-4 py-2 text-sm font-bold transition"
+                            :class="challengeFilter === 'completed'
+                                ? 'bg-white text-zinc-950'
+                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'"
+                            @click="challengeFilter = 'completed'"
+                        >
+                            Completed ({{ counts.completed }})
+                        </button>
+
+                        <button
+                            type="button"
+                            class="rounded-2xl px-4 py-2 text-sm font-bold transition"
+                            :class="challengeFilter === 'all'
+                                ? 'bg-white text-zinc-950'
+                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'"
+                            @click="challengeFilter = 'all'"
+                        >
+                            All ({{ counts.all }})
+                        </button>
+                    </div>
                 </section>
 
                 <section class="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
                     <article
-                        v-for="challenge in challenges"
+                        v-for="challenge in filteredChallenges"
                         :key="challenge.id"
                         class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
                     >
@@ -167,10 +291,10 @@ const submitProof = () => {
                     </article>
 
                     <div
-                        v-if="!challenges.length"
+                        v-if="!filteredChallenges.length"
                         class="rounded-3xl border border-dashed border-zinc-800 p-10 text-center text-zinc-500"
                     >
-                        No active challenges yet.
+                        No challenges found for this filter.
                     </div>
                 </section>
             </main>
