@@ -11,6 +11,7 @@ class Challenge extends Model
 {
     protected $fillable = [
         'shop_item_id',
+        'game_id',
         'title',
         'description',
         'game_name',
@@ -24,6 +25,11 @@ class Challenge extends Model
         'reward_coins' => 'integer',
         'is_active' => 'boolean',
     ];
+
+    public function game(): BelongsTo
+    {
+        return $this->belongsTo(Game::class);
+    }
 
     public function item(): BelongsTo
     {

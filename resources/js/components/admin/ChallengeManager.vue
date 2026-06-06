@@ -1,5 +1,8 @@
 <script setup>
+import { computed, ref, watch } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
+
+import GameSearchResults from '@/components/game/GameSearchResults.vue'
 
 defineProps({
     shopItems: {
@@ -21,9 +24,9 @@ defineProps({
 const challengeForm = useForm({
     title: '',
     description: '',
-    game_name: '',
-    reward_xp: 0,
-    reward_coins: 0,
+    game_id: '',
+    reward_xp: '',
+    reward_coins: '',
     shop_item_id: '',
     is_active: true,
 })
@@ -32,17 +35,89 @@ const rejectForm = useForm({
     admin_note: '',
 })
 
+const gameSearch = ref('')
+const selectedGame = ref(null)
+
+const steamResults = ref([])
+const igdbResults = ref([])
+
+const loadingSteam = ref(false)
+const loadingIgdb = ref(false)
+
+const loadingGames = computed(() => loadingSteam.value || loadingIgdb.value)
+
+let gameSearchTimeout = null
+
+watch(gameSearch, (value) => {
+    clearTimeout(gameSearchTimeout)
+
+    if (selectedGame.value && value === selectedGame.value.title) {
+        return
+    }
+
+    selectedGame.value = null
+    challengeForm.game_id = ''
+
+    if (!value || value.length < 2) {
+        steamResults.value = []
+        igdbResults.value = []
+        return
+    }
+
+    gameSearchTimeout = setTimeout(async () => {
+        loadingSteam.value = true
+        loadingIgdb.value = true
+
+        try {
+            const [steamResponse, igdbResponse] = await Promise.all([
+                fetch(`/steam/search?q=${encodeURIComponent(value)}`),
+                fetch(`/igdb/search?q=${encodeURIComponent(value)}`),
+            ])
+
+            steamResults.value = steamResponse.ok
+                ? await steamResponse.json()
+                : []
+
+            igdbResults.value = igdbResponse.ok
+                ? await igdbResponse.json()
+                : []
+        } finally {
+            loadingSteam.value = false
+            loadingIgdb.value = false
+        }
+    }, 350)
+})
+
+const selectGame = (game) => {
+    selectedGame.value = game
+    gameSearch.value = game.title
+    challengeForm.game_id = game.id
+
+    steamResults.value = []
+    igdbResults.value = []
+}
+
 const createChallenge = () => {
+    if (!challengeForm.game_id) {
+        alert('Select a game from Steam or IGDB first.')
+        return
+    }
+
     challengeForm.post('/admin/challenges', {
         preserveScroll: true,
 
         onSuccess: () => {
             challengeForm.reset()
-            challengeForm.game_name = ''
-            challengeForm.reward_xp = 0
-            challengeForm.reward_coins = 0
+            challengeForm.reward_xp = ''
+            challengeForm.reward_coins = ''
             challengeForm.shop_item_id = ''
+            challengeForm.game_id = ''
             challengeForm.is_active = true
+
+            gameSearch.value = ''
+            selectedGame.value = null
+            steamResults.value = []
+            igdbResults.value = []
         },
     })
 }
@@ -78,7 +153,7 @@ const rejectSubmission = (submission) => {
 </script>
 
 <template>
-    <section class="grid gap-8 xl:grid-cols-[420px_1fr]">
+    <section class="grid gap-8 xl:grid-cols-[520px_1fr]">
         <form
             class="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
             @submit.prevent="createChallenge"
@@ -93,11 +168,60 @@ const rejectSubmission = (submission) => {
                 class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
             />
 
-            <input
-                v-model="challengeForm.game_name"
-                placeholder="Game name, e.g. Elden Ring"
-                class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
-            />
+            <div class="space-y-3">
+                <input
+                    v-model="gameSearch"
+                    placeholder="Search game, e.g. Elden Ring"
+                    class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                />
+
+                <div
+                    v-if="selectedGame"
+                    class="flex items-center gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4"
+                >
+                    <img
+                        v-if="selectedGame.cover_url || selectedGame.igdb_cover_url"
+                        :src="selectedGame.cover_url || selectedGame.igdb_cover_url"
+                        :alt="selectedGame.title"
+                        class="h-16 w-28 shrink-0 rounded-xl object-cover"
+                    />
+
+                    <div
+                        v-else
+                        class="flex h-16 w-28 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-xs text-zinc-500"
+                    >
+                        GAME
+                    </div>
+
+                    <div class="min-w-0">
+                        <p class="truncate font-semibold text-white">
+                            {{ selectedGame.title }}
+                        </p>
+
+                        <p class="text-sm text-emerald-400">
+                            Selected game
+                        </p>
+                    </div>
+                </div>
+
+                <p
+                    v-if="!selectedGame && gameSearch.length >= 2 && !loadingGames && !steamResults.length && !igdbResults.length"
+                    class="rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300"
+                >
+                    No game found. You must select a game from Steam or IGDB.
+                </p>
+
+                <GameSearchResults
+                    v-if="!selectedGame"
+                    compact
+                    :steam-results="steamResults"
+                    :igdb-results="igdbResults"
+                    :loading="loadingGames"
+                    :duplicate="false"
+                    @select-steam="selectGame"
+                    @select-igdb="selectGame"
+                />
+            </div>
 
             <textarea
                 v-model="challengeForm.description"
@@ -151,8 +275,8 @@ const rejectSubmission = (submission) => {
 
             <button
                 type="submit"
-                class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
-                :disabled="challengeForm.processing"
+                class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="challengeForm.processing || !challengeForm.game_id"
             >
                 Create challenge
             </button>
@@ -282,7 +406,7 @@ const rejectSubmission = (submission) => {
                             </h3>
 
                             <p class="mt-1 text-sm text-emerald-400">
-                                {{ challenge.game_name }}
+                                {{ challenge.game?.title ?? challenge.game_name }}
                             </p>
 
                             <p class="mt-1 text-sm text-zinc-400">

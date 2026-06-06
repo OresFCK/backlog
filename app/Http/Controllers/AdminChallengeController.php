@@ -21,7 +21,10 @@ class AdminChallengeController extends Controller
     {
         return Inertia::render('admin/challenges', [
             'challenges' => Challenge::query()
-                ->with('item:id,name')
+                ->with([
+                    'item:id,name',
+                    'game:id,title,cover_url,igdb_cover_url,steam_app_id,igdb_id',
+                ])
                 ->latest()
                 ->get(),
 
@@ -35,15 +38,21 @@ class AdminChallengeController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        Challenge::query()->create($request->validate([
+        $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'game_name' => ['required', 'string', 'max:255'],
+            'game_id' => ['required', 'exists:games,id'],
             'reward_xp' => ['required', 'integer', 'min:0'],
             'reward_coins' => ['required', 'integer', 'min:0'],
             'shop_item_id' => ['nullable', 'exists:shop_items,id'],
             'is_active' => ['boolean'],
-        ]));
+        ]);
+
+        $game = \App\Models\Game::query()->findOrFail($data['game_id']);
+
+        $data['game_name'] = $game->title;
+
+        Challenge::query()->create($data);
 
         return back();
     }
@@ -135,7 +144,8 @@ class AdminChallengeController extends Controller
     {
         return ChallengeSubmission::query()
             ->with([
-                'challenge:id,title,game_name,reward_xp,reward_coins,shop_item_id',
+                'challenge:id,title,game_id,game_name,reward_xp,reward_coins,shop_item_id',
+                'challenge.game:id,title,cover_url,igdb_cover_url',
                 'challenge.item:id,name',
                 'user:id,name,email,steam_avatar_url',
             ])
@@ -172,7 +182,8 @@ class AdminChallengeController extends Controller
                 'challenge' => [
                     'id' => $submission->challenge?->id,
                     'title' => $submission->challenge?->title,
-                    'game_name' => $submission->challenge?->game_name,
+                    'game_name' => $submission->challenge?->game?->title
+                        ?? $submission->challenge?->game_name,
                     'reward_xp' => $submission->challenge?->reward_xp,
                     'reward_coins' => $submission->challenge?->reward_coins,
 
