@@ -1,12 +1,43 @@
 <script setup>
+import { computed, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { Check, Trash2 } from 'lucide-vue-next'
 
-defineProps({
+const props = defineProps({
     reports: {
         type: Array,
         default: () => [],
     },
+})
+
+const selectedStatus = ref('all')
+const selectedUser = ref('all')
+
+const reporterOptions = computed(() => {
+    const users = new Map()
+
+    props.reports.forEach((report) => {
+        if (report.reporter?.id) {
+            users.set(report.reporter.id, report.reporter.name || 'Unknown')
+        }
+    })
+
+    return Array.from(users, ([id, name]) => ({ id, name }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+})
+
+const filteredReports = computed(() => {
+    return props.reports.filter((report) => {
+        const matchesStatus =
+            selectedStatus.value === 'all' ||
+            report.status === selectedStatus.value
+
+        const matchesUser =
+            selectedUser.value === 'all' ||
+            String(report.reporter?.id) === String(selectedUser.value)
+
+        return matchesStatus && matchesUser
+    })
 })
 
 const resolveReport = (report) => {
@@ -35,22 +66,64 @@ const deleteReview = (report) => {
 
 <template>
     <section class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
-        <div class="mb-6">
-            <h2 class="text-2xl font-black text-white">
-                Review Reports
-            </h2>
+        <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <h2 class="text-2xl font-black text-white">
+                    Review Reports
+                </h2>
 
-            <p class="mt-1 text-sm text-zinc-400">
-                Review reports submitted by users.
-            </p>
+                <p class="mt-1 text-sm text-zinc-400">
+                    Review reports submitted by users.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <select
+                    v-model="selectedStatus"
+                    class="rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                >
+                    <option value="all">
+                        All statuses
+                    </option>
+
+                    <option value="pending">
+                        Pending
+                    </option>
+
+                    <option value="resolved">
+                        Resolved
+                    </option>
+                </select>
+
+                <select
+                    v-model="selectedUser"
+                    class="rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                >
+                    <option value="all">
+                        All reporters
+                    </option>
+
+                    <option
+                        v-for="user in reporterOptions"
+                        :key="user.id"
+                        :value="user.id"
+                    >
+                        {{ user.name }}
+                    </option>
+                </select>
+            </div>
         </div>
 
+        <p class="mb-4 text-sm text-zinc-500">
+            Showing {{ filteredReports.length }} of {{ reports.length }} reports.
+        </p>
+
         <div
-            v-if="reports.length"
+            v-if="filteredReports.length"
             class="space-y-5"
         >
             <article
-                v-for="report in reports"
+                v-for="report in filteredReports"
                 :key="report.id"
                 class="rounded-2xl border border-zinc-800 bg-zinc-950 p-5"
             >
@@ -124,7 +197,8 @@ const deleteReview = (report) => {
                     <div class="flex shrink-0 flex-wrap gap-3">
                         <button
                             type="button"
-                            class="inline-flex items-center gap-2 rounded-xl border border-zinc-700 px-4 py-2 text-sm font-bold text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
+                            class="inline-flex items-center gap-2 rounded-xl border border-zinc-700 px-4 py-2 text-sm font-bold text-zinc-300 transition hover:bg-zinc-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                            :disabled="report.status === 'resolved'"
                             @click="resolveReport(report)"
                         >
                             <Check class="h-4 w-4" />
@@ -149,11 +223,11 @@ const deleteReview = (report) => {
             class="rounded-2xl border border-dashed border-zinc-800 p-10 text-center"
         >
             <h3 class="text-xl font-bold text-white">
-                No reports yet
+                No reports found
             </h3>
 
             <p class="mt-2 text-zinc-500">
-                Reported reviews will appear here.
+                Try changing the selected filters.
             </p>
         </div>
     </section>
