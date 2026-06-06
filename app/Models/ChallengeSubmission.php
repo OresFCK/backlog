@@ -11,12 +11,15 @@ class ChallengeSubmission extends Model
         'challenge_id',
         'user_id',
         'screenshot_path',
+        'screenshot_paths',
+        'description',
         'status',
         'admin_note',
         'reviewed_at',
     ];
 
     protected $casts = [
+        'screenshot_paths' => 'array',
         'reviewed_at' => 'datetime',
     ];
 

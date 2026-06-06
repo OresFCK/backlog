@@ -17,7 +17,8 @@ defineProps({
 const selectedChallenge = ref(null)
 
 const proofForm = useForm({
-    screenshot: null,
+    screenshots: [],
+    description: '',
 })
 
 const joinChallenge = (challenge) => {
@@ -28,14 +29,22 @@ const joinChallenge = (challenge) => {
 
 const openProofModal = (challenge) => {
     selectedChallenge.value = challenge
+    proofForm.clearErrors()
     proofForm.reset()
-    proofForm.screenshot = null
+    proofForm.screenshots = []
+    proofForm.description = ''
 }
 
 const closeProofModal = () => {
     selectedChallenge.value = null
+    proofForm.clearErrors()
     proofForm.reset()
-    proofForm.screenshot = null
+    proofForm.screenshots = []
+    proofForm.description = ''
+}
+
+const handleScreenshots = (event) => {
+    proofForm.screenshots = Array.from(event.target.files ?? []).slice(0, 5)
 }
 
 const submitProof = () => {
@@ -180,7 +189,7 @@ const submitProof = () => {
                 </h2>
 
                 <p class="mt-2 text-sm text-zinc-400">
-                    Upload a screenshot proving you completed:
+                    Upload screenshots proving you completed:
                     <span class="font-bold text-white">
                         {{ selectedChallenge.title }}
                     </span>
@@ -188,16 +197,57 @@ const submitProof = () => {
 
                 <input
                     type="file"
+                    multiple
                     accept="image/jpeg,image/png,image/webp"
                     class="mt-6 w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white file:mr-4 file:rounded-xl file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-bold file:text-zinc-950"
-                    @input="proofForm.screenshot = $event.target.files[0]"
+                    @input="handleScreenshots"
                 />
+
+                <p class="mt-2 text-xs text-zinc-500">
+                    You can upload up to 5 screenshots.
+                </p>
+
+                <p
+                    v-if="proofForm.errors.screenshots"
+                    class="mt-2 text-sm text-red-400"
+                >
+                    {{ proofForm.errors.screenshots }}
+                </p>
+
+                <p
+                    v-if="proofForm.errors['screenshots.0']"
+                    class="mt-2 text-sm text-red-400"
+                >
+                    {{ proofForm.errors['screenshots.0'] }}
+                </p>
+
+                <textarea
+                    v-model="proofForm.description"
+                    rows="4"
+                    maxlength="1000"
+                    placeholder="Add a short description for your submission..."
+                    class="mt-4 w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                />
+
+                <p
+                    v-if="proofForm.errors.description"
+                    class="mt-2 text-sm text-red-400"
+                >
+                    {{ proofForm.errors.description }}
+                </p>
+
+                <div
+                    v-if="proofForm.screenshots.length"
+                    class="mt-3 text-xs text-zinc-400"
+                >
+                    Selected files: {{ proofForm.screenshots.length }} / 5
+                </div>
 
                 <div class="mt-6 flex gap-3">
                     <button
                         type="submit"
-                        class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
-                        :disabled="proofForm.processing"
+                        class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+                        :disabled="proofForm.processing || !proofForm.screenshots.length"
                     >
                         Send to admin
                     </button>

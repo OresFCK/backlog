@@ -85,12 +85,14 @@ class ChallengeController extends Controller
 
     public function submit(Request $request, Challenge $challenge): RedirectResponse
     {
-        $request->validate([
-            'screenshot' => [
+        $data = $request->validate([
+            'description' => ['nullable', 'string', 'max:1000'],
+            'screenshots' => ['required', 'array', 'min:1', 'max:5'],
+            'screenshots.*' => [
                 'required',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:4096',
+                'max:5120',
             ],
         ]);
 
@@ -100,9 +102,11 @@ class ChallengeController extends Controller
             $challenge->id,
         ]);
 
-        $path = $request
-            ->file('screenshot')
-            ->store('challenge-submissions', 'public');
+        $paths = [];
+
+        foreach ($request->file('screenshots', []) as $screenshot) {
+            $paths[] = $screenshot->store('challenge-submissions', 'public');
+        }
 
         ChallengeSubmission::query()->updateOrCreate(
             [
@@ -110,7 +114,9 @@ class ChallengeController extends Controller
                 'user_id' => $user->id,
             ],
             [
-                'screenshot_path' => $path,
+                'screenshot_path' => $paths[0] ?? null,
+                'screenshot_paths' => $paths,
+                'description' => $data['description'] ?? null,
                 'status' => 'pending',
                 'admin_note' => null,
                 'reviewed_at' => null,
