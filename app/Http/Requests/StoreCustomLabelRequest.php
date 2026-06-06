@@ -18,7 +18,7 @@ class StoreCustomLabelRequest extends FormRequest
                 'required',
                 'string',
                 'min:2',
-                'max:24',
+                'max:18',
             ],
 
             'color' => [
