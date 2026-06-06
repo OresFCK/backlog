@@ -319,6 +319,21 @@ Route::middleware(['auth', 'admin'])
         Route::post('/users/{user}/coins', [AdminUserController::class, 'addCoins'])
             ->name('users.coins');
 
+        Route::get('/grantables', [AdminUserController::class, 'grantables'])
+            ->name('grantables');
+
+        Route::post('/users/{user}/xp', [AdminUserController::class, 'addXp'])
+            ->name('users.xp');
+
+        Route::post('/users/{user}/level', [AdminUserController::class, 'setLevel'])
+            ->name('users.level');
+
+        Route::post('/users/{user}/items', [AdminUserController::class, 'grantItem'])
+            ->name('users.items');
+
+        Route::post('/users/{user}/challenges', [AdminUserController::class, 'completeChallenge'])
+            ->name('users.challenges');
+
         Route::post('/challenge-submissions/{submission}/approve', [AdminChallengeController::class, 'approve'])
             ->name('challenge-submissions.approve');
 

@@ -15,7 +15,7 @@ const form = useForm({
     name: '',
     description: '',
     type: 'profile_overlay',
-    price: 0,
+    price: '',
     image: null,
     is_active: true,
 })
