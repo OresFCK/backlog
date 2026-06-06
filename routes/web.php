@@ -137,13 +137,26 @@ Route::middleware('auth')->group(function () {
         StoreCustomLabelRequest $request
     ) => Payload::storeCustomLabel($request))->name('settings.labels.store');
 
-    Route::get('/games/{game}', fn (
+    Route::get('/games/{game}', function (
         string $game,
         SteamService $steam
-    ) => Inertia::render(
-        'games/show',
-        Payload::gamePageData($game, $steam)
-    ))->name('games.show');
+    ) {
+        try {
+            $data = Payload::gamePageData($game, $steam);
+        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
+            return redirect()
+                ->route('dashboard')
+                ->with('no_product_card', true);
+        }
+
+        if (blank($data['game'] ?? null)) {
+            return redirect()
+                ->route('dashboard')
+                ->with('no_product_card', true);
+        }
+
+        return Inertia::render('games/show', $data);
+    })->name('games.show');
 
     Route::get('/profile', fn (
         SteamService $steam

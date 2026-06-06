@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
@@ -9,6 +9,11 @@ import RecommendationsSection from '@/components/recommendations/Recommendations
 
 const props = defineProps({
     user: Object,
+
+    flash: {
+        type: Object,
+        default: () => ({}),
+    },
 
     games: {
         type: Array,
@@ -34,11 +39,20 @@ const props = defineProps({
 const sortBy = ref('name')
 const searchQuery = ref('')
 const selectedStatus = ref('all')
+const showNoProductCardPopup = ref(false)
+
+watch(
+    () => props.flash?.no_product_card,
+    (value) => {
+        if (value) {
+            showNoProductCardPopup.value = true
+        }
+    },
+    { immediate: true }
+)
 
 const mappedGames = computed(() => {
-
     let games = props.games.map((game) => {
-
         const status =
             props.statuses.find(
                 (item) =>
@@ -80,20 +94,14 @@ const mappedGames = computed(() => {
     })
 
     if (searchQuery.value.trim()) {
-
         games = games.filter((game) =>
             String(game.title)
                 .toLowerCase()
-                .includes(
-                    searchQuery.value.toLowerCase()
-                )
+                .includes(searchQuery.value.toLowerCase())
         )
     }
 
-    if (
-        selectedStatus.value !== 'all'
-    ) {
-
+    if (selectedStatus.value !== 'all') {
         games = games.filter(
             (game) =>
                 game.status ===
@@ -102,9 +110,7 @@ const mappedGames = computed(() => {
     }
 
     switch (sortBy.value) {
-
         case 'playtime':
-
             return games.sort(
                 (a, b) =>
                     b.average_playtime_minutes -
@@ -112,7 +118,6 @@ const mappedGames = computed(() => {
             )
 
         case 'rating':
-
             return games.sort(
                 (a, b) =>
                     (b.rating ?? 0) -
@@ -120,7 +125,6 @@ const mappedGames = computed(() => {
             )
 
         default:
-
             return games.sort((a, b) =>
                 String(a.title).localeCompare(
                     String(b.title)
@@ -138,7 +142,6 @@ const mappedGames = computed(() => {
             <Topbar :user="user" />
 
             <main class="flex-1 space-y-10 p-8">
-
                 <section
                     v-if="
                         friendsRanking?.length ||
@@ -146,43 +149,27 @@ const mappedGames = computed(() => {
                     "
                 >
                     <RecommendationsSection
-                        :friends-ranking="
-                            friendsRanking
-                        "
-                        :global-ranking="
-                            globalRanking
-                        "
+                        :friends-ranking="friendsRanking"
+                        :global-ranking="globalRanking"
                     />
                 </section>
 
                 <section>
-                    <div
-                        class="mb-6 flex flex-wrap items-center justify-between gap-4"
-                    >
+                    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
                         <div>
-                            <h2
-                                class="text-2xl font-bold text-white"
-                            >
+                            <h2 class="text-2xl font-bold text-white">
                                 Your game library
                             </h2>
 
-                            <p
-                                class="mt-1 text-zinc-400"
-                            >
-                                {{
-                                    mappedGames.length
-                                }}
+                            <p class="mt-1 text-zinc-400">
+                                {{ mappedGames.length }}
                                 games available
                             </p>
                         </div>
 
-                        <div
-                            class="flex flex-wrap items-center gap-4"
-                        >
+                        <div class="flex flex-wrap items-center gap-4">
                             <input
-                                v-model="
-                                    searchQuery
-                                "
+                                v-model="searchQuery"
                                 type="text"
                                 placeholder="Search games..."
                                 class="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-500"
@@ -206,9 +193,7 @@ const mappedGames = computed(() => {
                             </select>
 
                             <select
-                                v-model="
-                                    selectedStatus
-                                "
+                                v-model="selectedStatus"
                                 class="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
                             >
                                 <option value="all">
@@ -217,26 +202,41 @@ const mappedGames = computed(() => {
 
                                 <option
                                     v-for="status in statuses"
-                                    :key="
-                                        status.id
-                                    "
-                                    :value="
-                                        status.name
-                                    "
+                                    :key="status.id"
+                                    :value="status.name"
                                 >
-                                    {{
-                                        status.name
-                                    }}
+                                    {{ status.name }}
                                 </option>
                             </select>
                         </div>
                     </div>
 
-                    <GameGrid
-                        :games="mappedGames"
-                    />
+                    <GameGrid :games="mappedGames" />
                 </section>
             </main>
+        </div>
+
+        <div
+            v-if="showNoProductCardPopup"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+        >
+            <div class="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-900 p-6 text-center shadow-2xl">
+                <h3 class="text-xl font-black text-white">
+                    No product card
+                </h3>
+
+                <p class="mt-3 text-sm text-zinc-400">
+                    Sadly this game has no product card so we can`t show you much :&lt;
+                </p>
+
+                <button
+                    type="button"
+                    class="mt-6 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
+                    @click="showNoProductCardPopup = false"
+                >
+                    Okay
+                </button>
+            </div>
         </div>
     </div>
 </template>
