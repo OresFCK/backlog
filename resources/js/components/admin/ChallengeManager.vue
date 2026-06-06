@@ -142,7 +142,11 @@ const deleteChallenge = (challenge) => {
 }
 
 const approveSubmission = (submission) => {
-    router.post(`/admin/challenge-submissions/${submission.id}/approve`, {}, {
+    const note = prompt('Comment for accepted submission?') ?? ''
+
+    router.post(`/admin/challenge-submissions/${submission.id}/approve`, {
+        admin_note: note,
+    }, {
         preserveScroll: true,
     })
 }
@@ -303,18 +307,36 @@ const rejectSubmission = (submission) => {
                     <div
                         v-for="submission in submissions"
                         :key="submission.id"
-                        class="grid gap-5 p-5 lg:grid-cols-[180px_1fr]"
+                        class="grid gap-5 p-5 lg:grid-cols-[220px_1fr]"
                     >
-                        <a
-                            :href="submission.screenshot_url"
-                            target="_blank"
-                            class="block overflow-hidden rounded-2xl bg-zinc-800"
-                        >
-                            <img
-                                :src="submission.screenshot_url"
-                                class="h-32 w-full object-cover"
-                            />
-                        </a>
+                        <div class="grid gap-2">
+                            <template v-if="submission.screenshot_urls?.length">
+                                <a
+                                    v-for="url in submission.screenshot_urls"
+                                    :key="url"
+                                    :href="url"
+                                    target="_blank"
+                                    class="block overflow-hidden rounded-2xl bg-zinc-800"
+                                >
+                                    <img
+                                        :src="url"
+                                        class="h-28 w-full object-cover"
+                                    />
+                                </a>
+                            </template>
+
+                            <a
+                                v-else-if="submission.screenshot_url"
+                                :href="submission.screenshot_url"
+                                target="_blank"
+                                class="block overflow-hidden rounded-2xl bg-zinc-800"
+                            >
+                                <img
+                                    :src="submission.screenshot_url"
+                                    class="h-32 w-full object-cover"
+                                />
+                            </a>
+                        </div>
 
                         <div>
                             <div class="flex items-start justify-between gap-4">
@@ -357,12 +379,30 @@ const rejectSubmission = (submission) => {
                                 Item: {{ submission.challenge.item.name }}
                             </p>
 
-                            <p
-                                v-if="submission.admin_note"
-                                class="mt-3 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300"
+                            <div
+                                v-if="submission.description"
+                                class="mt-3 rounded-xl border border-zinc-700 bg-zinc-950 p-3 text-sm text-zinc-300"
                             >
+                                <p class="mb-1 text-xs font-bold uppercase tracking-wide text-zinc-500">
+                                    User description
+                                </p>
+
+                                {{ submission.description }}
+                            </div>
+
+                            <div
+                                v-if="submission.admin_note"
+                                class="mt-3 rounded-xl border p-3 text-sm"
+                                :class="submission.status === 'approved'
+                                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+                                    : 'border-red-500/20 bg-red-500/10 text-red-300'"
+                            >
+                                <p class="mb-1 text-xs font-bold uppercase tracking-wide opacity-70">
+                                    Admin comment
+                                </p>
+
                                 {{ submission.admin_note }}
-                            </p>
+                            </div>
 
                             <div
                                 v-if="submission.status === 'pending'"

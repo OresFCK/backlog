@@ -78,8 +78,12 @@ class AdminChallengeController extends Controller
         return back();
     }
 
-    public function approve(ChallengeSubmission $submission): RedirectResponse
+    public function approve(Request $request, ChallengeSubmission $submission): RedirectResponse
     {
+        $data = $request->validate([
+            'admin_note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
         if ($submission->status === 'approved') {
             return back();
         }
@@ -92,7 +96,7 @@ class AdminChallengeController extends Controller
         $user = $submission->user;
         $challenge = $submission->challenge;
 
-        DB::transaction(function () use ($submission, $user, $challenge) {
+        DB::transaction(function () use ($submission, $user, $challenge, $data) {
             $newXp = $user->xp + $challenge->reward_xp;
 
             $user->update([
@@ -118,6 +122,7 @@ class AdminChallengeController extends Controller
 
             $submission->update([
                 'status' => 'approved',
+                'admin_note' => $data['admin_note'] ?? null,
                 'reviewed_at' => now(),
             ]);
 
@@ -130,6 +135,7 @@ class AdminChallengeController extends Controller
                     'reward_xp' => $challenge->reward_xp,
                     'reward_coins' => $challenge->reward_coins,
                     'shop_item_id' => $challenge->shop_item_id,
+                    'admin_note' => $data['admin_note'] ?? null,
                 ],
             ]);
         });
@@ -137,10 +143,8 @@ class AdminChallengeController extends Controller
         return back();
     }
 
-    public function reject(
-        Request $request,
-        ChallengeSubmission $submission
-    ): RedirectResponse {
+    public function reject(Request $request, ChallengeSubmission $submission): RedirectResponse
+    {
         $data = $request->validate([
             'admin_note' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -192,7 +196,9 @@ class AdminChallengeController extends Controller
                 'user_id',
                 'status',
                 'admin_note',
+                'description',
                 'screenshot_path',
+                'screenshot_paths',
                 'created_at',
                 'reviewed_at',
             ])
@@ -200,12 +206,17 @@ class AdminChallengeController extends Controller
                 'id' => $submission->id,
                 'status' => $submission->status,
                 'admin_note' => $submission->admin_note,
+                'description' => $submission->description,
                 'created_at' => $submission->created_at?->format('Y-m-d H:i'),
                 'reviewed_at' => $submission->reviewed_at?->format('Y-m-d H:i'),
 
                 'screenshot_url' => $submission->screenshot_path
                     ? Storage::url($submission->screenshot_path)
                     : null,
+
+                'screenshot_urls' => collect($submission->screenshot_paths ?? [])
+                    ->map(fn ($path) => Storage::url($path))
+                    ->values(),
 
                 'user' => [
                     'id' => $submission->user?->id,

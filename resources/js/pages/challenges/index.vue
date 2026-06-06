@@ -285,7 +285,13 @@ const submitProof = () => {
                                 v-else
                                 class="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-3 text-center text-sm font-bold text-emerald-400"
                             >
-                                Completed
+                                <template v-if="challenge.admin_note">
+                                    {{ challenge.admin_note }}
+                                </template>
+
+                                <template v-else>
+                                    Completed
+                                </template>
                             </div>
                         </div>
                     </article>
