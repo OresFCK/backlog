@@ -103,11 +103,20 @@ class PayloadHelper
 
     public static function profilePageData(SteamService $steam): array
     {
+        $user = Auth::user();
+
+        $games = collect(
+            self::library()->allGamesForUser($user, $steam)
+        )->keyBy(fn ($game) => (string) $game['id']);
+
         return [
             'user' => self::currentUser(),
             'games' => self::library()->allGames($steam),
             'activity' => self::library()->activityLog($steam),
             'equippedItems' => self::equippedItems(),
+            'featuredGames' => self::featuredGames($user, $games),
+            'featuredReviews' => self::featuredReviews($user),
+            'featuredWardrobeItems' => self::featuredWardrobeItems($user),
         ];
     }
 

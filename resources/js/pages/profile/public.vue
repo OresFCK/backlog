@@ -148,13 +148,6 @@ defineProps({
                                 </span>
                             </div>
 
-                            <p
-                                v-if="item.note"
-                                class="mt-5 line-clamp-4 text-sm leading-6 text-zinc-300"
-                            >
-                                {{ item.note }}
-                            </p>
-
                             <p class="mt-5 text-xs text-zinc-600">
                                 Last updated {{ item.updated_at ?? 'recently' }}
                             </p>

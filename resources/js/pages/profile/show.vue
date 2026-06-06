@@ -29,20 +29,35 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+
+    featuredGames: {
+        type: Array,
+        default: () => [],
+    },
+
+    featuredReviews: {
+        type: Array,
+        default: () => [],
+    },
+
+    featuredWardrobeItems: {
+        type: Array,
+        default: () => [],
+    },
 })
 
-const activeSection = ref('overview')
+const activeSection = ref('showcase')
 
 const menuItems = [
-    {
-        key: 'overview',
-        label: 'Overview',
-        icon: Home,
-    },
     {
         key: 'showcase',
         label: 'Showcase',
         icon: Image,
+    },
+    {
+        key: 'overview',
+        label: 'Overview',
+        icon: Home,
     },
     {
         key: 'activity',
@@ -179,23 +194,25 @@ const stats = computed(() => {
                 />
 
                 <div class="mx-auto max-w-7xl p-8">
-                    <template v-if="activeSection === 'overview'">
+                    <template
+                        v-if="activeSection === 'showcase'"
+                    >
+                        <ProfileShowcase
+                            :showcase="equippedByType.profile_showcase"
+                            :featured-games="featuredGames"
+                            :featured-reviews="featuredReviews"
+                            :featured-wardrobe-items="featuredWardrobeItems"
+                        />
+                    </template>
+                    
+
+                    <template v-else-if="activeSection === 'overview'">
                         <ProfileStats
                             :games-count="games.length"
                             :stats="stats"
                         />
                     </template>
-
-                    <template
-                        v-else-if="activeSection === 'showcase'"
-                    >
-                        <ProfileShowcase
-                            :showcase="
-                                equippedByType.profile_showcase
-                            "
-                        />
-                    </template>
-
+                    
                     <template
                         v-else-if="activeSection === 'activity'"
                     >
