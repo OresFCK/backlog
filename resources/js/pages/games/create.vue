@@ -202,10 +202,10 @@ function submit() {
         <div class="flex flex-1 flex-col">
             <Topbar :user="user" />
 
-            <main class="mx-auto w-full max-w-5xl flex-1 p-8">
+            <main class="mx-auto w-full max-w-7xl flex-1 p-8">
                 <GameAddHeader />
 
-                <div class="grid gap-8 lg:grid-cols-[1fr_360px]">
+                <div class="grid gap-8 2xl:grid-cols-[minmax(0,1fr)_380px]">
                     <GameSearchResults
                         :steam-results="steamResults"
                         :igdb-results="igdbResults"
