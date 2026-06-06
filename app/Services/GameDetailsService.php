@@ -100,8 +100,8 @@ class GameDetailsService
                 ?? $this->steamCoverUrl($gameId),
 
             'header_image' => $details['header_image'] ?? null,
-            'description' => strip_tags($details['short_description'] ?? ''),
-            'about' => strip_tags($details['about_the_game'] ?? ''),
+            'description' => $this->plainTextFromHtml($details['short_description'] ?? ''),
+            'about' => $this->plainTextFromHtml($details['about_the_game'] ?? ''),
 
             'developers' => $details['developers'] ?? [],
             'publishers' => $details['publishers'] ?? [],
@@ -122,6 +122,29 @@ class GameDetailsService
 
             ...$this->meta->metaPayload($meta),
         ];
+    }
+
+    private function plainTextFromHtml(?string $html): string
+    {
+        if (! $html) {
+            return '';
+        }
+
+        $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        $html = preg_replace('/<\s*br\s*\/?>/i', "\n", $html);
+        $html = preg_replace('/<\s*\/p\s*>/i', "\n\n", $html);
+        $html = preg_replace('/<\s*\/div\s*>/i', "\n\n", $html);
+        $html = preg_replace('/<\s*\/li\s*>/i', "\n", $html);
+        $html = preg_replace('/<\s*li[^>]*>/i', '• ', $html);
+        $html = preg_replace('/<\s*\/h[1-6]\s*>/i', "\n\n", $html);
+
+        $text = strip_tags($html);
+
+        $text = preg_replace("/[ \t]+/", ' ', $text);
+        $text = preg_replace("/\n{3,}/", "\n\n", $text);
+
+        return trim($text);
     }
 
     private function cachedAppDetails(SteamService $steam, string $gameId): ?array

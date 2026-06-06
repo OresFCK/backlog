@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
@@ -39,6 +39,17 @@ const status = ref('')
 const showOnPublicProfile = ref(props.game.show_on_public_profile ?? false)
 
 const isReviewModalOpen = ref(false)
+const isAboutExpanded = ref(false)
+
+const aboutText = computed(() => {
+    return props.game.about ||
+        props.game.description ||
+        'No details available.'
+})
+
+const shouldShowReadMore = computed(() => {
+    return aboutText.value.length > 700
+})
 
 watch(
     () => props.statuses,
@@ -109,7 +120,7 @@ const toggleNotRecommended = () => {
                     />
 
                     <div class="grid gap-8 p-10 lg:grid-cols-[1fr_360px]">
-                        <section class="space-y-8">
+                        <section class="min-w-0 space-y-8">
                             <div class="space-y-5">
                                 <div class="grid gap-5 lg:grid-cols-[1fr_260px]">
                                     <GameNotes
@@ -131,9 +142,9 @@ const toggleNotRecommended = () => {
                                 </div>
 
                                 <CustomGameDetailsEditor
-    v-if="game.is_custom"
-    :game="game"
-/>
+                                    v-if="game.is_custom"
+                                    :game="game"
+                                />
 
                                 <GameStats :game="game" />
                             </div>
@@ -145,13 +156,28 @@ const toggleNotRecommended = () => {
                                     About
                                 </h2>
 
-                                <p class="mt-3 whitespace-pre-line text-zinc-400">
-                                    {{
-                                        game.about ||
-                                        game.description ||
-                                        'No details available.'
-                                    }}
-                                </p>
+                                <div
+                                    class="relative mt-3 overflow-hidden"
+                                    :class="!isAboutExpanded && shouldShowReadMore ? 'max-h-48' : ''"
+                                >
+                                    <p class="whitespace-pre-line break-words text-zinc-400">
+                                        {{ aboutText }}
+                                    </p>
+
+                                    <div
+                                        v-if="!isAboutExpanded && shouldShowReadMore"
+                                        class="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-zinc-900 to-transparent"
+                                    />
+                                </div>
+
+                                <button
+                                    v-if="shouldShowReadMore"
+                                    type="button"
+                                    class="mt-4 rounded-xl border border-zinc-700 px-4 py-2 text-sm font-bold text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+                                    @click="isAboutExpanded = !isAboutExpanded"
+                                >
+                                    {{ isAboutExpanded ? 'Show less' : 'Read more' }}
+                                </button>
                             </div>
                         </section>
 
