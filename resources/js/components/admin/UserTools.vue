@@ -6,6 +6,7 @@ import {
 } from 'vue'
 
 import {
+    Link,
     useForm,
 } from '@inertiajs/vue3'
 
@@ -568,39 +569,50 @@ const completeChallenge = () => {
             </div>
         </div>
 
-        <div class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
-            <div class="border-b border-zinc-800 p-6">
-                <h2 class="text-xl font-bold text-white">
-                    User activity
-                </h2>
+    <div class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
+        <div class="border-b border-zinc-800 p-6">
+            <h2 class="text-xl font-bold text-white">
+                User activity
+            </h2>
+
+            <p class="mt-1 text-sm text-zinc-500">
+                Shows actions performed by the selected user.
+            </p>
+        </div>
+
+        <div class="divide-y divide-zinc-800">
+            <div
+                v-for="log in userLogs"
+                :key="log.id"
+                class="p-5"
+            >
+                <Link
+                    v-if="log.url"
+                    :href="log.url"
+                    class="font-bold text-indigo-300 transition hover:text-indigo-200 hover:underline"
+                >
+                    {{ log.message }}
+                </Link>
+
+                <p
+                    v-else
+                    class="font-bold text-white"
+                >
+                    {{ log.message }}
+                </p>
 
                 <p class="mt-1 text-sm text-zinc-500">
-                    Shows actions performed by the selected user.
+                    {{ log.created_at }}
                 </p>
             </div>
 
-            <div class="divide-y divide-zinc-800">
-                <div
-                    v-for="log in userLogs"
-                    :key="log.id"
-                    class="p-5"
-                >
-                    <p class="font-bold text-white">
-                        {{ log.message }}
-                    </p>
-
-                    <p class="mt-1 text-sm text-zinc-500">
-                        {{ log.created_at }}
-                    </p>
-                </div>
-
-                <div
-                    v-if="!userLogs.length"
-                    class="p-10 text-center text-zinc-500"
-                >
-                    Search user to see their activity.
-                </div>
+            <div
+                v-if="!userLogs.length"
+                class="p-10 text-center text-zinc-500"
+            >
+                Search user to see their activity.
             </div>
         </div>
+    </div>
     </section>
 </template>

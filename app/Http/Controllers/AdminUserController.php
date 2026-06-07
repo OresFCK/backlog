@@ -41,6 +41,24 @@ class AdminUserController extends Controller
                 ->latest()
                 ->limit(30)
                 ->get()
+                ->map(function (ActivityLog $log) {
+                    $reviewId =
+                        $log->metadata['public_review_id']
+                        ?? $log->metadata['review_id']
+                        ?? null;
+
+                    return [
+                        'id' => $log->id,
+                        'type' => $log->type,
+                        'message' => $log->message,
+                        'metadata' => $log->metadata,
+                        'created_at' => $log->created_at?->diffForHumans(),
+
+                        'url' => $reviewId
+                            ? "/admin/reviews/{$reviewId}"
+                            : null,
+                    ];
+                })
         );
     }
 

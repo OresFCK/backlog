@@ -2,16 +2,21 @@
 
 use App\Helpers\PayloadHelper as Payload;
 use App\Http\Controllers\AdminChallengeController;
+use App\Http\Controllers\AdminReviewController;
 use App\Http\Controllers\AdminReviewReportController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\Auth\SteamAuthController;
 use App\Http\Controllers\ChallengeController;
+use App\Http\Controllers\CustomGameController;
+use App\Http\Controllers\IgdbDumpController;
+use App\Http\Controllers\IgdbGameSearchController;
 use App\Http\Controllers\PublicReviewController;
 use App\Http\Controllers\PublicReviewReportController;
 use App\Http\Controllers\PublicReviewVoteController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\ShopItemController;
+use App\Http\Controllers\StatsController;
 use App\Http\Controllers\UserConnectionController;
 use App\Http\Controllers\WardrobeController;
 use App\Http\Requests\StoreCustomGameRequest;
@@ -19,9 +24,6 @@ use App\Http\Requests\StoreCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
-use App\Http\Controllers\IgdbDumpController;
-use App\Http\Controllers\IgdbGameSearchController;
-use App\Http\Controllers\StatsController;
 use App\Models\User;
 use App\Services\SteamService;
 use Illuminate\Support\Facades\Route;
@@ -30,11 +32,8 @@ use Inertia\Inertia;
 
 Route::redirect('/', '/home');
 
-Route::inertia('/home', 'home')
-    ->name('home');
-
-Route::inertia('/login', 'auth/login')
-    ->name('login');
+Route::inertia('/home', 'home')->name('home');
+Route::inertia('/login', 'auth/login')->name('login');
 
 Route::get('/u/{user:steam_id}', fn (
     User $user,
@@ -95,21 +94,64 @@ Route::middleware('auth')->group(function () {
         Inertia::render('wishlist/index', Payload::wishlistPageData($steam))
     )->name('wishlist.index');
 
+    Route::get('/dropped', fn (SteamService $steam) =>
+        Inertia::render('dropped/index', Payload::droppedPageData($steam))
+    )->name('dropped.index');
+
     Route::get('/recommendations', [
         RecommendationController::class,
         'index',
     ])->name('recommendations.index');
 
-    Route::get('/games/create', fn (SteamService $steam) =>
-        Inertia::render('games/create', Payload::pageData($steam))
-    )->name('games.create');
+    Route::get('/stats', [
+        StatsController::class,
+        'index',
+    ])->name('stats.index');
 
-    Route::post('/games', fn (
-        StoreCustomGameRequest $request
-    ) => Payload::storeCustomGame($request))->name('games.store');
+    Route::get('/steam/search', fn (
+        SteamService $steam
+    ) => Payload::steamSearch($steam))->name('steam.search');
+
+    Route::prefix('games')
+        ->name('games.')
+        ->group(function () {
+            Route::get('/create', fn (SteamService $steam) =>
+                Inertia::render('games/create', Payload::pageData($steam))
+            )->name('create');
+
+            Route::post('/', fn (
+                StoreCustomGameRequest $request
+            ) => Payload::storeCustomGame($request))->name('store');
+
+            Route::post('/{game}/meta', fn (
+                UpdateGameMetaRequest $request,
+                string $game
+            ) => Payload::storeMeta($request, $game))->name('meta');
+
+            Route::get('/{game}', function (
+                string $game,
+                SteamService $steam
+            ) {
+                try {
+                    $data = Payload::gamePageData($game, $steam);
+                } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
+                    return redirect()
+                        ->route('dashboard')
+                        ->with('no_product_card', true);
+                }
+
+                if (blank($data['game'] ?? null)) {
+                    return redirect()
+                        ->route('dashboard')
+                        ->with('no_product_card', true);
+                }
+
+                return Inertia::render('games/show', $data);
+            })->name('show');
+        });
 
     Route::patch('/custom-games/{customGame}', [
-        \App\Http\Controllers\CustomGameController::class,
+        CustomGameController::class,
         'update',
     ])->name('custom-games.update');
 
@@ -117,258 +159,339 @@ Route::middleware('auth')->group(function () {
         StoreCustomStatusRequest $request
     ) => Payload::storeStatus($request))->name('statuses.store');
 
-    Route::post('/games/{game}/meta', fn (
-        UpdateGameMetaRequest $request,
-        string $game
-    ) => Payload::storeMeta($request, $game))->name('games.meta');
+    Route::prefix('settings')
+        ->name('settings.')
+        ->group(function () {
+            Route::get('/labels', fn () =>
+                Inertia::render('settings/labels', [
+                    'user' => Payload::currentUser(),
+                    'labels' => Payload::customLabels(),
+                ])
+            )->name('labels');
 
-    Route::get('/steam/search', fn (
-        SteamService $steam
-    ) => Payload::steamSearch($steam))->name('steam.search');
+            Route::post('/labels', fn (
+                StoreCustomLabelRequest $request
+            ) => Payload::storeCustomLabel($request))->name('labels.store');
+        });
 
-    Route::get('/settings/labels', fn () =>
-        Inertia::render('settings/labels', [
-            'user' => Payload::currentUser(),
-            'labels' => Payload::customLabels(),
-        ])
-    )->name('settings.labels');
+    Route::prefix('profile')
+        ->name('profile.')
+        ->group(function () {
+            Route::get('/', fn (
+                SteamService $steam
+            ) => Inertia::render(
+                'profile/show',
+                Payload::profilePageData($steam)
+            ))->name('show');
 
-    Route::post('/settings/labels', fn (
-        StoreCustomLabelRequest $request
-    ) => Payload::storeCustomLabel($request))->name('settings.labels.store');
+            Route::post('/banner', function (
+                UpdateProfileBannerRequest $request
+            ) {
+                $user = $request->user();
 
-    Route::get('/games/{game}', function (
-        string $game,
-        SteamService $steam
-    ) {
-        try {
-            $data = Payload::gamePageData($game, $steam);
-        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
-            return redirect()
-                ->route('dashboard')
-                ->with('no_product_card', true);
-        }
+                if ($user->banner_url) {
+                    Storage::disk('public')->delete(
+                        str_replace('/storage/', '', $user->banner_url)
+                    );
+                }
 
-        if (blank($data['game'] ?? null)) {
-            return redirect()
-                ->route('dashboard')
-                ->with('no_product_card', true);
-        }
+                $path = $request
+                    ->file('banner')
+                    ->store('banners', 'public');
 
-        return Inertia::render('games/show', $data);
-    })->name('games.show');
+                $user->update([
+                    'banner_url' => "/storage/{$path}",
+                ]);
 
-    Route::get('/profile', fn (
-        SteamService $steam
-    ) => Inertia::render(
-        'profile/show',
-        Payload::profilePageData($steam)
-    ))->name('profile.show');
+                return back();
+            })->name('banner.update');
+        });
 
-    Route::post('/profile/banner', function (
-        UpdateProfileBannerRequest $request
-    ) {
-        $user = $request->user();
+    Route::prefix('reviews')
+        ->name('reviews.')
+        ->group(function () {
+            Route::get('/', [
+                PublicReviewController::class,
+                'index',
+            ])->name('index');
 
-        if ($user->banner_url) {
-            Storage::disk('public')->delete(
-                str_replace('/storage/', '', $user->banner_url)
-            );
-        }
+            Route::post('/public', [
+                PublicReviewController::class,
+                'store',
+            ])->name('public.store');
 
-        $path = $request
-            ->file('banner')
-            ->store('banners', 'public');
+            Route::post('/{review}/feature', [
+                PublicReviewController::class,
+                'toggleFeatured',
+            ])->name('feature');
 
-        $user->update([
-            'banner_url' => "/storage/{$path}",
-        ]);
+            Route::post('/{review}/report', [
+                PublicReviewReportController::class,
+                'store',
+            ])->name('report');
 
-        return back();
-    })->name('profile.banner.update');
+            Route::post('/{review}/vote', [
+                PublicReviewVoteController::class,
+                'store',
+            ])->name('vote.store');
 
-    Route::get('/dropped', fn (SteamService $steam) =>
-        Inertia::render('dropped/index', Payload::droppedPageData($steam))
-    )->name('dropped.index');
+            Route::delete('/{review}/vote', [
+                PublicReviewVoteController::class,
+                'destroy',
+            ])->name('vote.destroy');
+        });
 
-    Route::post('/reviews/public', [
-        PublicReviewController::class,
-        'store',
-    ])->name('reviews.public.store');
+    Route::prefix('people')
+        ->name('people.')
+        ->group(function () {
+            Route::get('/', [
+                UserConnectionController::class,
+                'index',
+            ])->name('index');
 
-    Route::get('/reviews', [
-        PublicReviewController::class,
-        'index',
-    ])->name('reviews.index');
+            Route::get('/search', [
+                UserConnectionController::class,
+                'search',
+            ])->name('search');
 
-    Route::post('/reviews/{review}/feature', [
-        PublicReviewController::class,
-        'toggleFeatured',
-    ])->name('reviews.feature');
+            Route::get('/notifications', [
+                UserConnectionController::class,
+                'notifications',
+            ])->name('notifications');
 
-    Route::post('/reviews/{review}/report', [
-        PublicReviewReportController::class,
-        'store',
-    ])->name('reviews.report');
+            Route::post('/notifications/read', [
+                UserConnectionController::class,
+                'markNotificationsAsRead',
+            ])->name('notifications.read');
 
-    Route::post('/reviews/{review}/vote', [
-        PublicReviewVoteController::class,
-        'store',
-    ])->name('reviews.vote.store');
+            Route::post('/', [
+                UserConnectionController::class,
+                'store',
+            ])->name('store');
 
-    Route::delete('/reviews/{review}/vote', [
-        PublicReviewVoteController::class,
-        'destroy',
-    ])->name('reviews.vote.destroy');
+            Route::patch('/{connection}/accept', [
+                UserConnectionController::class,
+                'accept',
+            ])->name('accept');
 
-    Route::get('/people', [
-        UserConnectionController::class,
-        'index',
-    ])->name('people.index');
+            Route::delete('/{connection}', [
+                UserConnectionController::class,
+                'destroy',
+            ])->name('destroy');
+        });
 
-    Route::get('/people/search', [
-        UserConnectionController::class,
-        'search',
-    ])->name('people.search');
+    Route::prefix('shop')
+        ->name('shop.')
+        ->group(function () {
+            Route::get('/', [
+                ShopController::class,
+                'index',
+            ])->name('index');
 
-    Route::get('/people/notifications', [
-        UserConnectionController::class,
-        'notifications',
-    ])->name('people.notifications');
+            Route::post('/{item}/buy', [
+                ShopController::class,
+                'buy',
+            ])->name('buy');
 
-    Route::post('/people', [
-        UserConnectionController::class,
-        'store',
-    ])->name('people.store');
+            Route::post('/{item}/equip', [
+                ShopController::class,
+                'equip',
+            ])->name('equip');
+        });
 
-    Route::patch('/people/{connection}/accept', [
-        UserConnectionController::class,
-        'accept',
-    ])->name('people.accept');
+    Route::prefix('wardrobe')
+        ->name('wardrobe.')
+        ->group(function () {
+            Route::get('/', [
+                WardrobeController::class,
+                'index',
+            ])->name('index');
 
-    Route::post(
-        '/people/notifications/read',
-        [UserConnectionController::class, 'markNotificationsAsRead']
-    );
+            Route::post('/{item}/equip', [
+                WardrobeController::class,
+                'equip',
+            ])->name('equip');
 
-    Route::delete('/people/{connection}', [
-        UserConnectionController::class,
-        'destroy',
-    ])->name('people.destroy');
+            Route::delete('/{item}/equip', [
+                WardrobeController::class,
+                'unequip',
+            ])->name('unequip');
 
-    Route::get('/shop', [ShopController::class, 'index'])
-        ->name('shop.index');
+            Route::post('/{item}/feature', [
+                WardrobeController::class,
+                'toggleFeatured',
+            ])->name('feature');
+        });
 
-    Route::post('/shop/{item}/buy', [ShopController::class, 'buy'])
-        ->name('shop.buy');
+    Route::prefix('challenges')
+        ->name('challenges.')
+        ->group(function () {
+            Route::get('/', [
+                ChallengeController::class,
+                'index',
+            ])->name('index');
 
-    Route::post('/shop/{item}/equip', [ShopController::class, 'equip'])
-        ->name('shop.equip');
+            Route::post('/{challenge}/join', [
+                ChallengeController::class,
+                'join',
+            ])->name('join');
 
-    Route::get('/wardrobe', [WardrobeController::class, 'index'])
-        ->name('wardrobe.index');
-
-    Route::post('/wardrobe/{item}/equip', [WardrobeController::class, 'equip'])
-        ->name('wardrobe.equip');
-
-    Route::delete('/wardrobe/{item}/equip', [WardrobeController::class, 'unequip'])
-        ->name('wardrobe.unequip');
-
-    Route::post('/wardrobe/{item}/feature', [WardrobeController::class, 'toggleFeatured'])
-        ->name('wardrobe.feature');
-
-    Route::get('/challenges', [ChallengeController::class, 'index'])
-        ->name('challenges.index');
-
-    Route::post('/challenges/{challenge}/join', [ChallengeController::class, 'join'])
-        ->name('challenges.join');
-
-    Route::post('/challenges/{challenge}/submit', [ChallengeController::class, 'submit'])
-        ->name('challenges.submit');
-        
-    Route::get('/stats', [StatsController::class, 'index'])
-        ->name('stats.index');
+            Route::post('/{challenge}/submit', [
+                ChallengeController::class,
+                'submit',
+            ])->name('submit');
+        });
 });
 
 Route::middleware(['auth', 'admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        Route::get('/', [ShopItemController::class, 'index'])
-            ->name('index');
+        Route::get('/', [
+            ShopItemController::class,
+            'index',
+        ])->name('index');
 
-        Route::post('/shop-items', [ShopItemController::class, 'store'])
-            ->name('shop-items.store');
+        Route::get('/grantables', [
+            AdminUserController::class,
+            'grantables',
+        ])->name('grantables');
 
-        Route::put('/shop-items/{item}', [ShopItemController::class, 'update'])
-            ->name('shop-items.update');
+        Route::prefix('shop-items')
+            ->name('shop-items.')
+            ->group(function () {
+                Route::post('/', [
+                    ShopItemController::class,
+                    'store',
+                ])->name('store');
 
-        Route::get('/challenges', [AdminChallengeController::class, 'index'])
-            ->name('challenges.index');
+                Route::put('/{item}', [
+                    ShopItemController::class,
+                    'update',
+                ])->name('update');
+            });
 
-        Route::post('/challenges', [AdminChallengeController::class, 'store'])
-            ->name('challenges.store');
+        Route::prefix('users')
+            ->name('users.')
+            ->group(function () {
+                Route::get('/search', [
+                    AdminUserController::class,
+                    'search',
+                ])->name('search');
 
-        Route::delete('/challenges/{challenge}', [AdminChallengeController::class, 'destroy'])
-            ->name('challenges.destroy');
+                Route::get('/{user}/logs', [
+                    AdminUserController::class,
+                    'logs',
+                ])->name('logs');
 
-        Route::get('/users/search', [AdminUserController::class, 'search'])
-            ->name('users.search');
+                Route::get('/{user}/available-challenges', [
+                    AdminUserController::class,
+                    'availableChallenges',
+                ])->name('available-challenges');
 
-        Route::get('/users/{user}/logs', [AdminUserController::class, 'logs'])
-            ->name('users.logs');
+                Route::post('/{user}/coins', [
+                    AdminUserController::class,
+                    'addCoins',
+                ])->name('coins');
 
-        Route::post('/users/{user}/coins', [AdminUserController::class, 'addCoins'])
-            ->name('users.coins');
+                Route::post('/{user}/xp', [
+                    AdminUserController::class,
+                    'addXp',
+                ])->name('xp');
 
-        Route::get('/grantables', [AdminUserController::class, 'grantables'])
-            ->name('grantables');
+                Route::post('/{user}/level', [
+                    AdminUserController::class,
+                    'setLevel',
+                ])->name('level');
 
-        Route::post('/users/{user}/xp', [AdminUserController::class, 'addXp'])
-            ->name('users.xp');
+                Route::post('/{user}/items', [
+                    AdminUserController::class,
+                    'grantItem',
+                ])->name('items');
 
-        Route::post('/users/{user}/level', [AdminUserController::class, 'setLevel'])
-            ->name('users.level');
+                Route::post('/{user}/challenges', [
+                    AdminUserController::class,
+                    'completeChallenge',
+                ])->name('challenges');
+            });
 
-        Route::post('/users/{user}/items', [AdminUserController::class, 'grantItem'])
-            ->name('users.items');
+        Route::prefix('challenges')
+            ->name('challenges.')
+            ->group(function () {
+                Route::get('/', [
+                    AdminChallengeController::class,
+                    'index',
+                ])->name('index');
 
-        Route::post('/users/{user}/challenges', [AdminUserController::class, 'completeChallenge'])
-            ->name('users.challenges');
+                Route::post('/', [
+                    AdminChallengeController::class,
+                    'store',
+                ])->name('store');
 
-        Route::post('/challenge-submissions/{submission}/approve', [AdminChallengeController::class, 'approve'])
-            ->name('challenge-submissions.approve');
+                Route::delete('/{challenge}', [
+                    AdminChallengeController::class,
+                    'destroy',
+                ])->name('destroy');
+            });
 
-        Route::post('/challenge-submissions/{submission}/reject', [AdminChallengeController::class, 'reject'])
-            ->name('challenge-submissions.reject');
+        Route::prefix('challenge-submissions')
+            ->name('challenge-submissions.')
+            ->group(function () {
+                Route::post('/{submission}/approve', [
+                    AdminChallengeController::class,
+                    'approve',
+                ])->name('approve');
 
-        Route::get(
-            '/admin/users/{user}/available-challenges',
-            [AdminUserController::class, 'availableChallenges']
-        );
+                Route::post('/{submission}/reject', [
+                    AdminChallengeController::class,
+                    'reject',
+                ])->name('reject');
+            });
 
-        Route::patch('/review-reports/{report}/resolve', [
-            AdminReviewReportController::class,
-            'resolve',
-        ])->name('review-reports.resolve');
+        Route::prefix('reviews')
+            ->name('reviews.')
+            ->group(function () {
+                Route::get('/{review}', [
+                    AdminReviewController::class,
+                    'show',
+                ])->name('show');
+            });
 
-        Route::delete('/review-reports/{report}/review', [
-            AdminReviewReportController::class,
-            'destroyReview',
-        ])->name('review-reports.review.destroy');
+        Route::prefix('review-reports')
+            ->name('review-reports.')
+            ->group(function () {
+                Route::patch('/{report}/resolve', [
+                    AdminReviewReportController::class,
+                    'resolve',
+                ])->name('resolve');
 
-        Route::post('/igdb/dumps/{endpoint}', [
-            \App\Http\Controllers\IgdbDumpController::class,
-            'show',
-        ])->name('igdb.dumps.show');
-        
-        Route::post('/igdb/games/import', [IgdbDumpController::class, 'importGames']);
+                Route::delete('/{report}/review', [
+                    AdminReviewReportController::class,
+                    'destroyReview',
+                ])->name('review.destroy');
+            });
 
-        Route::post('/igdb/sync', [
-            \App\Http\Controllers\IgdbDumpController::class,
-        'syncCatalog',
-    ]);
+        Route::prefix('igdb')
+            ->name('igdb.')
+            ->group(function () {
+                Route::post('/dumps/{endpoint}', [
+                    IgdbDumpController::class,
+                    'show',
+                ])->name('dumps.show');
+
+                Route::post('/games/import', [
+                    IgdbDumpController::class,
+                    'importGames',
+                ])->name('games.import');
+
+                Route::post('/sync', [
+                    IgdbDumpController::class,
+                    'syncCatalog',
+                ])->name('sync');
+            });
     });
 
-Route::get('/igdb/search', [IgdbGameSearchController::class, 'index'])
-    ->name('igdb.search');
+Route::get('/igdb/search', [
+    IgdbGameSearchController::class,
+    'index',
+])->name('igdb.search');
