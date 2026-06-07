@@ -31,6 +31,12 @@ class UserConnectionController extends Controller
     {
         $incomingRequests = $this->incomingRequests();
 
+        $adminUnreadCount = auth()->user()
+            ->activityLogs()
+            ->where('type', 'like', 'admin_%')
+            ->whereNull('read_at')
+            ->count();
+
         $adminNotifications = auth()->user()
             ->activityLogs()
             ->where('type', 'like', 'admin_%')
@@ -43,6 +49,7 @@ class UserConnectionController extends Controller
                 'message' => $log->message,
                 'reason' => $log->metadata['reason'] ?? null,
                 'created_at' => $log->created_at?->diffForHumans(),
+                'read_at' => $log->read_at,
             ])
             ->values()
             ->toArray();
@@ -52,11 +59,26 @@ class UserConnectionController extends Controller
 
             'incoming_requests' => $incomingRequests,
 
-            'admin_notifications_count' => count($adminNotifications),
+            'admin_notifications_count' => $adminUnreadCount,
 
             'admin_notifications' => $adminNotifications,
 
-            'total_count' => count($incomingRequests) + count($adminNotifications),
+            'total_count' => count($incomingRequests) + $adminUnreadCount,
+        ]);
+    }
+
+    public function markNotificationsAsRead(): JsonResponse
+    {
+        auth()->user()
+            ->activityLogs()
+            ->where('type', 'like', 'admin_%')
+            ->whereNull('read_at')
+            ->update([
+                'read_at' => now(),
+            ]);
+
+        return response()->json([
+            'success' => true,
         ]);
     }
 
@@ -183,12 +205,19 @@ class UserConnectionController extends Controller
 
         return [
             'id' => $user->id,
+
             'name' => $user->name,
+
             'avatar' => $user->steam_avatar_url,
+
             'level' => $user->level ?? 1,
+
             'coins' => $user->coins ?? 0,
+
             'xp' => $user->xp ?? 0,
+
             'xp_for_next_level' => $user->xp_for_next_level ?? 100,
+
             'xp_for_current_level' => $user->xp_for_current_level ?? 0,
         ];
     }

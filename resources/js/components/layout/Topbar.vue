@@ -75,6 +75,33 @@ const loadNotifications = async () => {
     count.value = data.total_count ?? 0
 }
 
+const markNotificationsAsRead = async () => {
+    await fetch(
+        '/people/notifications/read',
+        {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    ?.content,
+            },
+        }
+    )
+
+    count.value = requests.value.length
+}
+
+const toggleNotifications = async () => {
+    isOpen.value = !isOpen.value
+
+    if (
+        isOpen.value &&
+        adminNotifications.value.length
+    ) {
+        await markNotificationsAsRead()
+    }
+}
+
 const acceptRequest = (request) => {
     router.patch(
         `/people/${request.id}/accept`,
@@ -143,7 +170,7 @@ onMounted(() => {
                 <button
                     type="button"
                     class="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900 text-zinc-300 transition hover:border-zinc-700 hover:text-white"
-                    @click="isOpen = !isOpen"
+                    @click="toggleNotifications"
                 >
                     <Bell class="h-5 w-5" />
 
@@ -186,15 +213,20 @@ onMounted(() => {
                                 {{ notification.message }}
                             </p>
 
-                            <p class="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
-                                Reason
-                            </p>
+                            <div
+                                v-if="notification.reason"
+                                class="mt-3 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2"
+                            >
+                                <p class="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+                                    Reason
+                                </p>
 
-                            <p class="mt-1 text-sm text-zinc-300">
-                                {{ notification.reason }}
-                            </p>
+                                <p class="mt-1 text-sm text-zinc-300">
+                                    {{ notification.reason }}
+                                </p>
+                            </div>
 
-                            <p class="mt-1 text-xs text-zinc-500">
+                            <p class="mt-3 text-xs text-zinc-500">
                                 {{ notification.created_at }}
                             </p>
                         </article>

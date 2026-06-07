@@ -12,10 +12,12 @@ class ActivityLog extends Model
         'type',
         'message',
         'metadata',
+        'read_at',
     ];
 
     protected $casts = [
         'metadata' => 'array',
+        'read_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

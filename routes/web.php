@@ -246,6 +246,11 @@ Route::middleware('auth')->group(function () {
         'accept',
     ])->name('people.accept');
 
+    Route::post(
+        '/people/notifications/read',
+        [UserConnectionController::class, 'markNotificationsAsRead']
+    );
+
     Route::delete('/people/{connection}', [
         UserConnectionController::class,
         'destroy',
