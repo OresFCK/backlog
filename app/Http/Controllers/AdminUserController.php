@@ -53,12 +53,12 @@ class AdminUserController extends Controller
                         'message' => $log->message,
                         'metadata' => $log->metadata,
                         'created_at' => $log->created_at?->diffForHumans(),
-
                         'url' => $reviewId
                             ? "/admin/reviews/{$reviewId}"
                             : null,
                     ];
                 })
+                ->values()
         );
     }
 
@@ -107,16 +107,29 @@ class AdminUserController extends Controller
     public function addCoins(Request $request, User $user): RedirectResponse
     {
         $data = $request->validate([
-            'amount' => ['required', 'integer', 'min:1'],
+            'amount' => ['required', 'integer', 'not_in:0'],
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $user->increment('coins', $data['amount']);
+        $newCoins = max(
+            0,
+            ($user->coins ?? 0) + $data['amount']
+        );
+
+        $user->update([
+            'coins' => $newCoins,
+        ]);
+
+        $action = $data['amount'] > 0
+            ? 'added'
+            : 'removed';
 
         $this->log(
             $user,
-            'admin_coins_added',
-            "Admin added {$data['amount']} coins.",
+            $data['amount'] > 0
+                ? 'admin_coins_added'
+                : 'admin_coins_removed',
+            "Admin {$action} " . abs($data['amount']) . ' coins.',
             $data
         );
 
@@ -126,21 +139,30 @@ class AdminUserController extends Controller
     public function addXp(Request $request, User $user): RedirectResponse
     {
         $data = $request->validate([
-            'amount' => ['required', 'integer', 'min:1'],
+            'amount' => ['required', 'integer', 'not_in:0'],
             'reason' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $newXp = ($user->xp ?? 0) + $data['amount'];
+        $newXp = max(
+            0,
+            ($user->xp ?? 0) + $data['amount']
+        );
 
         $user->update([
             'xp' => $newXp,
             'level' => LevelSystem::levelFromXp($newXp),
         ]);
 
+        $action = $data['amount'] > 0
+            ? 'added'
+            : 'removed';
+
         $this->log(
             $user,
-            'admin_xp_added',
-            "Admin added {$data['amount']} XP.",
+            $data['amount'] > 0
+                ? 'admin_xp_added'
+                : 'admin_xp_removed',
+            "Admin {$action} " . abs($data['amount']) . ' XP.',
             $data
         );
 
@@ -228,11 +250,19 @@ class AdminUserController extends Controller
         ]);
 
         if ($data['grant_rewards'] ?? false) {
-            $newXp = ($user->xp ?? 0) + $challenge->reward_xp;
+            $newXp = max(
+                0,
+                ($user->xp ?? 0) + ($challenge->reward_xp ?? 0)
+            );
+
+            $newCoins = max(
+                0,
+                ($user->coins ?? 0) + ($challenge->reward_coins ?? 0)
+            );
 
             $user->update([
                 'xp' => $newXp,
-                'coins' => ($user->coins ?? 0) + $challenge->reward_coins,
+                'coins' => $newCoins,
                 'level' => LevelSystem::levelFromXp($newXp),
             ]);
 

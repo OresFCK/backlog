@@ -399,7 +399,6 @@ const completeChallenge = () => {
                         <input
                             v-model="coinsForm.amount"
                             type="number"
-                            min="1"
                             placeholder="Coins amount, e.g. 500"
                             class="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
                         />
@@ -415,7 +414,7 @@ const completeChallenge = () => {
                             class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 disabled:opacity-50"
                             :disabled="coinsForm.processing"
                         >
-                            Add coins
+                            Change coins
                         </button>
                     </form>
 
@@ -427,7 +426,6 @@ const completeChallenge = () => {
                         <input
                             v-model="xpForm.amount"
                             type="number"
-                            min="1"
                             placeholder="XP amount, e.g. 1000"
                             class="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
                         />
@@ -443,7 +441,7 @@ const completeChallenge = () => {
                             class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 disabled:opacity-50"
                             :disabled="xpForm.processing"
                         >
-                            Add XP
+                            Change XP
                         </button>
                     </form>
 
