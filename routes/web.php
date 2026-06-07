@@ -342,6 +342,11 @@ Route::middleware(['auth', 'admin'])
         Route::post('/challenge-submissions/{submission}/reject', [AdminChallengeController::class, 'reject'])
             ->name('challenge-submissions.reject');
 
+        Route::get(
+            '/admin/users/{user}/available-challenges',
+            [AdminUserController::class, 'availableChallenges']
+        );
+
         Route::patch('/review-reports/{report}/resolve', [
             AdminReviewReportController::class,
             'resolve',

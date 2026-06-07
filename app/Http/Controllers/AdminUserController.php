@@ -55,8 +55,35 @@ class AdminUserController extends Controller
             'challenges' => Challenge::query()
                 ->where('is_active', true)
                 ->orderBy('title')
-                ->get(['id', 'title', 'game_name', 'reward_xp', 'reward_coins']),
+                ->get([
+                    'id',
+                    'title',
+                    'game_name',
+                    'reward_xp',
+                    'reward_coins',
+                ]),
         ]);
+    }
+
+    public function availableChallenges(User $user): JsonResponse
+    {
+        $completedChallengeIds = $user->challenges()
+            ->whereNotNull('completed_at')
+            ->pluck('challenges.id');
+
+        return response()->json(
+            Challenge::query()
+                ->where('is_active', true)
+                ->whereNotIn('id', $completedChallengeIds)
+                ->orderBy('title')
+                ->get([
+                    'id',
+                    'title',
+                    'game_name',
+                    'reward_xp',
+                    'reward_coins',
+                ])
+        );
     }
 
     public function addCoins(Request $request, User $user): RedirectResponse
@@ -68,7 +95,12 @@ class AdminUserController extends Controller
 
         $user->increment('coins', $data['amount']);
 
-        $this->log($user, 'admin_coins_added', "Admin added {$data['amount']} coins.", $data);
+        $this->log(
+            $user,
+            'admin_coins_added',
+            "Admin added {$data['amount']} coins.",
+            $data
+        );
 
         return back();
     }
@@ -87,7 +119,12 @@ class AdminUserController extends Controller
             'level' => LevelSystem::levelFromXp($newXp),
         ]);
 
-        $this->log($user, 'admin_xp_added', "Admin added {$data['amount']} XP.", $data);
+        $this->log(
+            $user,
+            'admin_xp_added',
+            "Admin added {$data['amount']} XP.",
+            $data
+        );
 
         return back();
     }
@@ -103,7 +140,12 @@ class AdminUserController extends Controller
             'level' => $data['level'],
         ]);
 
-        $this->log($user, 'admin_level_set', "Admin set level to {$data['level']}.", $data);
+        $this->log(
+            $user,
+            'admin_level_set',
+            "Admin set level to {$data['level']}.",
+            $data
+        );
 
         return back();
     }
@@ -125,11 +167,16 @@ class AdminUserController extends Controller
             'is_featured_on_profile' => false,
         ]);
 
-        $this->log($user, 'admin_item_granted', "Admin granted item: {$item->name}.", [
-            'shop_item_id' => $item->id,
-            'item_name' => $item->name,
-            'reason' => $data['reason'] ?? null,
-        ]);
+        $this->log(
+            $user,
+            'admin_item_granted',
+            "Admin granted item: {$item->name}.",
+            [
+                'shop_item_id' => $item->id,
+                'item_name' => $item->name,
+                'reason' => $data['reason'] ?? null,
+            ]
+        );
 
         return back();
     }
@@ -143,6 +190,18 @@ class AdminUserController extends Controller
         ]);
 
         $challenge = Challenge::query()->findOrFail($data['challenge_id']);
+
+        $alreadyCompleted = $user->challenges()
+            ->where('challenge_id', $challenge->id)
+            ->whereNotNull('completed_at')
+            ->exists();
+
+        if ($alreadyCompleted) {
+            return back()->with(
+                'error',
+                'Challenge has already been completed by this user.'
+            );
+        }
 
         $user->challenges()->syncWithoutDetaching([
             $challenge->id => [
@@ -170,11 +229,16 @@ class AdminUserController extends Controller
             }
         }
 
-        $this->log($user, 'admin_challenge_completed', "Admin completed challenge: {$challenge->title}.", [
-            'challenge_id' => $challenge->id,
-            'grant_rewards' => $data['grant_rewards'] ?? false,
-            'reason' => $data['reason'] ?? null,
-        ]);
+        $this->log(
+            $user,
+            'admin_challenge_completed',
+            "Admin completed challenge: {$challenge->title}.",
+            [
+                'challenge_id' => $challenge->id,
+                'grant_rewards' => $data['grant_rewards'] ?? false,
+                'reason' => $data['reason'] ?? null,
+            ]
+        );
 
         return back();
     }
@@ -193,8 +257,12 @@ class AdminUserController extends Controller
         ];
     }
 
-    private function log(User $user, string $type, string $message, array $metadata = []): void
-    {
+    private function log(
+        User $user,
+        string $type,
+        string $message,
+        array $metadata = []
+    ): void {
         ActivityLog::query()->create([
             'user_id' => $user->id,
             'type' => $type,

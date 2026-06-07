@@ -1,6 +1,13 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import {
+    computed,
+    onMounted,
+    ref,
+} from 'vue'
+
+import {
+    useForm,
+} from '@inertiajs/vue3'
 
 const userSearch = ref('')
 const foundUsers = ref([])
@@ -13,10 +20,22 @@ const challenges = ref([])
 const activeAction = ref('coins')
 
 const actions = [
-    { key: 'coins', label: 'Coins' },
-    { key: 'xp', label: 'XP' },
-    { key: 'item', label: 'Item' },
-    { key: 'challenge', label: 'Challenge' },
+    {
+        key: 'coins',
+        label: 'Coins',
+    },
+    {
+        key: 'xp',
+        label: 'XP',
+    },
+    {
+        key: 'item',
+        label: 'Item',
+    },
+    {
+        key: 'challenge',
+        label: 'Challenge',
+    },
 ]
 
 const coinsForm = useForm({
@@ -29,7 +48,6 @@ const xpForm = useForm({
     reason: '',
 })
 
-
 const itemForm = useForm({
     shop_item_id: '',
     reason: '',
@@ -41,23 +59,69 @@ const challengeForm = useForm({
     reason: '',
 })
 
-const selectedActionLabel = computed(() => {
-    return actions.find((action) => action.key === activeAction.value)?.label
-})
+const selectedActionLabel = computed(() =>
+    actions.find(
+        (action) => action.key === activeAction.value
+    )?.label
+)
 
-onMounted(async () => {
+const selectedChallenge = computed(() =>
+    challenges.value.find(
+        (challenge) =>
+            Number(challenge.id) === Number(challengeForm.challenge_id)
+    )
+)
+
+const loadGrantables = async () => {
     const response = await fetch('/admin/grantables')
 
-    if (response.ok) {
-        const data = await response.json()
+    if (! response.ok) {
+        return
+    }
 
-        shopItems.value = data.shopItems ?? []
+    const data = await response.json()
+
+    shopItems.value = data.shopItems ?? []
+
+    if (! selectedUser.value) {
         challenges.value = data.challenges ?? []
     }
+}
+
+const loadAvailableChallenges = async () => {
+    if (! selectedUser.value) {
+        challenges.value = []
+        return
+    }
+
+    const response = await fetch(
+        `/admin/users/${selectedUser.value.id}/available-challenges`
+    )
+
+    if (! response.ok) {
+        challenges.value = []
+        return
+    }
+
+    challenges.value = await response.json()
+
+    if (
+        challengeForm.challenge_id &&
+        ! challenges.value.some(
+            (challenge) =>
+                Number(challenge.id) === Number(challengeForm.challenge_id)
+        )
+    ) {
+        challengeForm.challenge_id = ''
+    }
+}
+
+onMounted(async () => {
+    await loadGrantables()
 })
 
 const searchUsers = async () => {
-    if (!userSearch.value) {
+    if (! userSearch.value) {
         foundUsers.value = []
         return
     }
@@ -72,12 +136,20 @@ const searchUsers = async () => {
 const selectUser = async (user) => {
     selectedUser.value = user
 
-    const response = await fetch(`/admin/users/${user.id}/logs`)
+    challengeForm.reset()
+    challengeForm.grant_rewards = true
+
+    await loadAvailableChallenges()
+
+    const response = await fetch(
+        `/admin/users/${user.id}/logs`
+    )
+
     userLogs.value = await response.json()
 }
 
 const refreshSelectedUser = async () => {
-    if (!selectedUser.value || !userSearch.value) {
+    if (! selectedUser.value || ! userSearch.value) {
         return
     }
 
@@ -86,7 +158,10 @@ const refreshSelectedUser = async () => {
     )
 
     const users = await response.json()
-    const freshUser = users.find((user) => user.id === selectedUser.value.id)
+
+    const freshUser = users.find(
+        (user) => user.id === selectedUser.value.id
+    )
 
     if (freshUser) {
         selectedUser.value = freshUser
@@ -99,45 +174,65 @@ const afterSuccess = async (form) => {
     await refreshSelectedUser()
 
     if (selectedUser.value) {
+        await loadAvailableChallenges()
         await selectUser(selectedUser.value)
     }
 }
 
 const addCoins = () => {
-    if (!selectedUser.value) return
+    if (! selectedUser.value) {
+        return
+    }
 
-    coinsForm.post(`/admin/users/${selectedUser.value.id}/coins`, {
-        preserveScroll: true,
-        onSuccess: () => afterSuccess(coinsForm),
-    })
+    coinsForm.post(
+        `/admin/users/${selectedUser.value.id}/coins`,
+        {
+            preserveScroll: true,
+            onSuccess: () => afterSuccess(coinsForm),
+        }
+    )
 }
 
 const addXp = () => {
-    if (!selectedUser.value) return
+    if (! selectedUser.value) {
+        return
+    }
 
-    xpForm.post(`/admin/users/${selectedUser.value.id}/xp`, {
-        preserveScroll: true,
-        onSuccess: () => afterSuccess(xpForm),
-    })
+    xpForm.post(
+        `/admin/users/${selectedUser.value.id}/xp`,
+        {
+            preserveScroll: true,
+            onSuccess: () => afterSuccess(xpForm),
+        }
+    )
 }
 
-
 const grantItem = () => {
-    if (!selectedUser.value) return
+    if (! selectedUser.value) {
+        return
+    }
 
-    itemForm.post(`/admin/users/${selectedUser.value.id}/items`, {
-        preserveScroll: true,
-        onSuccess: () => afterSuccess(itemForm),
-    })
+    itemForm.post(
+        `/admin/users/${selectedUser.value.id}/items`,
+        {
+            preserveScroll: true,
+            onSuccess: () => afterSuccess(itemForm),
+        }
+    )
 }
 
 const completeChallenge = () => {
-    if (!selectedUser.value) return
+    if (! selectedUser.value) {
+        return
+    }
 
-    challengeForm.post(`/admin/users/${selectedUser.value.id}/challenges`, {
-        preserveScroll: true,
-        onSuccess: () => afterSuccess(challengeForm),
-    })
+    challengeForm.post(
+        `/admin/users/${selectedUser.value.id}/challenges`,
+        {
+            preserveScroll: true,
+            onSuccess: () => afterSuccess(challengeForm),
+        }
+    )
 }
 </script>
 
@@ -351,7 +446,6 @@ const completeChallenge = () => {
                         </button>
                     </form>
 
-
                     <form
                         v-if="activeAction === 'item'"
                         class="space-y-3"
@@ -391,87 +485,122 @@ const completeChallenge = () => {
 
                     <form
                         v-if="activeAction === 'challenge'"
-                        class="space-y-3"
+                        class="space-y-4"
                         @submit.prevent="completeChallenge"
                     >
-                        <select
-                            v-model="challengeForm.challenge_id"
-                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                        <div
+                            v-if="!selectedUser"
+                            class="rounded-2xl border border-dashed border-zinc-800 p-5 text-center text-sm text-zinc-500"
                         >
-                            <option value="">
-                                Select challenge
-                            </option>
+                            Select a user first.
+                        </div>
 
-                            <option
-                                v-for="challenge in challenges"
-                                :key="challenge.id"
-                                :value="challenge.id"
+                        <div
+                            v-else-if="!challenges.length"
+                            class="rounded-2xl border border-dashed border-zinc-800 p-5 text-center text-sm text-zinc-500"
+                        >
+                            This user has completed all active challenges.
+                        </div>
+
+                        <template v-else>
+                            <select
+                                v-model="challengeForm.challenge_id"
+                                class="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
                             >
-                                {{ challenge.title }} · {{ challenge.game_name }}
-                            </option>
-                        </select>
+                                <option value="">
+                                    Select available challenge
+                                </option>
 
-                        <label class="flex items-center gap-3 text-sm text-zinc-300">
+                                <option
+                                    v-for="challenge in challenges"
+                                    :key="challenge.id"
+                                    :value="challenge.id"
+                                >
+                                    {{ challenge.title }} · {{ challenge.game_name }}
+                                </option>
+                            </select>
+
+                            <div
+                                v-if="selectedChallenge"
+                                class="rounded-2xl border border-zinc-800 bg-zinc-900 p-4"
+                            >
+                                <p class="text-sm font-bold text-white">
+                                    {{ selectedChallenge.title }}
+                                </p>
+
+                                <p class="mt-2 text-xs text-zinc-500">
+                                    Rewards:
+                                    {{ selectedChallenge.reward_xp ?? 0 }} XP
+                                    ·
+                                    {{ selectedChallenge.reward_coins ?? 0 }} coins
+                                </p>
+                            </div>
+
+                            <label class="flex items-center gap-3 text-sm text-zinc-300">
+                                <input
+                                    v-model="challengeForm.grant_rewards"
+                                    type="checkbox"
+                                    class="h-4 w-4 rounded border-zinc-700 bg-zinc-950"
+                                />
+
+                                Grant challenge rewards
+                            </label>
+
                             <input
-                                v-model="challengeForm.grant_rewards"
-                                type="checkbox"
-                                class="h-4 w-4 rounded border-zinc-700 bg-zinc-950"
+                                v-model="challengeForm.reason"
+                                placeholder="Reason"
+                                class="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
                             />
 
-                            Grant challenge rewards
-                        </label>
-
-                        <input
-                            v-model="challengeForm.reason"
-                            placeholder="Reason"
-                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
-                        />
-
-                        <button
-                            type="submit"
-                            class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 disabled:opacity-50"
-                            :disabled="challengeForm.processing || !challengeForm.challenge_id"
-                        >
-                            Complete challenge
-                        </button>
+                            <button
+                                type="submit"
+                                class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 disabled:opacity-50"
+                                :disabled="
+                                    challengeForm.processing ||
+                                    !challengeForm.challenge_id
+                                "
+                            >
+                                Complete challenge
+                            </button>
+                        </template>
                     </form>
                 </div>
             </div>
         </div>
 
         <div class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
-    <div class="border-b border-zinc-800 p-6">
-        <h2 class="text-xl font-bold text-white">
-            User activity
-        </h2>
+            <div class="border-b border-zinc-800 p-6">
+                <h2 class="text-xl font-bold text-white">
+                    User activity
+                </h2>
 
-        <p class="mt-1 text-sm text-zinc-500">
-            Shows actions performed by the selected user.
-        </p>
-    </div>
+                <p class="mt-1 text-sm text-zinc-500">
+                    Shows actions performed by the selected user.
+                </p>
+            </div>
 
-    <div class="divide-y divide-zinc-800">
-        <div
-            v-for="log in userLogs"
-            :key="log.id"
-            class="p-5"
-        >
-            <p class="font-bold text-white">
-                {{ log.message }}
-            </p>
+            <div class="divide-y divide-zinc-800">
+                <div
+                    v-for="log in userLogs"
+                    :key="log.id"
+                    class="p-5"
+                >
+                    <p class="font-bold text-white">
+                        {{ log.message }}
+                    </p>
 
-            <p class="mt-1 text-sm text-zinc-500">
-                {{ log.created_at }}
-            </p>
+                    <p class="mt-1 text-sm text-zinc-500">
+                        {{ log.created_at }}
+                    </p>
+                </div>
+
+                <div
+                    v-if="!userLogs.length"
+                    class="p-10 text-center text-zinc-500"
+                >
+                    Search user to see their activity.
+                </div>
+            </div>
         </div>
-
-        <div
-            v-if="!userLogs.length"
-            class="p-10 text-center text-zinc-500"
-        >
-            Search user to see their activity.
-        </div>
-    </div>
-</div>
     </section>
 </template>
