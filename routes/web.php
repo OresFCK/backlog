@@ -24,6 +24,9 @@ use App\Http\Requests\StoreCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
+use App\Http\Controllers\UserSubmissionController;
+use App\Http\Controllers\AdminUserSubmissionController;
+use App\Models\UserSubmission;
 use App\Models\User;
 use App\Services\SteamService;
 use Illuminate\Support\Facades\Route;
@@ -172,6 +175,21 @@ Route::middleware('auth')->group(function () {
             Route::post('/labels', fn (
                 StoreCustomLabelRequest $request
             ) => Payload::storeCustomLabel($request))->name('labels.store');
+
+            Route::get('/report-bug', [
+                UserSubmissionController::class,
+                'bug',
+            ])->name('report-bug');
+
+            Route::get('/suggestion', [
+                UserSubmissionController::class,
+                'suggestion',
+            ])->name('suggestion');
+
+            Route::post('/submissions', [
+                UserSubmissionController::class,
+                'store',
+            ])->name('submissions.store');
         });
 
     Route::prefix('profile')
@@ -414,6 +432,20 @@ Route::middleware(['auth', 'admin'])
                     'completeChallenge',
                 ])->name('challenges');
             });
+
+        Route::prefix('user-submissions')
+            ->name('user-submissions.')
+            ->group(function () {
+                Route::patch('/{submission}/resolve', [
+                AdminUserSubmissionController::class,
+                'resolve',
+            ])->name('resolve');
+
+            Route::delete('/{submission}', [
+                AdminUserSubmissionController::class,
+                'destroy',
+            ])->name('destroy');
+        });
 
         Route::prefix('challenges')
             ->name('challenges.')

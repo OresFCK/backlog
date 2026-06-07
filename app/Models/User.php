@@ -83,4 +83,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(ActivityLog::class);
     }
+
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(UserSubmission::class);
+    }
 }

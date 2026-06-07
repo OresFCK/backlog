@@ -6,6 +6,7 @@ use App\Helpers\PayloadHelper as Payload;
 use App\Models\Challenge;
 use App\Models\ChallengeSubmission;
 use App\Models\ShopItem;
+use App\Models\UserSubmission;
 use App\Services\SteamService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -96,6 +97,30 @@ class ShopItemController extends Controller
                 ],
             ]);
 
+        $userSubmissions = UserSubmission::query()
+            ->with('user')
+            ->latest()
+            ->get()
+            ->map(fn (UserSubmission $submission) => [
+                'id' => $submission->id,
+                'type' => $submission->type,
+                'title' => $submission->title,
+                'message' => $submission->message,
+                'status' => $submission->status,
+                'created_at' => $submission->created_at?->format('Y-m-d H:i'),
+
+                'image_url' => $submission->image_path
+                    ? Storage::url($submission->image_path)
+                    : null,
+
+                'user' => $submission->user ? [
+                    'id' => $submission->user->id,
+                    'name' => $submission->user->name,
+                    'email' => $submission->user->email,
+                    'avatar' => $submission->user->steam_avatar_url,
+                ] : null,
+            ]);
+
         return Inertia::render('admin/index', [
             ...Payload::pageData($steam),
 
@@ -104,6 +129,7 @@ class ShopItemController extends Controller
             'challenges' => $challenges,
             'submissions' => $submissions,
             'reviewReports' => Payload::reviewReports(),
+            'suggestions' => $userSubmissions,
         ]);
     }
 

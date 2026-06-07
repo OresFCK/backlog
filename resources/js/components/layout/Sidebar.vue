@@ -23,6 +23,8 @@ import {
     ShoppingBag,
     Shirt,
     BarChart3,
+    Bug,
+    Lightbulb,
 } from 'lucide-vue-next'
 
 const page = usePage()
@@ -156,6 +158,16 @@ const settingsItems = [
         label: 'Custom Statuses',
         href: '/settings/labels',
         icon: Tags,
+    },
+    {
+        label: 'Report bug',
+        href: '/settings/report-bug',
+        icon: Bug,
+    },
+    {
+        label: 'Send suggestion',
+        href: '/settings/suggestion',
+        icon: Lightbulb,
     },
 ]
 </script>

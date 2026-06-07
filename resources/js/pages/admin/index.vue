@@ -8,6 +8,7 @@ import ShopItemsManager from '@/components/admin/ShopItemsManager.vue'
 import ChallengeManager from '@/components/admin/ChallengeManager.vue'
 import UserTools from '@/components/admin/UserTools.vue'
 import ReviewReportsManager from '@/components/admin/ReviewReportsManager.vue'
+import SuggestionsManager from '@/components/admin/SuggestionsManager.vue'
 
 defineProps({
     user: Object,
@@ -22,6 +23,11 @@ defineProps({
     },
 
     reviewReports: {
+        type: Array,
+        default: () => [],
+    },
+
+    suggestions: {
         type: Array,
         default: () => [],
     },
@@ -130,6 +136,19 @@ const syncIgdb = async () => {
 
                         <button
                             type="button"
+                            class="rounded-2xl px-5 py-3 text-sm font-bold transition"
+                            :class="
+                                activeTab === 'suggestions'
+                                    ? 'bg-white text-zinc-950'
+                                    : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                            "
+                            @click="activeTab = 'suggestions'"
+                        >
+                            Suggestions
+                        </button>
+
+                        <button
+                            type="button"
                             class="rounded-2xl bg-indigo-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-400"
                             @click="syncIgdb"
                         >
@@ -140,7 +159,6 @@ const syncIgdb = async () => {
                             }}
                         </button>
                     </div>
-
                 </section>
 
                 <ShopItemsManager
@@ -162,6 +180,11 @@ const syncIgdb = async () => {
                 <ReviewReportsManager
                     v-if="activeTab === 'reports'"
                     :reports="reviewReports"
+                />
+
+                <SuggestionsManager
+                    v-if="activeTab === 'suggestions'"
+                    :suggestions="suggestions"
                 />
             </main>
         </div>
