@@ -1,7 +1,7 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
-defineProps({
+const props = defineProps({
     game: {
         type: Object,
         required: true,
@@ -20,31 +20,66 @@ defineProps({
 
 const expandedReviews = ref([])
 
+const filters = ref({
+    rating: '',
+    platform: '',
+    recommendation: '',
+})
+
+const platforms = [
+    { value: 'pc', label: 'PC' },
+    { value: 'steam_deck', label: 'Steam Deck' },
+    { value: 'playstation_5', label: 'PlayStation 5' },
+    { value: 'playstation_4', label: 'PlayStation 4' },
+    { value: 'xbox_series', label: 'Xbox Series X/S' },
+    { value: 'xbox_one', label: 'Xbox One' },
+    { value: 'nintendo_switch', label: 'Nintendo Switch' },
+    { value: 'nintendo_switch_2', label: 'Nintendo Switch 2' },
+    { value: 'ios', label: 'iOS' },
+    { value: 'android', label: 'Android' },
+    { value: 'other', label: 'Other' },
+]
+
 const platformLabel = (platform) => {
-    const labels = {
-        pc: 'PC',
-        steam_deck: 'Steam Deck',
-        playstation_5: 'PlayStation 5',
-        playstation_4: 'PlayStation 4',
-        xbox_series: 'Xbox Series X/S',
-        xbox_one: 'Xbox One',
-        nintendo_switch: 'Nintendo Switch',
-        nintendo_switch_2: 'Nintendo Switch 2',
-        ios: 'iOS',
-        android: 'Android',
-        other: 'Other',
+    return platforms.find(item => item.value === platform)?.label ?? platform
+}
+
+const filteredReviews = computed(() => {
+    return (props.stats?.reviews ?? []).filter((review) => {
+        const matchesRating =
+            !filters.value.rating ||
+            Number(review.rating) === Number(filters.value.rating)
+
+        const matchesPlatform =
+            !filters.value.platform ||
+            review.platform === filters.value.platform
+
+        const matchesRecommendation =
+            !filters.value.recommendation ||
+            (
+                filters.value.recommendation === 'recommended' &&
+                review.recommended
+            ) ||
+            (
+                filters.value.recommendation === 'not_recommended' &&
+                review.not_recommended
+            )
+
+        return matchesRating && matchesPlatform && matchesRecommendation
+    })
+})
+
+const clearFilters = () => {
+    filters.value = {
+        rating: '',
+        platform: '',
+        recommendation: '',
     }
-
-    return labels[platform] ?? platform
 }
 
-const shouldTruncate = (body) => {
-    return String(body ?? '').length > 360
-}
+const shouldTruncate = (body) => String(body ?? '').length > 360
 
-const isExpanded = (review) => {
-    return expandedReviews.value.includes(review.id)
-}
+const isExpanded = (review) => expandedReviews.value.includes(review.id)
 
 const displayedBody = (review) => {
     const body = String(review.body ?? '')
@@ -148,12 +183,82 @@ const toggleExpanded = (review) => {
             v-if="stats?.reviews?.length"
             class="mt-8 space-y-4"
         >
-            <h3 class="text-xl font-bold text-white">
-                Community reviews
-            </h3>
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-white">
+                        Community reviews
+                    </h3>
+
+                    <p class="mt-1 text-sm text-zinc-500">
+                        Showing {{ filteredReviews.length }} of {{ stats.reviews.length }} reviews.
+                    </p>
+                </div>
+
+                <div class="grid gap-3 sm:grid-cols-3 lg:w-[720px]">
+                    <select
+                        v-model="filters.rating"
+                        class="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-600"
+                    >
+                        <option value="">
+                            Any rating
+                        </option>
+
+                        <option
+                            v-for="rating in 10"
+                            :key="rating"
+                            :value="rating"
+                        >
+                            {{ rating }}/10
+                        </option>
+                    </select>
+
+                    <select
+                        v-model="filters.platform"
+                        class="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-600"
+                    >
+                        <option value="">
+                            Any platform
+                        </option>
+
+                        <option
+                            v-for="platform in platforms"
+                            :key="platform.value"
+                            :value="platform.value"
+                        >
+                            {{ platform.label }}
+                        </option>
+                    </select>
+
+                    <select
+                        v-model="filters.recommendation"
+                        class="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-600"
+                    >
+                        <option value="">
+                            Any recommendation
+                        </option>
+
+                        <option value="recommended">
+                            Recommended
+                        </option>
+
+                        <option value="not_recommended">
+                            Not recommended
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <button
+                v-if="filters.rating || filters.platform || filters.recommendation"
+                type="button"
+                class="rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-2 text-sm font-bold text-zinc-300 transition hover:text-white"
+                @click="clearFilters"
+            >
+                Clear filters
+            </button>
 
             <article
-                v-for="review in stats.reviews"
+                v-for="review in filteredReviews"
                 :key="review.id"
                 class="rounded-2xl border border-zinc-800 bg-zinc-950 p-5"
             >
@@ -235,6 +340,13 @@ const toggleExpanded = (review) => {
                     </div>
                 </div>
             </article>
+
+            <div
+                v-if="!filteredReviews.length"
+                class="rounded-2xl border border-dashed border-zinc-800 p-8 text-center text-zinc-500"
+            >
+                No reviews match selected filters.
+            </div>
         </div>
 
         <div
