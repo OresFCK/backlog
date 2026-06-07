@@ -15,6 +15,24 @@ defineEmits([
     'report-review',
 ])
 
+const platformLabel = (platform) => {
+    const labels = {
+        pc: 'PC',
+        steam_deck: 'Steam Deck',
+        playstation_5: 'PlayStation 5',
+        playstation_4: 'PlayStation 4',
+        xbox_series: 'Xbox Series X/S',
+        xbox_one: 'Xbox One',
+        nintendo_switch: 'Nintendo Switch',
+        nintendo_switch_2: 'Nintendo Switch 2',
+        ios: 'iOS',
+        android: 'Android',
+        other: 'Other',
+    }
+
+    return labels[platform] ?? platform
+}
+
 const shouldTruncate = (body) => {
     return String(body ?? '').length > 420
 }
@@ -39,6 +57,11 @@ const truncatedBody = (body) => {
                 class="h-14 w-14 rounded-2xl object-cover"
             />
 
+            <div
+                v-else
+                class="h-14 w-14 shrink-0 rounded-2xl bg-zinc-800"
+            />
+
             <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-3">
                     <h2 class="text-lg font-bold text-white">
@@ -54,6 +77,13 @@ const truncatedBody = (body) => {
                         class="rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-1 text-sm font-bold text-white"
                     >
                         {{ review.rating }}/10
+                    </span>
+
+                    <span
+                        v-if="review.platform"
+                        class="rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-1 text-sm font-bold text-zinc-300"
+                    >
+                        {{ platformLabel(review.platform) }}
                     </span>
 
                     <span
@@ -78,6 +108,20 @@ const truncatedBody = (body) => {
                 <h3 class="mt-1 text-2xl font-black text-white">
                     {{ review.title || 'Untitled review' }}
                 </h3>
+
+                <a
+                    v-if="review.screenshot_url"
+                    :href="review.screenshot_url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="mt-4 block overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950"
+                >
+                    <img
+                        :src="review.screenshot_url"
+                        :alt="review.title || review.game_title"
+                        class="max-h-96 w-full object-cover"
+                    >
+                </a>
 
                 <p class="mt-4 whitespace-pre-line text-zinc-300">
                     {{ truncatedBody(review.body) }}

@@ -10,6 +10,7 @@ use App\Models\UserConnection;
 use App\Services\SteamService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -29,6 +30,10 @@ class PublicReviewController extends Controller
                 'title' => $review->title,
                 'body' => $review->body,
                 'rating' => $review->rating,
+                'platform' => $review->platform,
+                'screenshot_url' => $review->screenshot_path
+                    ? Storage::url($review->screenshot_path)
+                    : null,
                 'recommended' => $review->recommended,
                 'not_recommended' => $review->not_recommended,
                 'is_featured_on_profile' => $review->is_featured_on_profile,
@@ -74,16 +79,41 @@ class PublicReviewController extends Controller
     public function store(
         StorePublicReviewRequest $request
     ): RedirectResponse {
+        $data = $request->validated();
+
+        $existingReview = PublicReview::query()
+            ->where('user_id', $request->user()->id)
+            ->where('game_id', $request->game_id)
+            ->first();
+
+        if ($request->hasFile('screenshot')) {
+            if ($existingReview?->screenshot_path) {
+                Storage::disk('public')->delete(
+                    $existingReview->screenshot_path
+                );
+            }
+
+            $data['screenshot_path'] = $request
+                ->file('screenshot')
+                ->store('review-screenshots', 'public');
+        }
+
+        unset($data['screenshot']);
+
         $review = PublicReview::updateOrCreate(
             [
                 'user_id' => $request->user()->id,
                 'game_id' => $request->game_id,
             ],
             [
-                'game_title' => $request->game_title,
-                'title' => $request->title,
-                'body' => $request->body,
-                'rating' => $request->rating,
+                'game_title' => $data['game_title'],
+                'title' => $data['title'],
+                'body' => $data['body'],
+                'rating' => $data['rating'],
+                'platform' => $data['platform'] ?? null,
+
+                'screenshot_path' => $data['screenshot_path']
+                    ?? $existingReview?->screenshot_path,
 
                 'recommended' => $request->boolean('recommended'),
                 'not_recommended' => $request->boolean('not_recommended'),
@@ -104,6 +134,7 @@ class PublicReviewController extends Controller
                 'game_id' => $review->game_id,
                 'game_title' => $review->game_title,
                 'rating' => $review->rating,
+                'platform' => $review->platform,
             ],
         ]);
 

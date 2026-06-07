@@ -15,15 +15,19 @@ class PublicReview extends Model
         'title',
         'body',
         'rating',
+        'platform',
+        'screenshot_path',
         'recommended',
         'not_recommended',
         'is_featured_on_profile',
+        'is_public',
     ];
 
     protected $casts = [
         'recommended' => 'boolean',
         'not_recommended' => 'boolean',
         'is_featured_on_profile' => 'boolean',
+        'is_public' => 'boolean',
         'rating' => 'integer',
     ];
 

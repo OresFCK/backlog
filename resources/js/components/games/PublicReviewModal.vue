@@ -32,11 +32,27 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
+const platforms = [
+    { value: 'pc', label: 'PC' },
+    { value: 'steam_deck', label: 'Steam Deck' },
+    { value: 'playstation_5', label: 'PlayStation 5' },
+    { value: 'playstation_4', label: 'PlayStation 4' },
+    { value: 'xbox_series', label: 'Xbox Series X/S' },
+    { value: 'xbox_one', label: 'Xbox One' },
+    { value: 'nintendo_switch', label: 'Nintendo Switch' },
+    { value: 'nintendo_switch_2', label: 'Nintendo Switch 2' },
+    { value: 'ios', label: 'iOS' },
+    { value: 'android', label: 'Android' },
+    { value: 'other', label: 'Other' },
+]
+
 const publicReviewTitle = ref(props.game.title)
 const publicReviewBody = ref(props.note ?? '')
 const publicReviewRating = ref(props.rating)
 const publicReviewRecommended = ref(props.recommended)
 const publicReviewNotRecommended = ref(props.notRecommended)
+const publicReviewPlatform = ref('')
+const publicReviewScreenshot = ref(null)
 
 const togglePublicRecommended = () => {
     publicReviewRecommended.value = !publicReviewRecommended.value
@@ -94,6 +110,10 @@ const handlePublicRatingInput = (event) => {
     publicReviewRating.value = normalizeRating(event.target.value)
 }
 
+const handleScreenshotInput = (event) => {
+    publicReviewScreenshot.value = event.target.files[0] ?? null
+}
+
 const submitPublicReview = () => {
     router.post(
         '/reviews/public',
@@ -105,11 +125,14 @@ const submitPublicReview = () => {
             rating: publicReviewRating.value
                 ? Number(publicReviewRating.value)
                 : null,
+            platform: publicReviewPlatform.value,
+            screenshot: publicReviewScreenshot.value,
             recommended: publicReviewRecommended.value,
             not_recommended: publicReviewNotRecommended.value,
         },
         {
             preserveScroll: true,
+            forceFormData: true,
 
             onSuccess: () => {
                 emit('close')
@@ -121,7 +144,7 @@ const submitPublicReview = () => {
 
 <template>
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-        <div class="w-full max-w-2xl rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl">
+        <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl">
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h2 class="text-2xl font-black text-white">
@@ -193,45 +216,85 @@ const submitPublicReview = () => {
                         </div>
                     </div>
 
-                    <div class="flex items-end gap-3">
-                        <button
-                            type="button"
-                            class="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 px-4 py-3 text-sm font-semibold transition"
-                            :class="
-                                publicReviewRecommended
-                                    ? 'bg-emerald-500/10 text-emerald-300'
-                                    : 'bg-zinc-900 text-zinc-300 hover:text-white'
-                            "
-                            @click="togglePublicRecommended"
+                    <div>
+                        <label class="text-sm font-semibold text-zinc-300">
+                            Platform
+                        </label>
+
+                        <select
+                            v-model="publicReviewPlatform"
+                            class="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-600"
                         >
-                            <ThumbsUp class="h-4 w-4" />
+                            <option value="">
+                                Select platform
+                            </option>
 
-                            {{
-                                publicReviewRecommended
-                                    ? 'Recommended'
-                                    : 'Recommend'
-                            }}
-                        </button>
-
-                        <button
-                            type="button"
-                            class="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 px-4 py-3 text-sm font-semibold transition"
-                            :class="
-                                publicReviewNotRecommended
-                                    ? 'bg-red-500/10 text-red-300'
-                                    : 'bg-zinc-900 text-zinc-300 hover:text-white'
-                            "
-                            @click="togglePublicNotRecommended"
-                        >
-                            <X class="h-4 w-4" />
-
-                            {{
-                                publicReviewNotRecommended
-                                    ? 'Not Recommended'
-                                    : 'Do Not Recommend'
-                            }}
-                        </button>
+                            <option
+                                v-for="platform in platforms"
+                                :key="platform.value"
+                                :value="platform.value"
+                            >
+                                {{ platform.label }}
+                            </option>
+                        </select>
                     </div>
+                </div>
+
+                <div>
+                    <label class="text-sm font-semibold text-zinc-300">
+                        Screenshot
+                    </label>
+
+                    <input
+                        type="file"
+                        accept="image/*"
+                        class="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-bold file:text-zinc-950"
+                        @input="handleScreenshotInput"
+                    />
+
+                    <p class="mt-2 text-xs text-zinc-500">
+                        Upload exactly one screenshot. Supported: JPG, PNG, WEBP.
+                    </p>
+                </div>
+
+                <div class="flex items-end gap-3">
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 px-4 py-3 text-sm font-semibold transition"
+                        :class="
+                            publicReviewRecommended
+                                ? 'bg-emerald-500/10 text-emerald-300'
+                                : 'bg-zinc-900 text-zinc-300 hover:text-white'
+                        "
+                        @click="togglePublicRecommended"
+                    >
+                        <ThumbsUp class="h-4 w-4" />
+
+                        {{
+                            publicReviewRecommended
+                                ? 'Recommended'
+                                : 'Recommend'
+                        }}
+                    </button>
+
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 px-4 py-3 text-sm font-semibold transition"
+                        :class="
+                            publicReviewNotRecommended
+                                ? 'bg-red-500/10 text-red-300'
+                                : 'bg-zinc-900 text-zinc-300 hover:text-white'
+                        "
+                        @click="togglePublicNotRecommended"
+                    >
+                        <X class="h-4 w-4" />
+
+                        {{
+                            publicReviewNotRecommended
+                                ? 'Not Recommended'
+                                : 'Do Not Recommend'
+                        }}
+                    </button>
                 </div>
             </div>
 

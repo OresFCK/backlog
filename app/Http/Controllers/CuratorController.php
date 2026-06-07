@@ -6,6 +6,7 @@ use App\Helpers\PayloadHelper as Payload;
 use App\Models\PublicReview;
 use App\Services\SteamService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -50,6 +51,10 @@ class CuratorController extends Controller
                     'title' => $review->title,
                     'body' => $review->body,
                     'rating' => $review->rating,
+                    'platform' => $review->platform,
+                    'screenshot_url' => $review->screenshot_path
+                        ? Storage::url($review->screenshot_path)
+                        : null,
                     'recommended' => $review->recommended,
                     'not_recommended' => $review->not_recommended,
                     'created_at' => $review->created_at?->diffForHumans(),
