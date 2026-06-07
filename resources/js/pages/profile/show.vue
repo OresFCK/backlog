@@ -11,7 +11,6 @@ import {
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
 
-import ProfileMenu from '@/components/profile/ProfileMenu.vue'
 import ProfileHero from '@/components/profile/ProfileHero.vue'
 import ProfileStats from '@/components/profile/ProfileStats.vue'
 import ProfileShowcase from '@/components/profile/ProfileShowcase.vue'
@@ -185,15 +184,29 @@ const stats = computed(() => {
                         :equipped-by-type="equippedByType"
                         :username-font-style="usernameFontStyle"
                     />
-                </div>
 
-                <ProfileMenu
-                    :items="menuItems"
-                    :active-section="activeSection"
-                    @change="activeSection = $event"
-                />
+                    <div class="-mt-4 mb-4 flex flex-wrap justify-center gap-3">
+                        <button
+                            v-for="item in menuItems"
+                            :key="item.key"
+                            type="button"
+                            class="flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold transition"
+                            :class="
+                                activeSection === item.key
+                                    ? 'bg-white text-zinc-950 shadow-lg'
+                                    : 'text-zinc-400 hover:text-white'
+                            "
+                            @click="activeSection = item.key"
+                        >
+                            <component
+                                :is="item.icon"
+                                class="h-4 w-4"
+                            />
 
-                <div class="mx-auto max-w-7xl p-8">
+                            {{ item.label }}
+                        </button>
+                    </div>
+
                     <template
                         v-if="activeSection === 'showcase'"
                     >
@@ -204,15 +217,16 @@ const stats = computed(() => {
                             :featured-wardrobe-items="featuredWardrobeItems"
                         />
                     </template>
-                    
 
-                    <template v-else-if="activeSection === 'overview'">
+                    <template
+                        v-else-if="activeSection === 'overview'"
+                    >
                         <ProfileStats
                             :games-count="games.length"
                             :stats="stats"
                         />
                     </template>
-                    
+
                     <template
                         v-else-if="activeSection === 'activity'"
                     >
