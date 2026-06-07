@@ -15,7 +15,6 @@ const activeAction = ref('coins')
 const actions = [
     { key: 'coins', label: 'Coins' },
     { key: 'xp', label: 'XP' },
-    { key: 'level', label: 'Level' },
     { key: 'item', label: 'Item' },
     { key: 'challenge', label: 'Challenge' },
 ]
@@ -30,10 +29,6 @@ const xpForm = useForm({
     reason: '',
 })
 
-const levelForm = useForm({
-    level: '',
-    reason: '',
-})
 
 const itemForm = useForm({
     shop_item_id: '',
@@ -126,14 +121,6 @@ const addXp = () => {
     })
 }
 
-const setLevel = () => {
-    if (!selectedUser.value) return
-
-    levelForm.post(`/admin/users/${selectedUser.value.id}/level`, {
-        preserveScroll: true,
-        onSuccess: () => afterSuccess(levelForm),
-    })
-}
 
 const grantItem = () => {
     if (!selectedUser.value) return
@@ -364,33 +351,6 @@ const completeChallenge = () => {
                         </button>
                     </form>
 
-                    <form
-                        v-if="activeAction === 'level'"
-                        class="space-y-3"
-                        @submit.prevent="setLevel"
-                    >
-                        <input
-                            v-model="levelForm.level"
-                            type="number"
-                            min="1"
-                            placeholder="Set level, e.g. 10"
-                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
-                        />
-
-                        <input
-                            v-model="levelForm.reason"
-                            placeholder="Reason"
-                            class="w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
-                        />
-
-                        <button
-                            type="submit"
-                            class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 disabled:opacity-50"
-                            :disabled="levelForm.processing"
-                        >
-                            Set level
-                        </button>
-                    </form>
 
                     <form
                         v-if="activeAction === 'item'"
