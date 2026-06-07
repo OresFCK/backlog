@@ -346,13 +346,6 @@ const deleteItem = (item) => {
                         Edit
                     </button>
 
-                    <button
-                        type="button"
-                        class="rounded-xl bg-red-500/10 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/20"
-                        @click="deleteItem(item)"
-                    >
-                        Delete
-                    </button>
                 </div>
 
                 <div

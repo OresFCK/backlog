@@ -298,9 +298,6 @@ Route::middleware(['auth', 'admin'])
         Route::put('/shop-items/{item}', [ShopItemController::class, 'update'])
             ->name('shop-items.update');
 
-        Route::delete('/shop-items/{item}', [ShopItemController::class, 'destroy'])
-            ->name('shop-items.destroy');
-
         Route::get('/challenges', [AdminChallengeController::class, 'index'])
             ->name('challenges.index');
 
