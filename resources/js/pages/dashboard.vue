@@ -61,7 +61,7 @@ const mappedGames = computed(() => {
             ) ?? null
 
         return {
-            id: game.id,
+            id: game.appid ?? game.id,
 
             title:
                 game.name ??

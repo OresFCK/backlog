@@ -35,7 +35,7 @@ const note = ref(props.game.note ?? '')
 const rating = ref(props.game.rating ? String(props.game.rating) : '')
 const recommended = ref(props.game.recommended ?? false)
 const notRecommended = ref(props.game.not_recommended ?? false)
-const status = ref('')
+const status = ref(props.game.status ?? 'Backlog')
 const showOnPublicProfile = ref(props.game.show_on_public_profile ?? false)
 
 const isReviewModalOpen = ref(false)
@@ -52,15 +52,14 @@ const shouldShowReadMore = computed(() => {
 })
 
 watch(
-    () => props.statuses,
-    (statuses) => {
-        if (!statuses.length) {
-            return
-        }
-
-        status.value = props.game.has_meta
-            ? props.game.status
-            : statuses[0].name
+    () => props.game,
+    (game) => {
+        note.value = game.note ?? ''
+        rating.value = game.rating ? String(game.rating) : ''
+        recommended.value = game.recommended ?? false
+        notRecommended.value = game.not_recommended ?? false
+        status.value = game.status ?? 'Backlog'
+        showOnPublicProfile.value = game.show_on_public_profile ?? false
     },
     {
         immediate: true,
