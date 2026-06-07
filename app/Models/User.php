@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -18,6 +16,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
+        'display_name',
         'email',
         'password',
         'steam_id',
@@ -47,6 +46,13 @@ class User extends Authenticatable
         ];
     }
 
+    public function getVisibleNameAttribute(): string
+    {
+        return $this->display_name
+            ?: $this->steam_persona_name
+            ?: $this->name;
+    }
+
     public function steamAccount(): HasOne
     {
         return $this->hasOne(SteamAccount::class);
@@ -66,10 +72,15 @@ class User extends Authenticatable
     {
         return $this->hasMany(CustomGame::class);
     }
-    
+
     public function customStatuses()
     {
-    return $this->hasMany(CustomStatus::class);
+        return $this->hasMany(CustomStatus::class);
+    }
+
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(UserSubmission::class);
     }
 
     public function challenges(): BelongsToMany
@@ -82,10 +93,5 @@ class User extends Authenticatable
     public function activityLogs(): HasMany
     {
         return $this->hasMany(ActivityLog::class);
-    }
-
-    public function submissions(): HasMany
-    {
-        return $this->hasMany(UserSubmission::class);
     }
 }

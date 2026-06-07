@@ -25,6 +25,7 @@ import {
     BarChart3,
     Bug,
     Lightbulb,
+    UserCog,
 } from 'lucide-vue-next'
 
 const page = usePage()
@@ -154,6 +155,11 @@ const toolItems = [
 ]
 
 const settingsItems = [
+    {
+        label: 'Account',
+        href: '/settings/account',
+        icon: UserCog,
+    },
     {
         label: 'Custom Statuses',
         href: '/settings/labels',

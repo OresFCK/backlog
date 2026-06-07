@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\PayloadHelper as Payload;
 use App\Http\Requests\StorePublicReviewRequest;
 use App\Models\ActivityLog;
 use App\Models\PublicReview;
 use App\Models\UserConnection;
+use App\Services\SteamService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,7 +15,7 @@ use Inertia\Response;
 
 class PublicReviewController extends Controller
 {
-    public function index(): Response
+    public function index(SteamService $steam): Response
     {
         $reviews = PublicReview::query()
             ->with([
@@ -53,7 +55,7 @@ class PublicReviewController extends Controller
                     auth()->id() === $review->user_id,
 
                 'user' => [
-                    'name' => $review->user?->name,
+                    'name' => $review->user?->visible_name,
                     'avatar' => $review->user?->steam_avatar_url,
                 ],
             ])
@@ -63,12 +65,8 @@ class PublicReviewController extends Controller
         return Inertia::render(
             'reviews/index',
             [
+                ...Payload::pageData($steam),
                 'reviews' => $reviews,
-
-                'user' => [
-                    'name' => auth()->user()->name,
-                    'avatar' => auth()->user()->steam_avatar_url,
-                ],
             ]
         );
     }
@@ -135,35 +133,26 @@ class PublicReviewController extends Controller
     ): bool {
         return UserConnection::query()
             ->where(function ($query) use ($voterId, $reviewAuthorId) {
-
                 $query
                     ->where(function ($query) use ($voterId, $reviewAuthorId) {
-
                         $query
                             ->where('type', 'friend')
                             ->where('status', 'accepted')
-
                             ->where(function ($query) use ($voterId, $reviewAuthorId) {
-
                                 $query
                                     ->where(function ($query) use ($voterId, $reviewAuthorId) {
-
                                         $query
                                             ->where('sender_id', $voterId)
                                             ->where('receiver_id', $reviewAuthorId);
                                     })
-
                                     ->orWhere(function ($query) use ($voterId, $reviewAuthorId) {
-
                                         $query
                                             ->where('sender_id', $reviewAuthorId)
                                             ->where('receiver_id', $voterId);
                                     });
                             });
                     })
-
                     ->orWhere(function ($query) use ($voterId, $reviewAuthorId) {
-
                         $query
                             ->where('type', 'follow')
                             ->where('sender_id', $voterId)

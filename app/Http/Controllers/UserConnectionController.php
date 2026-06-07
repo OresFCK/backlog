@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\LevelSystem;
+use App\Helpers\PayloadHelper as Payload;
 use App\Http\Requests\StoreUserConnectionRequest;
 use App\Models\User;
 use App\Models\UserConnection;
@@ -13,12 +15,12 @@ use Inertia\Response;
 
 class UserConnectionController extends Controller
 {
-    public function index(): Response
+    public function index(SteamService $steam): Response
     {
         return Inertia::render(
             'people/index',
             [
-                'user' => $this->currentUser(),
+                ...Payload::pageData($steam),
 
                 'connections' => $this->connections(),
 
@@ -85,7 +87,6 @@ class UserConnectionController extends Controller
     public function search(
         SteamService $steam
     ): JsonResponse {
-
         $query = trim(
             (string) request('q')
         );
@@ -104,7 +105,6 @@ class UserConnectionController extends Controller
         return response()->json(
             collect($steamProfiles)
                 ->map(function ($profile) {
-
                     $user = User::where(
                         'steam_id',
                         $profile['steam_id']
@@ -116,7 +116,7 @@ class UserConnectionController extends Controller
                         'id' => $user?->id,
 
                         'name' =>
-                            $user?->name
+                            $user?->visible_name
                             ?? $profile['name'],
 
                         'steam_id' =>
@@ -139,7 +139,6 @@ class UserConnectionController extends Controller
     public function store(
         StoreUserConnectionRequest $request
     ): RedirectResponse {
-
         abort_if(
             (int) $request->user_id === auth()->id(),
             422
@@ -166,7 +165,6 @@ class UserConnectionController extends Controller
     public function accept(
         UserConnection $connection
     ): RedirectResponse {
-
         abort_unless(
             $connection->receiver_id === auth()->id(),
             403
@@ -187,7 +185,6 @@ class UserConnectionController extends Controller
     public function destroy(
         UserConnection $connection
     ): RedirectResponse {
-
         abort_unless(
             $connection->sender_id === auth()->id()
             || $connection->receiver_id === auth()->id(),
@@ -202,23 +199,24 @@ class UserConnectionController extends Controller
     private function currentUser(): array
     {
         $user = auth()->user();
+        $level = LevelSystem::levelFromXp($user->xp ?? 0);
 
         return [
             'id' => $user->id,
 
-            'name' => $user->name,
+            'name' => $user->visible_name,
 
             'avatar' => $user->steam_avatar_url,
 
-            'level' => $user->level ?? 1,
+            'level' => $level,
 
             'coins' => $user->coins ?? 0,
 
             'xp' => $user->xp ?? 0,
 
-            'xp_for_next_level' => $user->xp_for_next_level ?? 100,
+            'xp_for_current_level' => LevelSystem::xpForNextLevel($level - 1),
 
-            'xp_for_current_level' => $user->xp_for_current_level ?? 0,
+            'xp_for_next_level' => LevelSystem::xpForNextLevel($level),
         ];
     }
 
@@ -252,7 +250,7 @@ class UserConnectionController extends Controller
                 'user' => [
                     'id' => $connection->sender->id,
 
-                    'name' => $connection->sender->name,
+                    'name' => $connection->sender->visible_name,
 
                     'steam_id' => $connection->sender->steam_id,
 
@@ -270,13 +268,11 @@ class UserConnectionController extends Controller
                 'receiver',
             ])
             ->where(function ($query) {
-
                 $query
                     ->where(
                         'sender_id',
                         auth()->id()
                     )
-
                     ->orWhere(
                         'receiver_id',
                         auth()->id()
@@ -285,7 +281,6 @@ class UserConnectionController extends Controller
             ->latest()
             ->get()
             ->map(function ($connection) {
-
                 $otherUser =
                     $connection->sender_id === auth()->id()
                     ? $connection->receiver
@@ -308,7 +303,7 @@ class UserConnectionController extends Controller
                     'user' => [
                         'id' => $otherUser->id,
 
-                        'name' => $otherUser->name,
+                        'name' => $otherUser->visible_name,
 
                         'steam_id' => $otherUser->steam_id,
 

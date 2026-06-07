@@ -26,6 +26,7 @@ use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
 use App\Http\Controllers\UserSubmissionController;
 use App\Http\Controllers\AdminUserSubmissionController;
+use App\Http\Controllers\AccountSettingsController;
 use App\Models\UserSubmission;
 use App\Models\User;
 use App\Services\SteamService;
@@ -190,6 +191,16 @@ Route::middleware('auth')->group(function () {
                 UserSubmissionController::class,
                 'store',
             ])->name('submissions.store');
+
+            Route::get('/account', [
+                AccountSettingsController::class,
+                'edit',
+            ])->name('account');
+
+            Route::patch('/account', [
+                AccountSettingsController::class,
+                'update',
+            ])->name('account.update');
         });
 
     Route::prefix('profile')

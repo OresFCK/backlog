@@ -49,7 +49,9 @@ class PayloadHelper
 
         return [
             'profileUser' => [
-                'name' => $user->name,
+                'name' => $user->visible_name,
+                'display_name' => $user->display_name,
+                'steam_persona_name' => $user->steam_persona_name,
                 'steam_id' => $user->steam_id,
                 'avatar' => $user->steam_avatar_url,
                 'banner_url' => $user->banner_url,
@@ -137,7 +139,9 @@ class PayloadHelper
         $level = LevelSystem::levelFromXp($user->xp ?? 0);
 
         return [
-            'name' => $user->name,
+            'name' => $user->visible_name,
+            'display_name' => $user->display_name,
+            'steam_persona_name' => $user->steam_persona_name,
             'steam_id' => $user->steam_id,
             'avatar' => $user->steam_avatar_url,
             'banner_url' => $user->banner_url,
@@ -188,7 +192,7 @@ class PayloadHelper
 
                 'reporter' => [
                     'id' => $report->reporter?->id,
-                    'name' => $report->reporter?->name,
+                    'name' => $report->reporter?->visible_name,
                     'avatar' => $report->reporter?->steam_avatar_url,
                 ],
 
@@ -203,7 +207,7 @@ class PayloadHelper
 
                     'user' => [
                         'id' => $report->review->user?->id,
-                        'name' => $report->review->user?->name,
+                        'name' => $report->review->user?->visible_name,
                         'avatar' => $report->review->user?->steam_avatar_url,
                     ],
                 ] : null,

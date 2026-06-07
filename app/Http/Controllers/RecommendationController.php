@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\PayloadHelper as Payload;
 use App\Services\RecommendationService;
+use App\Services\SteamService;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -12,11 +14,13 @@ class RecommendationController extends Controller
         private RecommendationService $recommendations
     ) {}
 
-    public function index(): Response
+    public function index(SteamService $steam): Response
     {
         return Inertia::render(
             'recommendations/index',
             [
+                ...Payload::pageData($steam),
+
                 'backlogRecommendations' =>
                     $this->recommendations->backlogRecommendations(),
 
@@ -28,11 +32,6 @@ class RecommendationController extends Controller
 
                 'globalRanking' =>
                     $this->recommendations->globalRanking(),
-
-                'user' => [
-                    'name' => auth()->user()->name,
-                    'avatar' => auth()->user()->steam_avatar_url,
-                ],
             ]
         );
     }
