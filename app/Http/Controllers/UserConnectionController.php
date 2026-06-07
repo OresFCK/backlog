@@ -29,14 +29,34 @@ class UserConnectionController extends Controller
 
     public function notifications(): JsonResponse
     {
-        return response()->json([
-            'incoming_requests_count' => UserConnection::query()
-                ->where('receiver_id', auth()->id())
-                ->where('type', 'friend')
-                ->where('status', 'pending')
-                ->count(),
+        $incomingRequests = $this->incomingRequests();
 
-            'incoming_requests' => $this->incomingRequests(),
+        $adminNotifications = auth()->user()
+            ->activityLogs()
+            ->where('type', 'like', 'admin_%')
+            ->latest()
+            ->limit(20)
+            ->get()
+            ->map(fn ($log) => [
+                'id' => 'admin_' . $log->id,
+                'type' => 'admin',
+                'message' => $log->message,
+                'reason' => $log->metadata['reason'] ?? null,
+                'created_at' => $log->created_at?->diffForHumans(),
+            ])
+            ->values()
+            ->toArray();
+
+        return response()->json([
+            'incoming_requests_count' => count($incomingRequests),
+
+            'incoming_requests' => $incomingRequests,
+
+            'admin_notifications_count' => count($adminNotifications),
+
+            'admin_notifications' => $adminNotifications,
+
+            'total_count' => count($incomingRequests) + count($adminNotifications),
         ]);
     }
 
@@ -162,6 +182,7 @@ class UserConnectionController extends Controller
         $user = auth()->user();
 
         return [
+            'id' => $user->id,
             'name' => $user->name,
             'avatar' => $user->steam_avatar_url,
             'level' => $user->level ?? 1,

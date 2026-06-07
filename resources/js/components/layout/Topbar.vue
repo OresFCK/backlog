@@ -6,7 +6,6 @@ import {
 } from 'vue'
 
 import {
-    Search,
     Bell,
     X,
     Check,
@@ -27,6 +26,7 @@ const props = defineProps({
 
 const isOpen = ref(false)
 const requests = ref([])
+const adminNotifications = ref([])
 const count = ref(0)
 
 const level = computed(() =>
@@ -71,7 +71,8 @@ const loadNotifications = async () => {
     const data = await response.json()
 
     requests.value = data.incoming_requests ?? []
-    count.value = data.incoming_requests_count ?? 0
+    adminNotifications.value = data.admin_notifications ?? []
+    count.value = data.total_count ?? 0
 }
 
 const acceptRequest = (request) => {
@@ -108,15 +109,15 @@ onMounted(() => {
 
         <div class="flex items-center gap-4">
             <div
-                class="hidden h-14 items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-bold text-white lg:flex"
+                class="hidden h-14 items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 text-sm font-bold text-white lg:flex"
             >
-                <Coins class="h-4 w-4"/>
+                <Coins class="h-4 w-4" />
 
                 <span>{{ coins }}</span>
             </div>
-            
+
             <div
-                class="hidden w-56 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 lg:block"
+                class="hidden h-14 w-56 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-2 lg:block"
             >
                 <div class="mb-2 flex items-center justify-between">
                     <p class="text-xs font-bold text-white">
@@ -156,7 +157,7 @@ onMounted(() => {
 
                 <div
                     v-if="isOpen"
-                    class="absolute right-0 top-14 z-50 w-96 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl"
+                    class="absolute right-0 top-16 z-50 max-h-[70vh] w-96 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl"
                 >
                     <div class="mb-4 flex items-center justify-between">
                         <h2 class="font-bold text-white">
@@ -173,9 +174,31 @@ onMounted(() => {
                     </div>
 
                     <div
-                        v-if="requests.length"
+                        v-if="requests.length || adminNotifications.length"
                         class="space-y-3"
                     >
+                        <article
+                            v-for="notification in adminNotifications"
+                            :key="notification.id"
+                            class="rounded-xl border border-indigo-900 bg-indigo-950/30 p-4"
+                        >
+                            <p class="text-sm font-semibold text-white">
+                                {{ notification.message }}
+                            </p>
+
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+                                Reason
+                            </p>
+
+                            <p class="mt-1 text-sm text-zinc-300">
+                                {{ notification.reason }}
+                            </p>
+
+                            <p class="mt-1 text-xs text-zinc-500">
+                                {{ notification.created_at }}
+                            </p>
+                        </article>
+
                         <article
                             v-for="request in requests"
                             :key="request.id"
@@ -224,7 +247,7 @@ onMounted(() => {
                     </div>
 
                     <div
-                        v-else
+                        v-if="!requests.length && !adminNotifications.length"
                         class="rounded-xl border border-dashed border-zinc-800 p-6 text-center text-sm text-zinc-500"
                     >
                         No notifications.
@@ -234,7 +257,7 @@ onMounted(() => {
 
             <Link
                 href="/profile"
-                class="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-3 py-2 transition hover:border-zinc-700"
+                class="flex h-14 items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-3 transition hover:border-zinc-700"
             >
                 <img
                     v-if="user?.avatar"
