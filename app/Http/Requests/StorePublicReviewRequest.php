@@ -50,6 +50,7 @@ class StorePublicReviewRequest extends FormRequest
             'recommended' => ['boolean'],
             'not_recommended' => ['boolean'],
             'is_featured_on_profile' => ['boolean'],
+            'time_to_beat_hours' => ['nullable', 'numeric', 'min:0', 'max:9999'],
         ];
     }
 }

@@ -122,6 +122,10 @@ class PublicReviewController extends Controller
                     $request->boolean('is_featured_on_profile'),
 
                 'is_public' => true,
+
+                'time_to_beat_minutes' => filled($data['time_to_beat_hours'] ?? null)
+                    ? (int) round(((float) $data['time_to_beat_hours']) * 60)
+                    : null,
             ]
         );
 

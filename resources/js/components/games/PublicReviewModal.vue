@@ -53,6 +53,7 @@ const publicReviewRecommended = ref(props.recommended)
 const publicReviewNotRecommended = ref(props.notRecommended)
 const publicReviewPlatform = ref('')
 const publicReviewScreenshot = ref(null)
+const publicReviewTimeToBeatHours = ref('')
 
 const togglePublicRecommended = () => {
     publicReviewRecommended.value = !publicReviewRecommended.value
@@ -88,6 +89,26 @@ const blockInvalidKeys = (event) => {
     }
 }
 
+const blockInvalidTimeKeys = (event) => {
+    const allowedKeys = [
+        'Backspace',
+        'Delete',
+        'ArrowLeft',
+        'ArrowRight',
+        'Tab',
+        '.',
+        ',',
+    ]
+
+    if (allowedKeys.includes(event.key)) {
+        return
+    }
+
+    if (!/^\d$/.test(event.key)) {
+        event.preventDefault()
+    }
+}
+
 const normalizeRating = (value) => {
     let normalizedValue = value.replace(/\D/g, '').slice(0, 2)
 
@@ -106,8 +127,20 @@ const normalizeRating = (value) => {
     return normalizedValue
 }
 
+const normalizeTimeToBeat = (value) => {
+    return String(value ?? '')
+        .replace(',', '.')
+        .replace(/[^\d.]/g, '')
+        .replace(/(\..*)\./g, '$1')
+        .slice(0, 7)
+}
+
 const handlePublicRatingInput = (event) => {
     publicReviewRating.value = normalizeRating(event.target.value)
+}
+
+const handleTimeToBeatInput = (event) => {
+    publicReviewTimeToBeatHours.value = normalizeTimeToBeat(event.target.value)
 }
 
 const handleScreenshotInput = (event) => {
@@ -127,6 +160,7 @@ const submitPublicReview = () => {
                 : null,
             platform: publicReviewPlatform.value,
             screenshot: publicReviewScreenshot.value,
+            time_to_beat_hours: publicReviewTimeToBeatHours.value || null,
             recommended: publicReviewRecommended.value,
             not_recommended: publicReviewNotRecommended.value,
         },
@@ -144,7 +178,7 @@ const submitPublicReview = () => {
 
 <template>
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-        <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl">
+        <div class="w-full max-w-5xl rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl">
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h2 class="text-2xl font-black text-white">
@@ -238,6 +272,32 @@ const submitPublicReview = () => {
                             </option>
                         </select>
                     </div>
+                </div>
+
+                <div>
+                    <label class="text-sm font-semibold text-zinc-300">
+                        Time till beaten
+                    </label>
+
+                    <div class="mt-2 flex items-center rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+                        <input
+                            :value="publicReviewTimeToBeatHours"
+                            type="text"
+                            inputmode="decimal"
+                            placeholder="e.g. 24.5"
+                            class="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
+                            @keydown="blockInvalidTimeKeys"
+                            @input="handleTimeToBeatInput"
+                        >
+
+                        <span class="ml-3 text-sm font-semibold text-zinc-400">
+                            hours
+                        </span>
+                    </div>
+
+                    <p class="mt-2 text-xs text-zinc-500">
+                        Stored for future features. Not displayed yet.
+                    </p>
                 </div>
 
                 <div>

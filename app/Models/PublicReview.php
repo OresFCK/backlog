@@ -21,6 +21,7 @@ class PublicReview extends Model
         'not_recommended',
         'is_featured_on_profile',
         'is_public',
+        'time_to_beat_minutes',
     ];
 
     protected $casts = [
@@ -29,6 +30,7 @@ class PublicReview extends Model
         'is_featured_on_profile' => 'boolean',
         'is_public' => 'boolean',
         'rating' => 'integer',
+        'time_to_beat_minutes' => 'integer',
     ];
 
     public function user(): BelongsTo
