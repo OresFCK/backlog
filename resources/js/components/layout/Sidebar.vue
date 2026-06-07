@@ -13,6 +13,7 @@ import {
     CheckCircle2,
     Ban,
     Sparkles,
+    Star,
     PlusCircle,
     ChevronDown,
     Settings,
@@ -87,6 +88,11 @@ const mainItems = [
         label: 'Recommendations',
         href: '/recommendations',
         icon: Sparkles,
+    },
+    {
+        label: 'Curators Index',
+        href: '/curators',
+        icon: Star,
     },
 ]
 

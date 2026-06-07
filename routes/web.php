@@ -27,6 +27,7 @@ use App\Http\Requests\UpdateProfileBannerRequest;
 use App\Http\Controllers\UserSubmissionController;
 use App\Http\Controllers\AdminUserSubmissionController;
 use App\Http\Controllers\AccountSettingsController;
+use App\Http\Controllers\CuratorController;
 use App\Models\UserSubmission;
 use App\Models\User;
 use App\Services\SteamService;
@@ -81,6 +82,16 @@ Route::middleware('auth')->group(function () {
             'globalRanking' => $recommendations->globalRanking(),
         ]);
     })->name('dashboard');
+
+    Route::get('/curators', [
+        CuratorController::class,
+        'index',
+    ])->name('curators.index');
+
+    Route::get('/curators/game/{source}/{gameId}', [
+        CuratorController::class,
+        'showGame',
+    ])->name('curators.game');
 
     Route::get('/backlog', fn (SteamService $steam) =>
         Inertia::render('backlog/index', Payload::backlogPageData($steam))
