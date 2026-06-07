@@ -58,75 +58,79 @@ const toggleFeatured = (item) => {
                     <article
                         v-for="item in items"
                         :key="item.id"
-                        class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
+                        class="flex overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
                     >
-                        <div class="flex h-44 items-center justify-center bg-zinc-800">
-                            <img
-                                v-if="item.image_url"
-                                :src="item.image_url"
-                                :alt="item.name"
-                                class="h-full w-full object-cover"
-                            />
+                        <div class="flex w-full flex-col">
+                            <div class="flex h-44 shrink-0 items-center justify-center bg-zinc-800">
+                                <img
+                                    v-if="item.image_url"
+                                    :src="item.image_url"
+                                    :alt="item.name"
+                                    class="h-full w-full object-cover"
+                                />
 
-                            <div
-                                v-else
-                                class="flex h-full w-full items-center justify-center text-sm text-zinc-500"
-                            >
-                                No preview
-                            </div>
-                        </div>
-
-                        <div class="space-y-4 p-5">
-                            <div>
-                                <p class="text-xs uppercase tracking-widest text-zinc-500">
-                                    {{ item.type }}
-                                </p>
-
-                                <h2 class="mt-1 text-lg font-bold text-white">
-                                    {{ item.name }}
-                                </h2>
-
-                                <p class="mt-2 line-clamp-2 text-sm text-zinc-400">
-                                    {{ item.description }}
-                                </p>
+                                <div
+                                    v-else
+                                    class="flex h-full w-full items-center justify-center text-sm text-zinc-500"
+                                >
+                                    No preview
+                                </div>
                             </div>
 
-                            <button
-                                v-if="!item.is_equipped"
-                                type="button"
-                                class="w-full rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
-                                @click="equipItem(item)"
-                            >
-                                Equip
-                            </button>
+                            <div class="flex flex-1 flex-col p-5">
+                                <div class="flex-1">
+                                    <p class="text-xs uppercase tracking-widest text-zinc-500">
+                                        {{ item.type }}
+                                    </p>
 
-                            <button
-                                v-else
-                                type="button"
-                                class="w-full rounded-2xl bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-400 transition hover:bg-red-500/10 hover:text-red-400"
-                                @click="unequipItem(item)"
-                            >
-                                Unequip
-                            </button>
+                                    <h2 class="mt-1 line-clamp-2 text-lg font-bold text-white">
+                                        {{ item.name }}
+                                    </h2>
 
-                            <button
-                                type="button"
-                                class="flex w-full items-center justify-center gap-2 rounded-2xl border px-5 py-3 text-sm font-bold transition"
-                                :class="
-                                    item.is_featured_on_profile
-                                        ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-300'
-                                        : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:text-white'
-                                "
-                                @click="toggleFeatured(item)"
-                            >
-                                <Star class="h-4 w-4" />
+                                    <p class="mt-2 line-clamp-3 text-sm text-zinc-400">
+                                        {{ item.description }}
+                                    </p>
+                                </div>
 
-                                {{
-                                    item.is_featured_on_profile
-                                        ? 'Featured on Profile'
-                                        : 'Add to Showcase'
-                                }}
-                            </button>
+                                <div class="mt-5 space-y-3">
+                                    <button
+                                        v-if="!item.is_equipped"
+                                        type="button"
+                                        class="w-full rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
+                                        @click="equipItem(item)"
+                                    >
+                                        Equip
+                                    </button>
+
+                                    <button
+                                        v-else
+                                        type="button"
+                                        class="w-full rounded-2xl bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-400 transition hover:bg-red-500/10 hover:text-red-400"
+                                        @click="unequipItem(item)"
+                                    >
+                                        Unequip
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="flex w-full items-center justify-center gap-2 rounded-2xl border px-5 py-3 text-sm font-bold transition"
+                                        :class="
+                                            item.is_featured_on_profile
+                                                ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-300'
+                                                : 'border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700 hover:text-white'
+                                        "
+                                        @click="toggleFeatured(item)"
+                                    >
+                                        <Star class="h-4 w-4" />
+
+                                        {{
+                                            item.is_featured_on_profile
+                                                ? 'Featured on Profile'
+                                                : 'Add to Showcase'
+                                        }}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </article>
                 </section>
