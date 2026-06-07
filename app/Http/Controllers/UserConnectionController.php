@@ -163,8 +163,12 @@ class UserConnectionController extends Controller
 
         return [
             'name' => $user->name,
-
             'avatar' => $user->steam_avatar_url,
+            'level' => $user->level ?? 1,
+            'coins' => $user->coins ?? 0,
+            'xp' => $user->xp ?? 0,
+            'xp_for_next_level' => $user->xp_for_next_level ?? 100,
+            'xp_for_current_level' => $user->xp_for_current_level ?? 0,
         ];
     }
 
