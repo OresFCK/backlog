@@ -1,5 +1,6 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3'
+import { useForm, usePage } from '@inertiajs/vue3'
+import { computed } from 'vue'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
@@ -7,6 +8,10 @@ import Topbar from '@/components/layout/Topbar.vue'
 const props = defineProps({
     user: Object,
 })
+
+const page = usePage()
+
+const successMessage = computed(() => page.props.flash?.success)
 
 const form = useForm({
     display_name: props.user?.display_name ?? '',
@@ -36,6 +41,13 @@ const submit = () => {
                         Set your app nickname. If empty, your Steam name will be used.
                     </p>
 
+                    <div
+                        v-if="successMessage"
+                        class="mt-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300"
+                    >
+                        {{ successMessage }}
+                    </div>
+
                     <form
                         class="mt-8 space-y-6"
                         @submit.prevent="submit"
@@ -49,7 +61,12 @@ const submit = () => {
                                 v-model="form.display_name"
                                 type="text"
                                 maxlength="32"
-                                class="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none focus:border-zinc-600"
+                                :class="[
+                                    'mt-2 w-full rounded-2xl border bg-zinc-950 px-4 py-3 text-white outline-none',
+                                    form.errors.display_name
+                                        ? 'border-red-500 focus:border-red-400'
+                                        : 'border-zinc-800 focus:border-zinc-600',
+                                ]"
                                 placeholder="e.g. Dagne"
                             >
 

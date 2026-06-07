@@ -235,6 +235,8 @@ function submit() {
                         :steam-app-id="steamAppId"
                         :igdb-id="igdbId"
                         :duplicate="duplicate"
+                        :errors="errors"
+                        :success="successMessage"
                         @submit="submit"
                     />
                 </div>
