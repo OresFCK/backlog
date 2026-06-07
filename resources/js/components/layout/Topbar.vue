@@ -108,7 +108,7 @@ onMounted(() => {
 
         <div class="flex items-center gap-4">
             <div
-                class="hidden items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-bold text-white lg:flex"
+                class="hidden h-14 items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-bold text-white lg:flex"
             >
                 <Coins class="h-4 w-4"/>
 
@@ -141,7 +141,7 @@ onMounted(() => {
             <div class="relative">
                 <button
                     type="button"
-                    class="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900 text-zinc-300 transition hover:border-zinc-700 hover:text-white"
+                    class="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900 text-zinc-300 transition hover:border-zinc-700 hover:text-white"
                     @click="isOpen = !isOpen"
                 >
                     <Bell class="h-5 w-5" />
