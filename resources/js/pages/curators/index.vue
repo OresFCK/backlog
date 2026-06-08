@@ -64,7 +64,7 @@ const loadGameStats = async (game) => {
 
     try {
         const response = await fetch(
-            `/curators/game/${game.source}/${game.id}`
+            `/curators/game/${game.source}/${game.id}?title=${encodeURIComponent(game.title)}`
         )
 
         gameStats.value = await response.json()
