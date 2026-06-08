@@ -16,7 +16,24 @@
                 >
                     Login with Steam
                 </a>
+            </div>
 
+            <div class="mt-8 max-w-lg text-sm text-zinc-500">
+                By signing in with Steam, you agree to our
+                <a
+                    href="/terms"
+                    class="underline transition hover:text-zinc-300"
+                >
+                    Terms of Service
+                </a>
+                and
+                <a
+                    href="/privacy"
+                    class="underline transition hover:text-zinc-300"
+                >
+                    Privacy Policy
+                </a>.
+                Curator.gg is currently operating as a closed beta project.
             </div>
         </div>
     </div>

@@ -90,6 +90,32 @@ const submit = () => {
                             {{ form.processing ? 'Saving...' : 'Save nickname' }}
                         </button>
                     </form>
+
+                    <section class="mt-10 border-t border-zinc-800 pt-8">
+                        <h2 class="text-lg font-semibold text-white">
+                            Legal
+                        </h2>
+
+                        <p class="mt-2 text-sm text-zinc-400">
+                            Review the legal documents governing your use of Curator.gg.
+                        </p>
+
+                        <div class="mt-4 flex flex-wrap gap-3">
+                            <a
+                                href="/terms"
+                                class="rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                            >
+                                Terms of Service
+                            </a>
+
+                            <a
+                                href="/privacy"
+                                class="rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                            >
+                                Privacy Policy
+                            </a>
+                        </div>
+                    </section>
                 </section>
             </main>
         </div>

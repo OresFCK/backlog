@@ -1,3 +1,4 @@
+```vue
 <script setup>
 defineProps({
     canResetPassword: Boolean,
@@ -14,7 +15,7 @@ defineProps({
         >
             <div class="mb-8 text-center">
                 <h1 class="text-4xl font-bold text-white">
-                    backlog
+                    Curator.gg
                 </h1>
 
                 <p class="mt-3 text-zinc-400">
@@ -40,12 +41,33 @@ defineProps({
                 Continue with Steam
             </a>
 
-            <p
-                class="mt-8 text-center text-xs text-zinc-500"
-            >
-                Steam and the Steam logo are trademarks of
-                Valve Corporation.
-            </p>
+            <div class="mt-6 space-y-3 text-center text-xs leading-relaxed text-zinc-500">
+                <p>
+                    By signing in, you acknowledge that you have read and agree
+                    to our
+                    <a
+                        href="/terms"
+                        class="underline transition hover:text-zinc-300"
+                    >
+                        Terms of Service
+                    </a>
+                    and
+                    <a
+                        href="/privacy"
+                        class="underline transition hover:text-zinc-300"
+                    >
+                        Privacy Policy
+                    </a>.
+                </p>
+
+                <p class="text-zinc-600">
+                    Steam and the Steam logo are trademarks and registered
+                    trademarks of Valve Corporation. Curator.gg is an
+                    independent project and is not affiliated with, endorsed,
+                    sponsored, or specifically approved by Valve Corporation.
+                </p>
+            </div>
         </div>
     </div>
 </template>
+```

@@ -40,6 +40,9 @@ Route::redirect('/', '/home');
 Route::inertia('/home', 'home')->name('home');
 Route::inertia('/login', 'auth/login')->name('login');
 
+Route::inertia('/terms', 'terms')->name('terms');
+Route::inertia('/privacy', 'privacy')->name('privacy');
+
 Route::get('/u/{user:steam_id}', fn (
     User $user,
     SteamService $steam
