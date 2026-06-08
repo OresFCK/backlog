@@ -2,7 +2,7 @@
     <div class="min-h-screen bg-zinc-950 text-white">
         <div class="mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-6 text-center">
             <h1 class="text-6xl font-bold tracking-tight">
-                backlog
+                Curator.gg
             </h1>
 
             <p class="mt-6 max-w-2xl text-lg text-zinc-400">
