@@ -22,6 +22,20 @@ class CuratorController extends Controller
 
     public function showGame(string $source, string $gameId): JsonResponse
     {
+        dd(
+    'request',
+    [
+        'source' => $source,
+        'gameId' => $gameId,
+    ],
+    'reviews',
+    PublicReview::query()
+        ->select('id', 'source', 'game_id', 'game_title', 'title', 'is_public')
+        ->latest()
+        ->limit(10)
+        ->get()
+        ->toArray()
+);
         $game = Game::query()
             ->where('source', $source)
             ->where('game_id', $gameId)
