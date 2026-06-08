@@ -49,6 +49,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
                 'igdbDump' => fn () => $request->session()->get('igdbDump'),
+                'no_product_card' => fn () => $request->session()->get('no_product_card'),
             ],
         ];
     }

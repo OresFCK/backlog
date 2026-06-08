@@ -17,16 +17,12 @@ class UserConnectionController extends Controller
 {
     public function index(SteamService $steam): Response
     {
-        return Inertia::render(
-            'people/index',
-            [
-                ...Payload::pageData($steam),
+        return Inertia::render('people/index', [
+            ...Payload::pageData($steam),
 
-                'connections' => $this->connections(),
-
-                'incomingRequests' => $this->incomingRequests(),
-            ]
-        );
+            'connections' => $this->connections(),
+            'incomingRequests' => $this->incomingRequests(),
+        ]);
     }
 
     public function notifications(): JsonResponse
@@ -58,11 +54,9 @@ class UserConnectionController extends Controller
 
         return response()->json([
             'incoming_requests_count' => count($incomingRequests),
-
             'incoming_requests' => $incomingRequests,
 
             'admin_notifications_count' => $adminUnreadCount,
-
             'admin_notifications' => $adminNotifications,
 
             'total_count' => count($incomingRequests) + $adminUnreadCount,
@@ -84,51 +78,71 @@ class UserConnectionController extends Controller
         ]);
     }
 
-    public function search(
-        SteamService $steam
-    ): JsonResponse {
-        $query = trim(
-            (string) request('q')
-        );
+    public function search(SteamService $steam): JsonResponse
+    {
+        $query = trim((string) request('q'));
 
         if (! $query) {
             return response()->json([]);
         }
 
-        $steamProfiles =
-            $steam->searchPlayer($query);
+        $steamProfiles = $steam->searchPlayer($query);
 
         if (! count($steamProfiles)) {
             return response()->json([]);
         }
 
+        $currentUserId = auth()->id();
+        $currentSteamId = auth()->user()->steam_id;
+
         return response()->json(
             collect($steamProfiles)
-                ->map(function ($profile) {
-                    $user = User::where(
-                        'steam_id',
-                        $profile['steam_id']
-                    )->first();
+                ->filter(fn ($profile) =>
+                    (string) $profile['steam_id'] !== (string) $currentSteamId
+                )
+                ->map(function ($profile) use ($currentUserId) {
+                    $user = User::where('steam_id', $profile['steam_id'])->first();
+
+                    $friendConnection = $user
+                        ? UserConnection::query()
+                            ->where('type', 'friend')
+                            ->where(function ($query) use ($currentUserId, $user) {
+                                $query
+                                    ->where(function ($query) use ($currentUserId, $user) {
+                                        $query
+                                            ->where('sender_id', $currentUserId)
+                                            ->where('receiver_id', $user->id);
+                                    })
+                                    ->orWhere(function ($query) use ($currentUserId, $user) {
+                                        $query
+                                            ->where('sender_id', $user->id)
+                                            ->where('receiver_id', $currentUserId);
+                                    });
+                            })
+                            ->first()
+                        : null;
+
+                    $followConnection = $user
+                        ? UserConnection::query()
+                            ->where('type', 'follow')
+                            ->where('sender_id', $currentUserId)
+                            ->where('receiver_id', $user->id)
+                            ->first()
+                        : null;
 
                     return [
                         'exists' => filled($user),
-
                         'id' => $user?->id,
+                        'name' => $user?->visible_name ?? $profile['name'],
+                        'steam_id' => $profile['steam_id'],
+                        'avatar' => $user?->steam_avatar_url ?? $profile['avatar'],
+                        'profile_url' => $profile['profile_url'] ?? null,
 
-                        'name' =>
-                            $user?->visible_name
-                            ?? $profile['name'],
+                        'friend_status' => $friendConnection?->status,
+                        'is_friend' => $friendConnection?->status === 'accepted',
+                        'friend_request_pending' => $friendConnection?->status === 'pending',
 
-                        'steam_id' =>
-                            $profile['steam_id'],
-
-                        'avatar' =>
-                            $user?->steam_avatar_url
-                            ?? $profile['avatar'],
-
-                        'profile_url' =>
-                            $profile['profile_url']
-                            ?? null,
+                        'is_following' => filled($followConnection),
                     ];
                 })
                 ->values()
@@ -136,20 +150,38 @@ class UserConnectionController extends Controller
         );
     }
 
-    public function store(
-        StoreUserConnectionRequest $request
-    ): RedirectResponse {
-        abort_if(
-            (int) $request->user_id === auth()->id(),
-            422
-        );
+    public function store(StoreUserConnectionRequest $request): RedirectResponse
+    {
+        $currentUserId = auth()->id();
+        $receiverId = (int) $request->user_id;
+
+        abort_if($receiverId === $currentUserId, 422);
+
+        if ($request->type === 'friend') {
+            $existingConnection = UserConnection::query()
+                ->where('type', 'friend')
+                ->where(function ($query) use ($currentUserId, $receiverId) {
+                    $query
+                        ->where(function ($query) use ($currentUserId, $receiverId) {
+                            $query
+                                ->where('sender_id', $currentUserId)
+                                ->where('receiver_id', $receiverId);
+                        })
+                        ->orWhere(function ($query) use ($currentUserId, $receiverId) {
+                            $query
+                                ->where('sender_id', $receiverId)
+                                ->where('receiver_id', $currentUserId);
+                        });
+                })
+                ->exists();
+
+            abort_if($existingConnection, 422);
+        }
 
         UserConnection::updateOrCreate(
             [
-                'sender_id' => auth()->id(),
-
-                'receiver_id' => $request->user_id,
-
+                'sender_id' => $currentUserId,
+                'receiver_id' => $receiverId,
                 'type' => $request->type,
             ],
             [
@@ -162,18 +194,10 @@ class UserConnectionController extends Controller
         return back();
     }
 
-    public function accept(
-        UserConnection $connection
-    ): RedirectResponse {
-        abort_unless(
-            $connection->receiver_id === auth()->id(),
-            403
-        );
-
-        abort_unless(
-            $connection->type === 'friend',
-            404
-        );
+    public function accept(UserConnection $connection): RedirectResponse
+    {
+        abort_unless($connection->receiver_id === auth()->id(), 403);
+        abort_unless($connection->type === 'friend', 404);
 
         $connection->update([
             'status' => 'accepted',
@@ -182,9 +206,8 @@ class UserConnectionController extends Controller
         return back();
     }
 
-    public function destroy(
-        UserConnection $connection
-    ): RedirectResponse {
+    public function destroy(UserConnection $connection): RedirectResponse
+    {
         abort_unless(
             $connection->sender_id === auth()->id()
             || $connection->receiver_id === auth()->id(),
@@ -203,19 +226,12 @@ class UserConnectionController extends Controller
 
         return [
             'id' => $user->id,
-
             'name' => $user->visible_name,
-
             'avatar' => $user->steam_avatar_url,
-
             'level' => $level,
-
             'coins' => $user->coins ?? 0,
-
             'xp' => $user->xp ?? 0,
-
             'xp_for_current_level' => LevelSystem::xpForNextLevel($level - 1),
-
             'xp_for_next_level' => LevelSystem::xpForNextLevel($level),
         ];
     }
@@ -224,36 +240,19 @@ class UserConnectionController extends Controller
     {
         return UserConnection::query()
             ->with('sender')
-            ->where(
-                'receiver_id',
-                auth()->id()
-            )
-            ->where(
-                'type',
-                'friend'
-            )
-            ->where(
-                'status',
-                'pending'
-            )
+            ->where('receiver_id', auth()->id())
+            ->where('type', 'friend')
+            ->where('status', 'pending')
             ->latest()
             ->get()
             ->map(fn ($connection) => [
                 'id' => $connection->id,
-
                 'status' => $connection->status,
-
-                'created_at' => $connection
-                    ->created_at
-                    ?->diffForHumans(),
-
+                'created_at' => $connection->created_at?->diffForHumans(),
                 'user' => [
                     'id' => $connection->sender->id,
-
                     'name' => $connection->sender->visible_name,
-
                     'steam_id' => $connection->sender->steam_id,
-
                     'avatar' => $connection->sender->steam_avatar_url,
                 ],
             ])
@@ -263,50 +262,29 @@ class UserConnectionController extends Controller
     private function connections(): array
     {
         return UserConnection::query()
-            ->with([
-                'sender',
-                'receiver',
-            ])
+            ->with(['sender', 'receiver'])
             ->where(function ($query) {
                 $query
-                    ->where(
-                        'sender_id',
-                        auth()->id()
-                    )
-                    ->orWhere(
-                        'receiver_id',
-                        auth()->id()
-                    );
+                    ->where('sender_id', auth()->id())
+                    ->orWhere('receiver_id', auth()->id());
             })
             ->latest()
             ->get()
             ->map(function ($connection) {
-                $otherUser =
-                    $connection->sender_id === auth()->id()
+                $otherUser = $connection->sender_id === auth()->id()
                     ? $connection->receiver
                     : $connection->sender;
 
                 return [
                     'id' => $connection->id,
-
                     'type' => $connection->type,
-
                     'status' => $connection->status,
-
-                    'is_incoming' =>
-                        $connection->receiver_id === auth()->id(),
-
-                    'created_at' => $connection
-                        ->created_at
-                        ?->diffForHumans(),
-
+                    'is_incoming' => $connection->receiver_id === auth()->id(),
+                    'created_at' => $connection->created_at?->diffForHumans(),
                     'user' => [
                         'id' => $otherUser->id,
-
                         'name' => $otherUser->visible_name,
-
                         'steam_id' => $otherUser->steam_id,
-
                         'avatar' => $otherUser->steam_avatar_url,
                     ],
                 ];

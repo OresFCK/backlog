@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { usePage } from '@inertiajs/vue3'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
@@ -36,14 +37,16 @@ const props = defineProps({
     },
 })
 
+const page = usePage()
 const sortBy = ref('name')
 const searchQuery = ref('')
 const selectedStatus = ref('all')
 const showNoProductCardPopup = ref(false)
 
 watch(
-    () => props.flash?.no_product_card,
+    () => page.props.flash?.no_product_card,
     (value) => {
+        console.log('no_product_card flash:', value)
         if (value) {
             showNoProductCardPopup.value = true
         }

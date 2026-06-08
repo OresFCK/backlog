@@ -152,12 +152,14 @@ Route::middleware('auth')->group(function () {
                 } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
                     return redirect()
                         ->route('dashboard')
-                        ->with('no_product_card', true);
+                        ->with('no_product_card', true)
+                        ->with('error', 'No product card');
                 }
 
                 if (blank($data['game'] ?? null)) {
                     return redirect()
                         ->route('dashboard')
+                        ->with('error', 'No product card')
                         ->with('no_product_card', true);
                 }
 
