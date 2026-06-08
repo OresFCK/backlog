@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\PayloadHelper as Payload;
+use App\Models\Game;
 use App\Models\PublicReview;
 use App\Services\SteamService;
 use Illuminate\Http\JsonResponse;
@@ -21,11 +22,25 @@ class CuratorController extends Controller
 
     public function showGame(string $source, string $gameId): JsonResponse
     {
-        $reviews = PublicReview::query()
-            ->with('user')
+        $game = Game::query()
             ->where('source', $source)
             ->where('game_id', $gameId)
+            ->first();
+
+        $reviews = PublicReview::query()
+            ->with('user')
             ->where('is_public', true)
+            ->where(function ($query) use ($source, $gameId, $game) {
+                $query->where(function ($query) use ($source, $gameId) {
+                    $query
+                        ->where('source', $source)
+                        ->where('game_id', $gameId);
+                });
+
+                if ($game?->name) {
+                    $query->orWhere('game_title', $game->name);
+                }
+            })
             ->latest()
             ->get();
 
