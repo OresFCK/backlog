@@ -23,6 +23,7 @@ class CuratorController extends Controller
     {
         $reviews = PublicReview::query()
             ->with('user')
+            ->where('source', $source)
             ->where('game_id', $gameId)
             ->where('is_public', true)
             ->latest()
