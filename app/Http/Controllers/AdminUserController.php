@@ -295,7 +295,7 @@ class AdminUserController extends Controller
     {
         return [
             'id' => $user->id,
-            'name' => $user->visible_name
+            'name' => $user->visible_name,
             'email' => $user->email,
             'steam_id' => $user->steam_id,
             'avatar' => $user->steam_avatar_url,
