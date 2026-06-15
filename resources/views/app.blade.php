@@ -1,50 +1,76 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"  @class(['dark' => ($appearance ?? 'system') == 'dark'])>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        {{-- Inline script to detect system dark mode preference and apply it immediately --}}
-        <script>
-            (function() {
-                const appearance = '{{ $appearance ?? "system" }}';
+    <title>Curator.gg – Organize Your Steam Library</title>
 
-                if (appearance === 'system') {
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    <meta
+        name="description"
+        content="Connect your Steam account, organize your game library, discover what to play next, track your backlog and build your gaming profile."
+    >
 
-                    if (prefersDark) {
-                        document.documentElement.classList.add('dark');
-                    }
+    <meta name="robots" content="index, follow">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Curator.gg">
+    <meta property="og:title" content="Curator.gg – Organize Your Steam Library">
+    <meta
+        property="og:description"
+        content="Connect your Steam account, organize your game library, discover what to play next and build your gaming profile."
+    >
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Curator.gg – Organize Your Steam Library">
+    <meta
+        name="twitter:description"
+        content="Connect your Steam account, organize your game library, discover what to play next and build your gaming profile."
+    >
+
+    <script>
+        (function () {
+            const appearance = 'system';
+
+            if (appearance === 'system') {
+                const prefersDark = window.matchMedia(
+                    '(prefers-color-scheme: dark)'
+                ).matches;
+
+                if (prefersDark) {
+                    document.documentElement.classList.add('dark');
                 }
-            })();
-        </script>
-
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
-        <style>
-            html {
-                background-color: oklch(1 0 0);
             }
+        })();
+    </script>
 
-            html.dark {
-                background-color: oklch(0.145 0 0);
-            }
-        </style>
+    <style>
+        html {
+            background-color: oklch(1 0 0);
+        }
 
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6138711947795604"
-            crossorigin="anonymous"></script>
+        html.dark {
+            background-color: oklch(0.145 0 0);
+        }
+    </style>
 
-        <link rel="icon" href="/favicon.png" sizes="any">
-        <link rel="icon" href="/favicon.png" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/favicon.png">
+    <script
+        async
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6138711947795604"
+        crossorigin="anonymous">
+    </script>
 
-        @fonts
+    <link rel="icon" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/favicon.png">
 
-        @vite(['resources/css/app.css', 'resources/js/app.ts'])
-        <x-inertia::head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
-        </x-inertia::head>
-    </head>
-    <body class="font-sans antialiased">
-        <x-inertia::app />
-    </body>
+    @fonts
+
+    @vite(['resources/css/app.css', 'resources/js/app.ts'])
+
+    <x-inertia::head />
+</head>
+
+<body class="font-sans antialiased">
+    <x-inertia::app />
+</body>
 </html>
