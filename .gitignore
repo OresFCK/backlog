@@ -28,3 +28,4 @@ yarn-error.log
 /.vscode
 /.zed
 .env.local
+storage/app/public/.gitignore
