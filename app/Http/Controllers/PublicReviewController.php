@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\PayloadHelper as Payload;
 use App\Http\Requests\StorePublicReviewRequest;
 use App\Models\ActivityLog;
+use App\Models\Game;
 use App\Models\PublicReview;
 use App\Models\UserConnection;
 use App\Services\SteamService;
@@ -22,7 +23,9 @@ class PublicReviewController extends Controller
             ->with([
                 'user',
                 'votes',
+                'game',
             ])
+            ->where('is_public', true)
             ->latest()
             ->get()
             ->map(fn ($review) => [
@@ -39,12 +42,14 @@ class PublicReviewController extends Controller
                 'is_featured_on_profile' => $review->is_featured_on_profile,
 
                 'game_id' => $review->game_id,
-                'game_title' => $review->game_title,
+                'game_title' => $review->game_title ?: $review->game?->title,
+                'game_slug' => $review->game?->slug,
 
                 'created_at' => $review->created_at?->diffForHumans(),
 
                 'can_vote' =>
-                    $review->user_id !== auth()->id()
+                    auth()->check()
+                    && $review->user_id !== auth()->id()
                     && $this->canVoteForReview(
                         auth()->id(),
                         $review->user_id
@@ -52,12 +57,13 @@ class PublicReviewController extends Controller
 
                 'votes_score' => $review->votes->sum('value'),
 
-                'user_vote' => $review->votes
-                    ->firstWhere('user_id', auth()->id())
-                    ?->value,
+                'user_vote' => auth()->check()
+                    ? $review->votes
+                        ->firstWhere('user_id', auth()->id())
+                        ?->value
+                    : null,
 
-                'is_owner' =>
-                    auth()->id() === $review->user_id,
+                'is_owner' => auth()->id() === $review->user_id,
 
                 'user' => [
                     'name' => $review->user?->visible_name,
@@ -81,9 +87,11 @@ class PublicReviewController extends Controller
     ): RedirectResponse {
         $data = $request->validated();
 
+        $game = Game::query()->findOrFail($data['game_id']);
+
         $existingReview = PublicReview::query()
             ->where('user_id', $request->user()->id)
-            ->where('game_id', $request->game_id)
+            ->where('game_id', $game->id)
             ->first();
 
         if ($request->hasFile('screenshot')) {
@@ -103,10 +111,16 @@ class PublicReviewController extends Controller
         $review = PublicReview::updateOrCreate(
             [
                 'user_id' => $request->user()->id,
-                'game_id' => $request->game_id,
+                'game_id' => $game->id,
             ],
             [
-                'game_title' => $data['game_title'],
+                'source' => $data['source'] ?? $game->source,
+                'source_game_id' => $data['source_game_id']
+                    ?? $game->steam_app_id
+                    ?? $game->igdb_id
+                    ?? null,
+
+                'game_title' => $game->title,
                 'title' => $data['title'],
                 'body' => $data['body'],
                 'rating' => $data['rating'],

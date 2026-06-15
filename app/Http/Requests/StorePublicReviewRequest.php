@@ -22,13 +22,16 @@ class StorePublicReviewRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true;
+        return auth()->check();
     }
 
     public function rules(): array
     {
         return [
-            'game_id' => ['required', 'string', 'max:255'],
+            'game_id' => ['required', 'integer', 'exists:games,id'],
+            'source' => ['nullable', 'string', 'max:50'],
+            'source_game_id' => ['nullable', 'string', 'max:255'],
+
             'game_title' => ['required', 'string', 'max:255'],
             'title' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string', 'max:5000'],

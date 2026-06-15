@@ -11,6 +11,8 @@ class PublicReview extends Model
     protected $fillable = [
         'user_id',
         'game_id',
+        'source',
+        'source_game_id',
         'game_title',
         'title',
         'body',
@@ -35,22 +37,16 @@ class PublicReview extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(
-            User::class
-        );
+        return $this->belongsTo(User::class);
     }
 
     public function game(): BelongsTo
     {
-        return $this->belongsTo(
-            Game::class
-        );
+        return $this->belongsTo(Game::class);
     }
 
     public function votes(): HasMany
     {
-        return $this->hasMany(
-            PublicReviewVote::class
-        );
+        return $this->hasMany(PublicReviewVote::class);
     }
 }

@@ -28,6 +28,9 @@ use App\Http\Controllers\UserSubmissionController;
 use App\Http\Controllers\AdminUserSubmissionController;
 use App\Http\Controllers\AccountSettingsController;
 use App\Http\Controllers\CuratorController;
+use App\Http\Controllers\PublicGameController;
+use App\Models\Game;
+use Illuminate\Support\Facades\Response;
 use App\Models\UserSubmission;
 use App\Models\User;
 use App\Services\SteamService;
@@ -554,3 +557,50 @@ Route::get('/igdb/search', [
     IgdbGameSearchController::class,
     'index',
 ])->name('igdb.search');
+
+Route::get('/{game:slug}', [
+    PublicGameController::class,
+    'show',
+])
+    ->where('game', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('games.public.show');
+
+Route::get('/sitemap.xml', function () {
+    $urls = [
+        [
+            'loc' => 'https://curator.gg/',
+            'changefreq' => 'daily',
+            'priority' => '1.0',
+        ],
+        [
+            'loc' => 'https://curator.gg/privacy',
+            'changefreq' => 'monthly',
+            'priority' => '0.5',
+        ],
+        [
+            'loc' => 'https://curator.gg/terms',
+            'changefreq' => 'monthly',
+            'priority' => '0.5',
+        ],
+    ];
+
+    $games = Game::query()
+        ->whereNotNull('slug')
+        ->where('slug', '!=', '')
+        ->latest('updated_at')
+        ->limit(50000)
+        ->get(['slug', 'updated_at']);
+
+    foreach ($games as $game) {
+        $urls[] = [
+            'loc' => 'https://curator.gg/' . $game->slug,
+            'lastmod' => $game->updated_at?->toAtomString(),
+            'changefreq' => 'weekly',
+            'priority' => '0.8',
+        ];
+    }
+
+    return Response::view('sitemap', [
+        'urls' => $urls,
+    ])->header('Content-Type', 'application/xml');
+})->name('sitemap');

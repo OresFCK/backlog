@@ -151,7 +151,14 @@ const submitPublicReview = () => {
     router.post(
         '/reviews/public',
         {
-            game_id: props.game.id,
+            game_id: props.game.database_id || props.game.id,
+            source: props.game.source || null,
+            source_game_id:
+                props.game.appid ||
+                props.game.steam_app_id ||
+                props.game.igdb_id ||
+                props.game.id,
+
             game_title: props.game.title,
             title: publicReviewTitle.value,
             body: publicReviewBody.value,

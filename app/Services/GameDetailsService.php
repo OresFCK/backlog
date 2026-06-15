@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\Helpers\GameTitleNormalizer;
+use App\Models\Game;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class GameDetailsService
 {
@@ -39,6 +42,10 @@ class GameDetailsService
 
         return [
             'id' => $gameId,
+            'database_id' => null,
+            'slug' => null,
+            'public_url' => null,
+
             'custom_game_id' => $customGame->id,
             'appid' => null,
 
@@ -97,6 +104,8 @@ class GameDetailsService
 
         abort_if(! $details, 404);
 
+        $canonicalGame = $this->findOrCreateCanonicalSteamGame($gameId, $details);
+
         $ownedGame = $this->ownedGame($steam, $steamId, $gameId);
         $achievements = $this->cachedAchievements($steam, $steamId, $gameId);
         $meta = $this->meta->metaFor($gameId);
@@ -107,16 +116,25 @@ class GameDetailsService
 
         return [
             'id' => $gameId,
+            'database_id' => $canonicalGame->id,
+            'slug' => $canonicalGame->slug,
+            'public_url' => route('games.public.show', $canonicalGame),
+
             'appid' => $gameId,
-            'title' => $details['name'] ?? 'Unknown game',
+            'steam_app_id' => $gameId,
+
+            'title' => $details['name'] ?? $canonicalGame->title ?? 'Unknown game',
             'publisher' => $details['publishers'][0] ?? null,
             'developer' => $details['developers'][0] ?? null,
 
             'cover_url' => $details['capsule_imagev5']
                 ?? $details['header_image']
+                ?? $canonicalGame->cover_url
                 ?? $this->steamCoverUrl($gameId),
 
-            'header_image' => $details['header_image'] ?? null,
+            'header_image' => $details['header_image'] ?? $canonicalGame->header_image_url,
+            'header_image_url' => $details['header_image'] ?? $canonicalGame->header_image_url,
+
             'description' => $this->plainTextFromHtml($details['short_description'] ?? ''),
             'about' => $this->plainTextFromHtml($details['about_the_game'] ?? ''),
 
@@ -140,6 +158,81 @@ class GameDetailsService
 
             ...$this->meta->metaPayload($meta),
         ];
+    }
+
+    private function findOrCreateCanonicalSteamGame(
+        string $steamAppId,
+        array $details
+    ): Game {
+        $title = $details['name'] ?? 'Unknown game';
+        $normalizedTitle = GameTitleNormalizer::normalize($title);
+
+        $game = Game::query()
+            ->where('steam_app_id', $steamAppId)
+            ->first();
+
+        if (! $game) {
+            $game = Game::query()
+                ->whereNull('steam_app_id')
+                ->where('normalized_title', $normalizedTitle)
+                ->orderByRaw("case when source = 'igdb' then 0 else 1 end")
+                ->first();
+        }
+
+        if (! $game) {
+            $game = new Game();
+        }
+
+        $shortDescription = $this->plainTextFromHtml(
+            $details['short_description'] ?? ''
+        );
+
+        $game->fill([
+            'steam_app_id' => $steamAppId,
+            'title' => $game->title ?: $title,
+            'normalized_title' => $game->normalized_title ?: $normalizedTitle,
+            'summary' => $game->summary ?: $shortDescription,
+            'source' => $game->source === 'igdb' ? 'merged' : 'steam',
+
+            'cover_url' => $details['capsule_imagev5']
+                ?? $details['header_image']
+                ?? $game->cover_url,
+
+            'header_image_url' => $details['header_image']
+                ?? $game->header_image_url,
+        ]);
+
+        if (! $game->slug) {
+            $game->slug = $this->uniqueSlug($title, $game->id);
+        }
+
+        $game->save();
+
+        return $game;
+    }
+
+    private function uniqueSlug(string $title, ?int $ignoreId = null): string
+    {
+        $baseSlug = Str::slug($title);
+
+        if (blank($baseSlug)) {
+            $baseSlug = 'game';
+        }
+
+        $slug = $baseSlug;
+        $counter = 2;
+
+        while (
+            Game::query()
+                ->where('slug', $slug)
+                ->when($ignoreId, fn ($query) => $query->whereKeyNot($ignoreId))
+                ->exists()
+        ) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        return $slug;
     }
 
     private function plainTextFromHtml(?string $html): string
