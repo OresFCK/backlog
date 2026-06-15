@@ -44,10 +44,27 @@
                     >
                         Login with Steam
                     </a>
+
+                    <p class="mt-6 max-w-xl text-sm text-zinc-500">
+                        By signing in with Steam, you agree to our
+                        <a
+                            href="/terms"
+                            class="underline transition hover:text-zinc-300"
+                        >
+                            Terms of Service
+                        </a>
+                        and
+                        <a
+                            href="/privacy"
+                            class="underline transition hover:text-zinc-300"
+                        >
+                            Privacy Policy
+                        </a>.
+                    </p>
                 </div>
 
                 <div
-                    class="mt-20 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
+                    class="mt-20 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-2xl"
                 >
                     <img
                         src="/dashboard.png"
@@ -70,7 +87,7 @@
                         </h3>
 
                         <p class="mt-3 text-sm text-zinc-500">
-                            Import your games, achievements and playtime.
+                            Import your games, achievements, playtime and profile data automatically.
                         </p>
                     </div>
 
@@ -78,11 +95,11 @@
                         class="rounded-2xl border border-zinc-800 bg-zinc-900 p-6"
                     >
                         <h3 class="font-semibold">
-                            Game statuses
+                            Library management
                         </h3>
 
                         <p class="mt-3 text-sm text-zinc-500">
-                            Track backlog, completed, playing and dropped games.
+                            Organize your backlog, completed titles and currently played games.
                         </p>
                     </div>
 
@@ -94,7 +111,7 @@
                         </h3>
 
                         <p class="mt-3 text-sm text-zinc-500">
-                            Build a public gaming identity.
+                            Build a public gaming identity and showcase your collection.
                         </p>
                     </div>
 
@@ -106,7 +123,7 @@
                         </h3>
 
                         <p class="mt-3 text-sm text-zinc-500">
-                            Discover opinions from other players.
+                            Discover recommendations and opinions from other players.
                         </p>
                     </div>
                 </div>
@@ -123,15 +140,15 @@
                         See it. Track it. Own it.
                     </h2>
 
-                    <div class="mt-20 grid gap-16 lg:grid-cols-2">
-                        <div>
+                    <div class="mt-20 grid gap-12 lg:grid-cols-2">
+                        <div class="flex flex-col">
                             <div
-                                class="overflow-hidden rounded-3xl border border-zinc-800"
+                                class="aspect-[16/8] overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-[0_0_60px_rgba(0,0,0,0.4)]"
                             >
                                 <img
                                     src="/profil_banner.png"
                                     alt="Profile"
-                                    class="w-full"
+                                    class="h-full w-full object-cover object-center"
                                 >
                             </div>
 
@@ -139,22 +156,20 @@
                                 Your gaming identity
                             </h3>
 
-                            <p
-                                class="mt-4 text-zinc-500"
-                            >
+                            <p class="mt-4 text-zinc-500">
                                 Create a profile that showcases your collection,
                                 achievements and activity.
                             </p>
                         </div>
 
-                        <div>
+                        <div class="flex flex-col">
                             <div
-                                class="overflow-hidden rounded-3xl border border-zinc-800"
+                                class="aspect-[16/8] overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 shadow-[0_0_60px_rgba(0,0,0,0.4)]"
                             >
                                 <img
                                     src="/library.png"
                                     alt="Library"
-                                    class="w-full"
+                                    class="h-full w-full object-cover object-top"
                                 >
                             </div>
 
@@ -162,17 +177,14 @@
                                 Organize your entire library
                             </h3>
 
-                            <p
-                                class="mt-4 text-zinc-500"
-                            >
-                                Search, filter and categorize hundreds of games
-                                effortlessly.
+                            <p class="mt-4 text-zinc-500">
+                                Search, filter and categorize hundreds of games effortlessly.
                             </p>
                         </div>
                     </div>
 
                     <div
-                        class="mt-20 overflow-hidden rounded-3xl border border-zinc-800"
+                        class="mt-24 overflow-hidden rounded-3xl border border-zinc-800 shadow-[0_0_60px_rgba(0,0,0,0.4)]"
                     >
                         <img
                             src="/reviews.png"
@@ -224,37 +236,53 @@
                 <div
                     class="mx-auto mt-16 grid max-w-xl gap-3 text-left"
                 >
-                    <div
-                        class="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4"
-                    >
+                    <div class="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4">
                         Advanced statistics
                     </div>
 
-                    <div
-                        class="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4"
-                    >
+                    <div class="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4">
                         Custom game statuses
                     </div>
 
-                    <div
-                        class="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4"
-                    >
+                    <div class="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4">
                         Profile customization
                     </div>
 
-                    <div
-                        class="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4"
-                    >
+                    <div class="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4">
                         Exclusive supporter badge
                     </div>
 
-                    <div
-                        class="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4"
-                    >
+                    <div class="rounded-xl border border-zinc-800 bg-zinc-900 px-5 py-4">
                         Early access to new features
                     </div>
                 </div>
             </section>
         </main>
+
+        <footer class="border-t border-zinc-800">
+            <div
+                class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-zinc-500 md:flex-row"
+            >
+                <div>
+                    © 2025 Curator.gg
+                </div>
+
+                <div class="flex items-center gap-6">
+                    <a
+                        href="/terms"
+                        class="transition hover:text-white"
+                    >
+                        Terms of Service
+                    </a>
+
+                    <a
+                        href="/privacy"
+                        class="transition hover:text-white"
+                    >
+                        Privacy Policy
+                    </a>
+                </div>
+            </div>
+        </footer>
     </div>
 </template>
