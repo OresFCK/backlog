@@ -1,7 +1,7 @@
 <script setup>
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
-import { router } from '@inertiajs/vue3'
+import { router, usePage } from '@inertiajs/vue3'
 import {
     BadgeCheck,
     ShoppingBag,
@@ -17,12 +17,18 @@ defineProps({
     },
 })
 
+const page = usePage()
+
 const buyItem = (item) => {
-    router.post(`/shop/${item.id}/buy`)
+    router.post(`/shop/${item.id}/buy`, {}, {
+        preserveScroll: true,
+    })
 }
 
 const equipItem = (item) => {
-    router.post(`/shop/${item.id}/equip`)
+    router.post(`/shop/${item.id}/equip`, {}, {
+        preserveScroll: true,
+    })
 }
 
 const itemImage = (item) => {
@@ -55,6 +61,18 @@ const itemImage = (item) => {
                                 </p>
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                <section v-if="page.props.flash?.error">
+                    <div class="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm font-semibold text-red-400">
+                        {{ page.props.flash.error }}
+                    </div>
+                </section>
+
+                <section v-if="page.props.flash?.success">
+                    <div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm font-semibold text-emerald-400">
+                        {{ page.props.flash.success }}
                     </div>
                 </section>
 
