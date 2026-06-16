@@ -30,10 +30,13 @@ class GameLibraryService
     {
         $metas = $this->metasForUser($user);
 
-        return [
+        return collect([
             ...$this->steamLibraryGamesForUser($user, $steam, $metas),
             ...$this->customGamesForUser($user, $metas),
-        ];
+        ])
+            ->filter(fn ($game) => ! empty($game['id']))
+            ->values()
+            ->toArray();
     }
 
     public function steamLibraryGames(SteamService $steam): array
@@ -64,27 +67,33 @@ class GameLibraryService
             ->keyBy(fn ($row) => (string) $row->steam_app_id);
 
         return collect($steam->getOwnedGames($user->steam_id))
+            ->filter(fn ($game) => ! empty($game['appid']))
             ->map(function (array $game) use ($metas, $achievementCache) {
                 $gameId = (string) $game['appid'];
                 $achievement = $achievementCache->get($gameId);
 
+                $metaPayload = $this->metaPayloadFromCollection($metas, $gameId);
+
                 return [
                     ...$game,
 
-                    'id' => $game['appid'],
-                    'title' => $game['name'] ?? null,
+                    'id' => $gameId,
+                    'appid' => $gameId,
+                    'name' => $game['name'] ?? 'Unknown game',
+                    'title' => $game['name'] ?? 'Unknown game',
                     'cover_url' => $this->steamCoverUrl($gameId),
 
                     'is_custom' => false,
                     'source' => 'steam',
 
-                    'achievements_unlocked' => $achievement?->unlocked ?? 0,
-                    'achievements_total' => $achievement?->total ?? 0,
-                    'achievement_percent' => $achievement?->percent ?? 0,
+                    'achievements_unlocked' => (int) ($achievement?->unlocked ?? 0),
+                    'achievements_total' => (int) ($achievement?->total ?? 0),
+                    'achievement_percent' => (int) ($achievement?->percent ?? 0),
 
-                    ...$this->metaPayloadFromCollection($metas, $gameId),
+                    ...$metaPayload,
                 ];
             })
+            ->values()
             ->toArray();
     }
 
@@ -107,51 +116,45 @@ class GameLibraryService
         return $user
             ->customGames()
             ->get()
+            ->filter(fn (CustomGame $game) => filled($game->title))
             ->map(function (CustomGame $game) use ($metas) {
                 $gameId = $this->customGameId($game->id);
 
-                $achievementsUnlocked = $game->achievements_unlocked !== null
-                    ? (int) $game->achievements_unlocked
-                    : null;
-
-                $achievementsTotal = $game->achievements_total !== null
-                    ? (int) $game->achievements_total
-                    : null;
+                $achievementsUnlocked = (int) ($game->achievements_unlocked ?? 0);
+                $achievementsTotal = (int) ($game->achievements_total ?? 0);
+                $metaPayload = $this->metaPayloadFromCollection($metas, $gameId);
 
                 return [
                     'id' => $gameId,
-                    'appid' => null,
+                    'appid' => $gameId,
                     'igdb_id' => $game->igdb_id,
                     'igdb_slug' => $game->igdb_slug,
                     'igdb_url' => $game->igdb_url,
-                    'name' => $game->title,
-                    'title' => $game->title,
+                    'name' => $game->title ?: 'Unknown game',
+                    'title' => $game->title ?: 'Unknown game',
                     'publisher' => $game->publisher,
                     'developer' => $game->developer,
                     'description' => $game->description,
                     'release_date' => $game->release_date?->format('Y-m-d'),
-                    'cover_url' => $game->cover_url,
-                    'header_image_url' => $game->header_image_url,
-
+                    'cover_url' => $game->cover_url ?: null,
+                    'header_image_url' => $game->header_image_url ?: null,
                     'playtime_forever' => (int) ($game->playtime_minutes ?? 0),
                     'playtime_hours' => $game->playtime_minutes !== null
-                        ? round($game->playtime_minutes / 60, 1)
-                        : null,
-
+                        ? round(((int) $game->playtime_minutes) / 60, 1)
+                        : 0,
                     'achievements_unlocked' => $achievementsUnlocked,
                     'achievements_total' => $achievementsTotal,
-                    'achievement_percent' => $achievementsTotal
-                        ? (int) round(($achievementsUnlocked / max($achievementsTotal, 1)) * 100)
+                    'achievement_percent' => $achievementsTotal > 0
+                        ? (int) round(($achievementsUnlocked / $achievementsTotal) * 100)
                         : 0,
-
                     'is_custom' => true,
-                    'source' => $game->source ?? 'manual',
+                    'source' => $game->source ?: 'manual',
                     'platform' => $game->platform,
                     'custom_game_id' => $game->id,
-
-                    ...$this->metaPayloadFromCollection($metas, $gameId),
+                    ...$metaPayload,
                 ];
             })
+            ->values()
             ->toArray();
     }
 

@@ -188,7 +188,7 @@ const settingsItems = [
     <aside class="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-zinc-800 bg-zinc-950">
         <div class="flex h-[89px] flex-col justify-center border-b border-zinc-800 px-6">
             <h1 class="text-2xl font-bold tracking-tight text-white">
-                Curator.gg
+                <Link href="/dashboard">Curator.gg</Link>
             </h1>
 
             <p class="mt-1 text-sm text-zinc-400">
