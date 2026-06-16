@@ -97,13 +97,14 @@ const joinChallenge = (challenge) => {
 const openProofModal = (challenge) => {
     selectedChallenge.value = challenge
     proofForm.clearErrors()
-    proofForm.reset()
-    proofForm.screenshots = []
-    proofForm.description = ''
 }
 
 const closeProofModal = () => {
     selectedChallenge.value = null
+    proofForm.clearErrors()
+}
+
+const resetProofForm = () => {
     proofForm.clearErrors()
     proofForm.reset()
     proofForm.screenshots = []
@@ -112,6 +113,8 @@ const closeProofModal = () => {
 
 const handleScreenshots = (event) => {
     proofForm.screenshots = Array.from(event.target.files ?? []).slice(0, 5)
+
+    event.target.value = ''
 }
 
 const submitProof = () => {
@@ -122,7 +125,10 @@ const submitProof = () => {
     proofForm.post(`/challenges/${selectedChallenge.value.id}/submit`, {
         preserveScroll: true,
         forceFormData: true,
-        onSuccess: closeProofModal,
+        onSuccess: () => {
+            closeProofModal()
+            resetProofForm()
+        },
     })
 }
 </script>
@@ -309,6 +315,7 @@ const submitProof = () => {
         <div
             v-if="selectedChallenge"
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+            @click.self="closeProofModal"
         >
             <form
                 class="w-full max-w-lg rounded-3xl border border-zinc-800 bg-zinc-950 p-6"
@@ -325,13 +332,35 @@ const submitProof = () => {
                     </span>
                 </p>
 
-                <input
-                    type="file"
-                    multiple
-                    accept="image/jpeg,image/png,image/webp"
-                    class="mt-6 w-full rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white file:mr-4 file:rounded-xl file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-bold file:text-zinc-950"
-                    @input="handleScreenshots"
-                />
+                <label
+                    class="mt-6 flex w-full cursor-pointer items-center gap-4 rounded-2xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white"
+                >
+                    <span class="shrink-0 rounded-xl bg-white px-4 py-2 text-sm font-bold text-zinc-950">
+                        Choose files
+                    </span>
+
+                    <span class="truncate text-zinc-300">
+                        <template v-if="proofForm.screenshots.length">
+                            {{
+                                proofForm.screenshots
+                                    .map((file) => file.name)
+                                    .join(', ')
+                            }}
+                        </template>
+
+                        <template v-else>
+                            No files selected
+                        </template>
+                    </span>
+
+                    <input
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/png,image/webp"
+                        class="hidden"
+                        @change="handleScreenshots"
+                    />
+                </label>
 
                 <p class="mt-2 text-xs text-zinc-500">
                     You can upload up to 5 screenshots.
