@@ -36,71 +36,33 @@ const emit = defineEmits([
     'toggle-not-recommended',
 ])
 
-const blockInvalidKeys = (event) => {
-    const allowedKeys = [
-        'Backspace',
-        'Delete',
-        'ArrowLeft',
-        'ArrowRight',
-        'Tab',
-    ]
-
-    if (allowedKeys.includes(event.key)) {
-        return
-    }
-
-    if (!/^\d$/.test(event.key)) {
-        event.preventDefault()
-    }
-}
-
-const normalizeRating = (value) => {
-    let normalizedValue = value.replace(/\D/g, '').slice(0, 2)
-
-    if (normalizedValue === '') {
-        return ''
-    }
-
-    if (Number(normalizedValue) > 10) {
-        return '10'
-    }
-
-    if (Number(normalizedValue) < 1) {
-        return '1'
-    }
-
-    return normalizedValue
-}
-
-const handleRatingInput = (event) => {
-    emit('update:rating', normalizeRating(event.target.value))
+const setRating = (value) => {
+    emit('update:rating', String(value))
+    emit('save')
 }
 </script>
 
 <template>
-    <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-center">
-        <p class="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+    <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <p class="text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">
             Your Rating
         </p>
 
-        <div class="mx-auto mt-6 flex h-36 w-36 items-center justify-center rounded-full border-[10px] border-zinc-200">
-            <div class="flex items-center gap-1">
-                <input
-                    :value="rating"
-                    type="text"
-                    inputmode="numeric"
-                    maxlength="2"
-                    placeholder="—"
-                    class="w-14 bg-transparent text-center text-4xl font-black text-white outline-none"
-                    @keydown="blockInvalidKeys"
-                    @input="handleRatingInput"
-                    @blur="$emit('save')"
-                />
-
-                <span class="text-2xl font-bold text-white">
-                    /10
-                </span>
-            </div>
+        <div class="mt-6 grid grid-cols-5 gap-2">
+            <button
+                v-for="value in 10"
+                :key="value"
+                type="button"
+                class="rounded-xl border py-3 text-sm font-bold transition"
+                :class="
+                    Number(rating) === value
+                        ? 'border-white bg-white text-zinc-950'
+                        : 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500 hover:text-white'
+                "
+                @click="setRating(value)"
+            >
+                {{ value }}
+            </button>
         </div>
 
         <button
