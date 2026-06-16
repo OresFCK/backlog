@@ -17,6 +17,7 @@ class UpdateGameMetaRequest extends FormRequest
             'note' => [
                 'nullable',
                 'string',
+                'max:255'
             ],
 
             'rating' => [

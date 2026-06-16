@@ -1,7 +1,8 @@
 <script setup>
+import { computed } from 'vue'
 import { Sparkles, Star } from 'lucide-vue-next'
 
-defineProps({
+const props = defineProps({
     modelValue: {
         type: String,
         default: '',
@@ -13,11 +14,33 @@ defineProps({
     },
 })
 
-defineEmits([
+const emit = defineEmits([
     'update:modelValue',
     'update:showOnPublicProfile',
     'save',
 ])
+
+const maxLength = 255
+
+const charactersLeft = computed(() => {
+    return maxLength - props.modelValue.length
+})
+
+const hasTooManyCharacters = computed(() => {
+    return props.modelValue.length > maxLength
+})
+
+const updateNote = (value) => {
+    emit('update:modelValue', value.slice(0, maxLength))
+}
+
+const save = () => {
+    if (hasTooManyCharacters.value) {
+        return
+    }
+
+    emit('save')
+}
 </script>
 
 <template>
@@ -43,7 +66,7 @@ defineEmits([
                 "
                 @click="
                     $emit('update:showOnPublicProfile', !showOnPublicProfile);
-                    $emit('save');
+                    save();
                 "
             >
                 <span
@@ -66,17 +89,36 @@ defineEmits([
 
         <textarea
             :value="modelValue"
+            :maxlength="maxLength"
             placeholder="Write your thoughts about this game..."
-            class="mt-5 min-h-40 w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-sm text-zinc-200 outline-none placeholder:text-zinc-500 focus:border-zinc-600"
-            @input="$emit('update:modelValue', $event.target.value)"
-            @blur="$emit('save')"
+            class="mt-5 min-h-40 w-full resize-none rounded-xl border bg-zinc-900 p-4 text-sm text-zinc-200 outline-none placeholder:text-zinc-500"
+            :class="
+                hasTooManyCharacters
+                    ? 'border-red-500/50 focus:border-red-500'
+                    : 'border-zinc-800 focus:border-zinc-600'
+            "
+            @input="updateNote($event.target.value)"
+            @blur="save"
         />
 
-        <p
-            v-if="showOnPublicProfile"
-            class="mt-3 text-sm font-medium text-indigo-300"
-        >
-            This game is visible on your public profile.
-        </p>
+        <div class="mt-3 flex items-center justify-between gap-4">
+            <p
+                v-if="showOnPublicProfile"
+                class="text-sm font-medium text-indigo-300"
+            >
+                This game is visible on your public profile.
+            </p>
+
+            <span
+                class="ml-auto text-xs font-semibold"
+                :class="
+                    charactersLeft <= 20
+                        ? 'text-red-400'
+                        : 'text-zinc-500'
+                "
+            >
+                {{ charactersLeft }} characters left
+            </span>
+        </div>
     </div>
 </template>

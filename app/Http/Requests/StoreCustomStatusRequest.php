@@ -17,7 +17,7 @@ class StoreCustomStatusRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'max:100',
+                'max:20',
             ],
 
             'color' => [

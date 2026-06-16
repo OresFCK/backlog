@@ -19,6 +19,7 @@ const props = defineProps({
 
 const title = ref('')
 const color = ref('#3b82f6')
+const maxTitleLength = 20
 
 const bannedWords = [
     'hitler',
@@ -45,6 +46,14 @@ const normalizedTitle = computed(() =>
         .trim()
 )
 
+const titleCharactersLeft = computed(() =>
+    maxTitleLength - title.value.length
+)
+
+const titleTooLong = computed(() =>
+    title.value.length > maxTitleLength
+)
+
 const hasBadWord = computed(() =>
     bannedWords.some((word) =>
         normalizedTitle.value.includes(word)
@@ -60,6 +69,7 @@ const duplicate = computed(() =>
 
 const canSubmit = computed(() =>
     title.value.trim().length >= 2 &&
+    !titleTooLong.value &&
     !hasBadWord.value &&
     !duplicate.value
 )
@@ -158,23 +168,51 @@ function submit() {
                                 <input
                                     v-model="title"
                                     type="text"
+                                    maxlength="20"
                                     placeholder="e.g. Cozy games"
-                                    class="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
+                                    class="w-full rounded-xl border bg-zinc-950 px-4 py-3 text-white outline-none placeholder:text-zinc-500"
+                                    :class="
+                                        titleTooLong
+                                            ? 'border-red-500/50 focus:border-red-500'
+                                            : 'border-zinc-800 focus:border-zinc-600'
+                                    "
                                 />
 
-                                <p
-                                    v-if="hasBadWord"
-                                    class="mt-2 text-sm font-medium text-red-400"
-                                >
-                                    This label contains a blocked word.
-                                </p>
+                                <div class="mt-2 flex items-center justify-between gap-3">
+                                    <div>
+                                        <p
+                                            v-if="titleTooLong"
+                                            class="text-sm font-medium text-red-400"
+                                        >
+                                            Title cannot be longer than 20 characters.
+                                        </p>
 
-                                <p
-                                    v-if="duplicate"
-                                    class="mt-2 text-sm font-medium text-red-400"
-                                >
-                                    This label already exists.
-                                </p>
+                                        <p
+                                            v-if="hasBadWord"
+                                            class="text-sm font-medium text-red-400"
+                                        >
+                                            This label contains a blocked word.
+                                        </p>
+
+                                        <p
+                                            v-if="duplicate"
+                                            class="text-sm font-medium text-red-400"
+                                        >
+                                            This label already exists.
+                                        </p>
+                                    </div>
+
+                                    <span
+                                        class="ml-auto shrink-0 text-xs font-semibold"
+                                        :class="
+                                            titleCharactersLeft <= 5
+                                                ? 'text-red-400'
+                                                : 'text-zinc-500'
+                                        "
+                                    >
+                                        {{ titleCharactersLeft }}/20
+                                    </span>
+                                </div>
                             </div>
 
                             <div>
