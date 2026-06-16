@@ -13,3 +13,9 @@ Schedule::command('steam:sync-achievements')
 
 Schedule::command('games:generate-slugs')
     ->daily();
+
+Schedule::command('igdb:import-games')
+    ->weekly();
+
+Schedule::command('igdb:import-covers')
+    ->weekly();
