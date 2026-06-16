@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 import { Sparkles, Star } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -22,25 +22,39 @@ const emit = defineEmits([
 
 const maxLength = 255
 
-const charactersLeft = computed(() => {
-    return maxLength - props.modelValue.length
-})
+const normalizedValue = computed(() =>
+    String(props.modelValue ?? '').slice(0, maxLength)
+)
 
-const hasTooManyCharacters = computed(() => {
-    return props.modelValue.length > maxLength
-})
+const charactersLeft = computed(() =>
+    maxLength - normalizedValue.value.length
+)
 
-const updateNote = (value) => {
-    emit('update:modelValue', value.slice(0, maxLength))
+const updateNote = (event) => {
+    const value = event.target.value.slice(0, maxLength)
+
+    event.target.value = value
+
+    emit('update:modelValue', value)
 }
 
-const save = () => {
-    if (hasTooManyCharacters.value) {
-        return
-    }
+const save = async () => {
+    emit('update:modelValue', normalizedValue.value)
+
+    await nextTick()
 
     emit('save')
 }
+
+watch(
+    () => props.modelValue,
+    (value) => {
+        if (String(value ?? '').length > maxLength) {
+            emit('update:modelValue', String(value).slice(0, maxLength))
+        }
+    },
+    { immediate: true }
+)
 </script>
 
 <template>
@@ -88,16 +102,11 @@ const save = () => {
         </div>
 
         <textarea
-            :value="modelValue"
+            :value="normalizedValue"
             :maxlength="maxLength"
             placeholder="Write your thoughts about this game..."
-            class="mt-5 min-h-40 w-full resize-none rounded-xl border bg-zinc-900 p-4 text-sm text-zinc-200 outline-none placeholder:text-zinc-500"
-            :class="
-                hasTooManyCharacters
-                    ? 'border-red-500/50 focus:border-red-500'
-                    : 'border-zinc-800 focus:border-zinc-600'
-            "
-            @input="updateNote($event.target.value)"
+            class="mt-5 min-h-40 w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-sm text-zinc-200 outline-none placeholder:text-zinc-500 focus:border-zinc-600"
+            @input="updateNote"
             @blur="save"
         />
 
