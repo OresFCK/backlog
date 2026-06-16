@@ -86,20 +86,45 @@ class UserConnectionController extends Controller
             return response()->json([]);
         }
 
-        $steamProfiles = $steam->searchPlayer($query);
-
-        if (! count($steamProfiles)) {
-            return response()->json([]);
-        }
-
         $currentUserId = auth()->id();
         $currentSteamId = auth()->user()->steam_id;
 
+        $steamProfiles = collect($steam->searchPlayer($query));
+
+        $curatorUsers = User::query()
+            ->where('id', '!=', $currentUserId)
+            ->where(function ($builder) use ($query) {
+                $builder
+                    ->where('display_name', 'like', "%{$query}%")
+                    ->orWhere('steam_persona_name', 'like', "%{$query}%")
+                    ->orWhere('steam_id', 'like', "%{$query}%");
+            })
+            ->limit(10)
+            ->get()
+            ->map(fn (User $user) => [
+                'steam_id' => $user->steam_id,
+                'name' => $user->visible_name,
+                'avatar' => $user->steam_avatar_url,
+                'profile_url' => null,
+                'curator_priority' => 1,
+            ]);
+
+        $steamProfiles = $steamProfiles
+            ->filter(fn ($profile) =>
+                (string) $profile['steam_id'] !== (string) $currentSteamId
+            )
+            ->map(fn ($profile) => [
+                'steam_id' => $profile['steam_id'],
+                'name' => $profile['name'],
+                'avatar' => $profile['avatar'],
+                'profile_url' => $profile['profile_url'] ?? null,
+                'curator_priority' => 0,
+            ]);
+
         return response()->json(
-            collect($steamProfiles)
-                ->filter(fn ($profile) =>
-                    (string) $profile['steam_id'] !== (string) $currentSteamId
-                )
+            $curatorUsers
+                ->merge($steamProfiles)
+                ->unique('steam_id')
                 ->map(function ($profile) use ($currentUserId) {
                     $user = User::where('steam_id', $profile['steam_id'])->first();
 
@@ -137,6 +162,9 @@ class UserConnectionController extends Controller
                         'steam_id' => $profile['steam_id'],
                         'avatar' => $user?->steam_avatar_url ?? $profile['avatar'],
                         'profile_url' => $profile['profile_url'] ?? null,
+                        'curator_priority' => filled($user)
+                            ? 1
+                            : $profile['curator_priority'],
 
                         'friend_status' => $friendConnection?->status,
                         'is_friend' => $friendConnection?->status === 'accepted',
@@ -145,6 +173,9 @@ class UserConnectionController extends Controller
                         'is_following' => filled($followConnection),
                     ];
                 })
+                ->sortByDesc('curator_priority')
+                ->groupBy(fn ($profile) => mb_strtolower(trim($profile['name'])))
+                ->flatMap(fn ($group) => $group->take(3))
                 ->values()
                 ->toArray()
         );

@@ -96,32 +96,28 @@ class RecommendationService
                     ->where('not_recommended', true)
                     ->count();
 
-                $averageRating = round(
-                    (float) $reviews
-                        ->whereNotNull('rating')
-                        ->avg('rating'),
-                    1
-                );
+                $averageRating = $this->averageRating($reviews);
 
-                $votesScore = $reviews->sum(
+                $rawVotesScore = $reviews->sum(
                     fn ($review) => $review->votes->sum('value')
                 );
 
-                $score =
-                    ($friendRecommendations * 40) +
-                    ($globalRecommendations * 8) +
-                    ($averageRating * 6) +
-                    ($votesScore * 3) -
-                    ($negativeRecommendations * 30);
+                $score = $this->score(
+                    $friendRecommendations,
+                    $globalRecommendations,
+                    $negativeRecommendations,
+                    $averageRating,
+                    $rawVotesScore
+                );
 
                 return [
                     'game_id' => $gameId,
-                    'score' => $score,
+                    'score' => round($score, 2),
                     'friend_recommendations' => $friendRecommendations,
                     'global_recommendations' => $globalRecommendations,
                     'not_recommended_count' => $negativeRecommendations,
                     'average_rating' => $averageRating,
-                    'votes_score' => $votesScore,
+                    'votes_score' => $rawVotesScore,
 
                     'game' => [
                         'id' => $gameId,
@@ -138,6 +134,40 @@ class RecommendationService
             })
             ->sortByDesc('score')
             ->values();
+    }
+
+    private function averageRating(Collection $reviews): ?float
+    {
+        $ratings = $reviews->whereNotNull('rating');
+
+        if ($ratings->isEmpty()) {
+            return null;
+        }
+
+        return round((float) $ratings->avg('rating'), 1);
+    }
+
+    private function score(
+        int $friendRecommendations,
+        int $globalRecommendations,
+        int $negativeRecommendations,
+        ?float $averageRating,
+        int|float $rawVotesScore
+    ): float {
+        $ratingScore = $averageRating !== null
+            ? $averageRating * 6
+            : 30;
+
+        $votesScore = $rawVotesScore > 0
+            ? log(1 + $rawVotesScore) * 8
+            : 0;
+
+        return
+            ($friendRecommendations * 45) +
+            (log(1 + $globalRecommendations) * 25) +
+            $ratingScore +
+            $votesScore -
+            ($negativeRecommendations * 25);
     }
 
     private function ownedGameIds(): Collection
@@ -191,13 +221,13 @@ class RecommendationService
     private function reasonText(
         int $friendRecommendations,
         int $globalRecommendations,
-        float $averageRating
+        ?float $averageRating
     ): string {
         if ($friendRecommendations >= 3) {
             return 'Your friends highly recommend this game.';
         }
 
-        if ($averageRating >= 8) {
+        if ($averageRating !== null && $averageRating >= 8) {
             return 'Players consistently rate this game very highly.';
         }
 
