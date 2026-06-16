@@ -144,11 +144,6 @@ const communityItems = [
 
 const toolItems = [
     {
-        label: 'Add Game',
-        href: '/games/create',
-        icon: PlusCircle,
-    },
-    {
         label: 'Shop',
         href: '/shop',
         icon: ShoppingBag,

@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { usePage } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
+import { PlusCircle } from 'lucide-vue-next'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
@@ -47,6 +48,7 @@ watch(
     () => page.props.flash?.no_product_card,
     (value) => {
         console.log('no_product_card flash:', value)
+
         if (value) {
             showNoProductCardPopup.value = true
         }
@@ -171,6 +173,14 @@ const mappedGames = computed(() => {
                         </div>
 
                         <div class="flex flex-wrap items-center gap-4">
+                            <Link
+                                href="/games/create"
+                                class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
+                            >
+                                <PlusCircle class="h-5 w-5" />
+                                Add game
+                            </Link>
+
                             <input
                                 v-model="searchQuery"
                                 type="text"
