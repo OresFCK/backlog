@@ -19,3 +19,5 @@ Schedule::command('igdb:import-games')
 
 Schedule::command('igdb:import-covers')
     ->weekly();
+
+Schedule::command('steam:libraries-sync')->daily();

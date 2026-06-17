@@ -8,6 +8,7 @@ use App\Models\CustomGame;
 use App\Models\SteamGameAchievementCache;
 use App\Models\User;
 use App\Models\UserGameMeta;
+use App\Models\UserSteamGame;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -66,22 +67,24 @@ class GameLibraryService
             ->get()
             ->keyBy(fn ($row) => (string) $row->steam_app_id);
 
-        return collect($steam->getOwnedGames($user->steam_id))
-            ->filter(fn ($game) => ! empty($game['appid']))
-            ->map(function (array $game) use ($metas, $achievementCache) {
-                $gameId = (string) $game['appid'];
+        return UserSteamGame::query()
+            ->where('user_id', $user->id)
+            ->get()
+            ->map(function (UserSteamGame $game) use ($metas, $achievementCache) {
+                $gameId = (string) $game->steam_app_id;
                 $achievement = $achievementCache->get($gameId);
 
                 $metaPayload = $this->metaPayloadFromCollection($metas, $gameId);
 
                 return [
-                    ...$game,
-
                     'id' => $gameId,
                     'appid' => $gameId,
-                    'name' => $game['name'] ?? 'Unknown game',
-                    'title' => $game['name'] ?? 'Unknown game',
+                    'name' => $game->name ?? 'Unknown game',
+                    'title' => $game->name ?? 'Unknown game',
                     'cover_url' => $this->steamCoverUrl($gameId),
+
+                    'playtime_forever' => (int) ($game->playtime_forever ?? 0),
+                    'playtime_hours' => round(((int) ($game->playtime_forever ?? 0)) / 60, 1),
 
                     'is_custom' => false,
                     'source' => 'steam',
@@ -127,30 +130,38 @@ class GameLibraryService
                 return [
                     'id' => $gameId,
                     'appid' => $gameId,
+
                     'igdb_id' => $game->igdb_id,
                     'igdb_slug' => $game->igdb_slug,
                     'igdb_url' => $game->igdb_url,
+
                     'name' => $game->title ?: 'Unknown game',
                     'title' => $game->title ?: 'Unknown game',
+
                     'publisher' => $game->publisher,
                     'developer' => $game->developer,
                     'description' => $game->description,
                     'release_date' => $game->release_date?->format('Y-m-d'),
+
                     'cover_url' => $game->cover_url ?: null,
                     'header_image_url' => $game->header_image_url ?: null,
+
                     'playtime_forever' => (int) ($game->playtime_minutes ?? 0),
                     'playtime_hours' => $game->playtime_minutes !== null
                         ? round(((int) $game->playtime_minutes) / 60, 1)
                         : 0,
+
                     'achievements_unlocked' => $achievementsUnlocked,
                     'achievements_total' => $achievementsTotal,
                     'achievement_percent' => $achievementsTotal > 0
                         ? (int) round(($achievementsUnlocked / $achievementsTotal) * 100)
                         : 0,
+
                     'is_custom' => true,
                     'source' => $game->source ?: 'manual',
                     'platform' => $game->platform,
                     'custom_game_id' => $game->id,
+
                     ...$metaPayload,
                 ];
             })
