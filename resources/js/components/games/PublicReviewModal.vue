@@ -185,7 +185,14 @@ const submitPublicReview = () => {
 
 <template>
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-        <div class="w-full max-w-5xl rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl">
+        <div
+             class="review-modal-scroll h-[720px] w-[960px] max-w-[95vw] resize overflow-auto rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl"
+            style="
+                min-width: 420px;
+                min-height: 360px;
+                max-height: 95vh;
+            "
+        >
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h2 class="text-2xl font-black text-white">
@@ -295,7 +302,7 @@ const submitPublicReview = () => {
                             class="w-full bg-transparent text-sm text-white outline-none placeholder:text-zinc-500"
                             @keydown="blockInvalidTimeKeys"
                             @input="handleTimeToBeatInput"
-                        >
+                        />
 
                         <span class="ml-3 text-sm font-semibold text-zinc-400">
                             hours
@@ -385,3 +392,33 @@ const submitPublicReview = () => {
         </div>
     </div>
 </template>
+
+<style scoped>
+.review-modal-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(82 82 91) transparent;
+}
+
+.review-modal-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.review-modal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.review-modal-scroll::-webkit-scrollbar-thumb {
+    background: rgb(63 63 70);
+    border-radius: 999px;
+    border: 3px solid rgb(9 9 11);
+}
+
+.review-modal-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgb(113 113 122);
+}
+
+.review-modal-scroll::-webkit-resizer {
+    background: rgb(9 9 11);
+}
+</style>
