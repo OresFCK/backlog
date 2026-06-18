@@ -186,7 +186,7 @@ const submitPublicReview = () => {
 <template>
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
         <div
-             class="review-modal-scroll h-[720px] w-[960px] max-w-[95vw] resize overflow-auto rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl"
+            class="review-modal-scroll h-[720px] w-[960px] max-w-[95vw] resize overflow-auto rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl"
             style="
                 min-width: 420px;
                 min-height: 360px;

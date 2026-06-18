@@ -8,6 +8,7 @@ use App\Models\ActivityLog;
 use App\Models\Game;
 use App\Models\PublicReview;
 use App\Models\UserConnection;
+use App\Models\UserGameMeta;
 use App\Services\SteamService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -140,6 +141,20 @@ class PublicReviewController extends Controller
                 'time_to_beat_minutes' => filled($data['time_to_beat_hours'] ?? null)
                     ? (int) round(((float) $data['time_to_beat_hours']) * 60)
                     : null,
+            ]
+        );
+
+        UserGameMeta::query()->updateOrCreate(
+            [
+                'user_id' => $request->user()->id,
+                'game_id' => (string) (
+                    $game->steam_app_id
+                    ?? $game->igdb_id
+                    ?? $game->id
+                ),
+            ],
+            [
+                'status' => 'Finished',
             ]
         );
 
