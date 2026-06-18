@@ -251,6 +251,32 @@ class PayloadHelper
         return self::meta()->storeMeta($request, $gameId);
     }
 
+    public static function bulkUpdateStatuses(): RedirectResponse
+    {
+        $validated = request()->validate([
+            'game_ids' => ['required', 'array'],
+            'game_ids.*' => ['required'],
+            'status' => ['required', 'string'],
+        ]);
+
+        foreach ($validated['game_ids'] as $gameId) {
+            UserGameMeta::query()->updateOrCreate(
+                [
+                    'user_id' => Auth::id(),
+                    'game_id' => (string) $gameId,
+                ],
+                [
+                    'status' => $validated['status'],
+                ]
+            );
+        }
+
+        return back()->with(
+            'success',
+            'Statuses updated successfully.'
+        );
+    }
+
     public static function steamSearch(
         SteamService $steam
     ): JsonResponse {

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { Link, usePage } from '@inertiajs/vue3'
+import { Link, router, usePage } from '@inertiajs/vue3'
 import { PlusCircle } from 'lucide-vue-next'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
@@ -39,22 +39,64 @@ const props = defineProps({
 })
 
 const page = usePage()
+
 const sortBy = ref('name')
 const searchQuery = ref('')
 const selectedStatus = ref('all')
 const showNoProductCardPopup = ref(false)
 
+const selectionMode = ref(false)
+const selectedGameIds = ref([])
+const bulkStatus = ref('')
+
 watch(
     () => page.props.flash?.no_product_card,
     (value) => {
-        console.log('no_product_card flash:', value)
-
         if (value) {
             showNoProductCardPopup.value = true
         }
     },
     { immediate: true }
 )
+
+const toggleSelectionMode = () => {
+    selectionMode.value = !selectionMode.value
+
+    if (!selectionMode.value) {
+        selectedGameIds.value = []
+        bulkStatus.value = ''
+    }
+}
+
+const toggleGameSelection = (gameId) => {
+    selectedGameIds.value = selectedGameIds.value.includes(gameId)
+        ? selectedGameIds.value.filter((id) => id !== gameId)
+        : [...selectedGameIds.value, gameId]
+}
+
+const clearSelection = () => {
+    selectedGameIds.value = []
+    bulkStatus.value = ''
+    selectionMode.value = false
+}
+
+const updateBulkStatus = () => {
+    if (!selectedGameIds.value.length || !bulkStatus.value) {
+        return
+    }
+
+    router.post(
+        '/games/bulk-status',
+        {
+            game_ids: selectedGameIds.value,
+            status: bulkStatus.value,
+        },
+        {
+            preserveScroll: true,
+            onSuccess: () => clearSelection(),
+        }
+    )
+}
 
 const mappedGames = computed(() => {
     let games = props.games.map((game) => {
@@ -125,8 +167,7 @@ const mappedGames = computed(() => {
         case 'rating':
             return games.sort(
                 (a, b) =>
-                    (b.rating ?? 0) -
-                    (a.rating ?? 0)
+                    (b.rating ?? 0) - (a.rating ?? 0)
             )
 
         default:
@@ -181,6 +222,18 @@ const mappedGames = computed(() => {
                                 Add game
                             </Link>
 
+                            <button
+                                type="button"
+                                class="rounded-xl border border-zinc-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-900"
+                                @click="toggleSelectionMode"
+                            >
+                                {{
+                                    selectionMode
+                                        ? 'Cancel'
+                                        : 'Update statuses'
+                                }}
+                            </button>
+
                             <input
                                 v-model="searchQuery"
                                 type="text"
@@ -224,9 +277,58 @@ const mappedGames = computed(() => {
                         </div>
                     </div>
 
-                    <GameGrid :games="mappedGames" />
+                    <GameGrid
+                        :games="mappedGames"
+                        :selected-game-ids="selectedGameIds"
+                        :selection-mode="selectionMode"
+                        @toggle-game-selection="toggleGameSelection"
+                    />
                 </section>
             </main>
+        </div>
+
+        <div
+            v-if="selectionMode"
+            class="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/95 px-4 py-3 shadow-2xl backdrop-blur"
+        >
+            <span class="text-sm font-bold text-white">
+                {{ selectedGameIds.length }}
+                selected
+            </span>
+
+            <select
+                v-model="bulkStatus"
+                class="rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none"
+            >
+                <option value="">
+                    Status
+                </option>
+
+                <option
+                    v-for="status in statuses"
+                    :key="status.id"
+                    :value="status.name"
+                >
+                    {{ status.name }}
+                </option>
+            </select>
+
+            <button
+                type="button"
+                class="rounded-xl bg-white px-4 py-2 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 disabled:opacity-50"
+                :disabled="!selectedGameIds.length || !bulkStatus"
+                @click="updateBulkStatus"
+            >
+                Update
+            </button>
+
+            <button
+                type="button"
+                class="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-zinc-800"
+                @click="clearSelection"
+            >
+                Cancel
+            </button>
         </div>
 
         <div

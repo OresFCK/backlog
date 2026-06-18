@@ -149,6 +149,10 @@ Route::middleware('auth')->group(function () {
                 string $game
             ) => Payload::storeMeta($request, $game))->name('meta');
 
+            Route::post('/bulk-status', fn () =>
+                Payload::bulkUpdateStatuses()
+            )->name('bulk-status');
+
             Route::get('/{game}', function (
                 string $game,
                 SteamService $steam
