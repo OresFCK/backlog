@@ -118,9 +118,10 @@ class GameDetailsService
 
         $genres = $this->genreNames($details);
 
-        $suggestedGame = $this->suggestedGame(
-            $canonicalGame,
-            $genres
+        $suggestedGame = $this->suggestedGameFromOwnedLibrary(
+            $gameId,
+            $genres,
+            $this->ownedGames($steam, $steamId)
         );
 
         return [
@@ -171,42 +172,32 @@ class GameDetailsService
         ];
     }
 
-    private function suggestedGame(
-        Game $currentGame,
-        array $genres
+    private function suggestedGameFromOwnedLibrary(
+        string $currentGameId,
+        array $genres,
+        array $ownedGames
     ): ?array {
-        if (empty($genres)) {
+        $games = collect($ownedGames)
+            ->filter(fn ($game) =>
+                (string) ($game['appid'] ?? '') !== (string) $currentGameId
+            )
+            ->values();
+
+        if ($games->isEmpty()) {
             return null;
         }
 
-        $matchedGenre = collect($genres)->random();
-
-        $suggestedGame = Game::query()
-            ->whereNotNull('slug')
-            ->where('slug', '!=', '')
-            ->whereKeyNot($currentGame->id)
-            ->inRandomOrder()
-            ->first();
-
-        if (! $suggestedGame) {
-            return null;
-        }
+        $suggested = $games->random();
+        $appid = (string) $suggested['appid'];
 
         return [
-            'title' => $suggestedGame->title,
-
-            'slug' => $suggestedGame->slug,
-
-            'cover_url' => $suggestedGame->steam_app_id
-                ? $this->steamLibraryCoverUrl(
-                    (string) $suggestedGame->steam_app_id
-                )
-                : (
-                    $suggestedGame->cover_url
-                    ?? $suggestedGame->header_image_url
-                ),
-
-            'matched_genre' => $matchedGenre,
+            'title' => $suggested['name'] ?? 'Unknown game',
+            'slug' => null,
+            'url' => "/games/{$appid}",
+            'cover_url' => $this->steamLibraryCoverUrl($appid),
+            'matched_genre' => ! empty($genres)
+                ? collect($genres)->random()
+                : null,
         ];
     }
 
@@ -314,17 +305,22 @@ class GameDetailsService
             ??= $steam->getAppDetails($gameId);
     }
 
+    private function ownedGames(
+        SteamService $steam,
+        string $steamId
+    ): array {
+        return $this->ownedGamesCache[$steamId]
+            ??= collect($steam->getOwnedGames($steamId))
+                ->keyBy(fn (array $game) => (string) $game['appid'])
+                ->all();
+    }
+
     private function ownedGame(
         SteamService $steam,
         string $steamId,
         string $gameId
     ): ?array {
-        $games = $this->ownedGamesCache[$steamId]
-            ??= collect($steam->getOwnedGames($steamId))
-                ->keyBy(fn (array $game) => (string) $game['appid'])
-                ->all();
-
-        return $games[(string) $gameId] ?? null;
+        return $this->ownedGames($steam, $steamId)[(string) $gameId] ?? null;
     }
 
     private function cachedAchievements(
