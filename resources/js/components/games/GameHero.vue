@@ -83,7 +83,7 @@ defineEmits(['create-review'])
 
             <Link
                 v-if="game.suggested_game"
-                :href="`/${game.suggested_game.slug}`"
+                :href="game.suggested_game.url"
                 class="group w-64 self-end overflow-hidden rounded-3xl border border-zinc-700 bg-zinc-950/80 shadow-2xl backdrop-blur transition hover:border-zinc-500 hover:bg-zinc-900/90"
             >
                 <img
