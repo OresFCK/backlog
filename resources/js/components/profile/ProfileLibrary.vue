@@ -1,34 +1,167 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { normalizeStatus, ratingStars, statusColor } from '@/lib/profile'
 
-defineProps({
-    games: Array,
-    groupedGames: Object,
+const props = defineProps({
+    games: {
+        type: Array,
+        default: () => [],
+    },
+
+    groupedGames: {
+        type: Object,
+        default: () => ({}),
+    },
 })
 
+const searchQuery = ref('')
+const selectedStatus = ref('all')
+const selectedRating = ref('all')
 const openStatuses = ref({})
+
+const statuses = computed(() =>
+    Object.keys(props.groupedGames ?? {})
+)
+
+const filteredGames = computed(() => {
+    return props.games.filter((game) => {
+        const title = String(game.title ?? game.name ?? '')
+            .toLowerCase()
+
+        const status = normalizeStatus(game.status)
+
+        const matchesSearch =
+            !searchQuery.value.trim() ||
+            title.includes(searchQuery.value.toLowerCase())
+
+        const matchesStatus =
+            selectedStatus.value === 'all' ||
+            status === selectedStatus.value
+
+        const matchesRating =
+            selectedRating.value === 'all' ||
+            Number(game.rating ?? 0) >= Number(selectedRating.value)
+
+        return matchesSearch && matchesStatus && matchesRating
+    })
+})
+
+const filteredGroupedGames = computed(() => {
+    return filteredGames.value.reduce((groups, game) => {
+        const status = normalizeStatus(game.status)
+
+        if (!groups[status]) {
+            groups[status] = []
+        }
+
+        groups[status].push(game)
+
+        return groups
+    }, {})
+})
 
 const toggleStatus = (status) => {
     openStatuses.value[status] = !openStatuses.value[status]
+}
+
+const clearFilters = () => {
+    searchQuery.value = ''
+    selectedStatus.value = 'all'
+    selectedRating.value = 'all'
 }
 </script>
 
 <template>
     <div class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
-        <div class="mb-6 flex items-center justify-between">
-            <h2 class="text-xl font-semibold">
-                Games Library
-            </h2>
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <h2 class="text-xl font-semibold">
+                    Games Library
+                </h2>
 
-            <p class="text-sm text-zinc-500">
-                {{ games.length }} games
-            </p>
+                <p class="mt-1 text-sm text-zinc-500">
+                    {{ filteredGames.length }} of {{ games.length }} games
+                </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <input
+                    v-model="searchQuery"
+                    type="text"
+                    placeholder="Search games..."
+                    class="rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-500"
+                />
+
+                <select
+                    v-model="selectedRating"
+                    class="rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                >
+                    <option value="all">
+                        All ratings
+                    </option>
+
+                    <option value="10">
+                        10★ only
+                    </option>
+
+                    <option value="9">
+                        9★+
+                    </option>
+
+                    <option value="8">
+                        8★+
+                    </option>
+
+                    <option value="7">
+                        7★+
+                    </option>
+
+                    <option value="6">
+                        6★+
+                    </option>
+
+                    <option value="5">
+                        5★+
+                    </option>
+
+                    <option value="4">
+                        4★+
+                    </option>
+
+                    <option value="3">
+                        3★+
+                    </option>
+
+                    <option value="2">
+                        2★+
+                    </option>
+
+                    <option value="1">
+                        1★+
+                    </option>
+                </select>
+
+                <button
+                    v-if="
+                        searchQuery ||
+                        selectedStatus !== 'all' ||
+                        selectedRating !== 'all'
+                    "
+                    type="button"
+                    class="rounded-xl border border-zinc-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-800"
+                    @click="clearFilters"
+                >
+                    Clear
+                </button>
+            </div>
         </div>
 
-        <div class="space-y-4">
+        <div
+            v-if="filteredGames.length"
+            class="space-y-4"
+        >
             <div
-                v-for="(statusGames, status) in groupedGames"
+                v-for="(statusGames, status) in filteredGroupedGames"
                 :key="status"
                 class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950"
             >
@@ -103,12 +236,26 @@ const toggleStatus = (status) => {
                             </p>
 
                             <p class="mt-4 text-xs text-zinc-600">
-                                Last activity: {{ game.updated_at ?? 'No updates' }}
+                                Last activity:
+                                {{ game.updated_at ?? 'No updates' }}
                             </p>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div
+            v-else
+            class="rounded-2xl border border-dashed border-zinc-700 bg-zinc-950 p-8 text-center"
+        >
+            <p class="font-semibold text-white">
+                No games found
+            </p>
+
+            <p class="mt-2 text-sm text-zinc-500">
+                Try changing your search or filters.
+            </p>
         </div>
     </div>
 </template>
