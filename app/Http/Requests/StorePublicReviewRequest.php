@@ -47,7 +47,7 @@ class StorePublicReviewRequest extends FormRequest
                 'nullable',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:4096',
+                'max:10240',
             ],
 
             'recommended' => ['boolean'],

@@ -29,7 +29,7 @@ class UserSubmissionController extends Controller
             'type' => ['required', 'string', 'in:bug,suggestion,admission'],
             'title' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string', 'max:5000'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
         ]);
 
         if ($request->hasFile('image')) {
