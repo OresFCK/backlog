@@ -91,6 +91,8 @@ class GameDetailsService
             'is_custom' => true,
             'source' => $customGame->source ?? 'manual',
 
+            'suggested_game' => null,
+
             ...$this->meta->metaPayload($meta),
         ];
     }
@@ -113,6 +115,13 @@ class GameDetailsService
         $achievementPercent = ! empty($achievements['total'])
             ? (int) round(((int) ($achievements['unlocked'] ?? 0) / max((int) $achievements['total'], 1)) * 100)
             : 0;
+
+        $genres = $this->genreNames($details);
+
+        $suggestedGame = $this->suggestedGame(
+            $canonicalGame,
+            $genres
+        );
 
         return [
             'id' => $gameId,
@@ -140,7 +149,7 @@ class GameDetailsService
 
             'developers' => $details['developers'] ?? [],
             'publishers' => $details['publishers'] ?? [],
-            'genres' => $this->genreNames($details),
+            'genres' => $genres,
             'screenshots' => $this->screenshotUrls($details),
             'platforms' => $details['platforms'] ?? [],
 
@@ -156,7 +165,48 @@ class GameDetailsService
             'is_custom' => false,
             'source' => 'steam',
 
+            'suggested_game' => $suggestedGame,
+
             ...$this->meta->metaPayload($meta),
+        ];
+    }
+
+    private function suggestedGame(
+        Game $currentGame,
+        array $genres
+    ): ?array {
+        if (empty($genres)) {
+            return null;
+        }
+
+        $matchedGenre = collect($genres)->random();
+
+        $suggestedGame = Game::query()
+            ->whereNotNull('slug')
+            ->where('slug', '!=', '')
+            ->whereKeyNot($currentGame->id)
+            ->inRandomOrder()
+            ->first();
+
+        if (! $suggestedGame) {
+            return null;
+        }
+
+        return [
+            'title' => $suggestedGame->title,
+
+            'slug' => $suggestedGame->slug,
+
+            'cover_url' => $suggestedGame->steam_app_id
+                ? $this->steamLibraryCoverUrl(
+                    (string) $suggestedGame->steam_app_id
+                )
+                : (
+                    $suggestedGame->cover_url
+                    ?? $suggestedGame->header_image_url
+                ),
+
+            'matched_genre' => $matchedGenre,
         ];
     }
 
@@ -317,6 +367,11 @@ class GameDetailsService
     private function steamCoverUrl(string $gameId): string
     {
         return "https://cdn.cloudflare.steamstatic.com/steam/apps/{$gameId}/header.jpg";
+    }
+
+    private function steamLibraryCoverUrl(string $gameId): string
+    {
+        return "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{$gameId}/library_600x900.jpg";
     }
 
     private function isCustomGame(string $gameId): bool
