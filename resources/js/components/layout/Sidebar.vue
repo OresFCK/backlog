@@ -27,6 +27,7 @@ import {
     Bug,
     Lightbulb,
     UserCog,
+    ListOrdered,
 } from 'lucide-vue-next'
 
 const page = usePage()
@@ -152,6 +153,11 @@ const toolItems = [
         label: 'Wardrobe',
         href: '/wardrobe',
         icon: Shirt,
+    },
+    {
+        label: 'Custom Lists',
+        href: '/lists',
+        icon: ListOrdered,
     },
 ]
 

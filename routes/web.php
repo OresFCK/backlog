@@ -29,6 +29,7 @@ use App\Http\Controllers\AdminUserSubmissionController;
 use App\Http\Controllers\AccountSettingsController;
 use App\Http\Controllers\CuratorController;
 use App\Http\Controllers\PublicGameController;
+use App\Http\Controllers\CustomListController;
 use App\Models\Game;
 use Illuminate\Support\Facades\Response;
 use App\Models\UserSubmission;
@@ -181,6 +182,40 @@ Route::middleware('auth')->group(function () {
         CustomGameController::class,
         'update',
     ])->name('custom-games.update');
+
+    Route::prefix('lists')
+    ->name('lists.')
+    ->group(function () {
+        Route::get('/', [
+            CustomListController::class,
+            'index',
+        ])->name('index');
+
+        Route::post('/', [
+            CustomListController::class,
+            'store',
+        ])->name('store');
+
+        Route::get('/{list}', [
+            CustomListController::class,
+            'show',
+        ])->name('show');
+
+        Route::post('/{list}/items', [
+            CustomListController::class,
+            'storeItem',
+        ])->name('items.store');
+
+        Route::patch('/{list}/items/reorder', [
+            CustomListController::class,
+            'reorder',
+        ])->name('items.reorder');
+
+        Route::delete('/{list}/items/{item}', [
+            CustomListController::class,
+            'destroyItem',
+        ])->name('items.destroy');
+    });
 
     Route::post('/statuses', fn (
         StoreCustomStatusRequest $request
