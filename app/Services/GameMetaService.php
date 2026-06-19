@@ -4,8 +4,11 @@ namespace App\Services;
 
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Models\UserGameMeta;
+use App\Helpers\CacheKeys;
+use App\Support\UserCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class GameMetaService
 {
@@ -19,9 +22,11 @@ class GameMetaService
         UpdateGameMetaRequest $request,
         string $gameId
     ): RedirectResponse {
+        $userId = Auth::id();
+
         UserGameMeta::updateOrCreate(
             [
-                'user_id' => Auth::id(),
+                'user_id' => $userId,
                 'game_id' => $gameId,
             ],
             [
@@ -37,15 +42,24 @@ class GameMetaService
             ]
         );
 
+        Cache::forget(CacheKeys::userMeta($userId, $gameId));
+        UserCache::flush($userId);
+
         return back();
     }
 
     public function metaFor(string $gameId): ?UserGameMeta
     {
-        return UserGameMeta::query()
-            ->where('user_id', Auth::id())
-            ->where('game_id', $gameId)
-            ->first();
+        $userId = Auth::id();
+
+        return Cache::remember(
+            CacheKeys::userMeta($userId, $gameId),
+            now()->addMinutes(30),
+            fn () => UserGameMeta::query()
+                ->where('user_id', $userId)
+                ->where('game_id', $gameId)
+                ->first()
+        );
     }
 
     public function existingMetaFor(string $gameId): array

@@ -4,8 +4,11 @@ namespace App\Services;
 
 use App\Http\Requests\StoreCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
+use App\Helpers\CacheKeys;
+use App\Support\UserCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class StatusService
 {
@@ -20,32 +23,42 @@ class StatusService
 
         $user = Auth::user();
 
-        if (! $user->customStatuses()->exists()) {
-            $user->customStatuses()->createMany($this->defaultStatuses());
-        }
+        return $this->statusesCache = Cache::remember(
+            CacheKeys::userStatuses($user->id),
+            now()->addHours(6),
+            function () use ($user) {
+                if (! $user->customStatuses()->exists()) {
+                    $user->customStatuses()->createMany($this->defaultStatuses());
+                }
 
-        return $this->statusesCache = $user
-            ->customStatuses()
-            ->get(['id', 'name', 'color'])
-            ->map(fn ($status) => [
-                'id' => $status->id,
-                'name' => $status->name,
-                'color' => $status->color,
-            ])
-            ->toArray();
+                return $user
+                    ->customStatuses()
+                    ->get(['id', 'name', 'color'])
+                    ->map(fn ($status) => [
+                        'id' => $status->id,
+                        'name' => $status->name,
+                        'color' => $status->color,
+                    ])
+                    ->toArray();
+            }
+        );
     }
 
     public function customLabels(): array
     {
-        return collect($this->statuses())
-            ->sortByDesc('id')
-            ->map(fn ($status) => [
-                'id' => $status['id'],
-                'title' => $status['name'],
-                'color' => $status['color'],
-            ])
-            ->values()
-            ->toArray();
+        return Cache::remember(
+            CacheKeys::userCustomLabels(Auth::id()),
+            now()->addHours(6),
+            fn () => collect($this->statuses())
+                ->sortByDesc('id')
+                ->map(fn ($status) => [
+                    'id' => $status['id'],
+                    'title' => $status['name'],
+                    'color' => $status['color'],
+                ])
+                ->values()
+                ->toArray()
+        );
     }
 
     public function storeStatus(StoreCustomStatusRequest $request): RedirectResponse
@@ -90,42 +103,33 @@ class StatusService
             return $this->statusColorsCache;
         }
 
-        return $this->statusColorsCache = collect($this->statuses())
-            ->mapWithKeys(fn ($status) => [
-                strtolower($status['name']) => $status['color'],
-            ])
-            ->toArray();
+        return $this->statusColorsCache = Cache::remember(
+            CacheKeys::userStatusColors(Auth::id()),
+            now()->addHours(6),
+            fn () => collect($this->statuses())
+                ->mapWithKeys(fn ($status) => [
+                    strtolower($status['name']) => $status['color'],
+                ])
+                ->toArray()
+        );
     }
 
     private function clearCache(): void
     {
         $this->statusesCache = null;
         $this->statusColorsCache = null;
+
+        UserCache::flush(Auth::id());
     }
 
     private function defaultStatuses(): array
     {
         return [
-            [
-                'name' => 'Backlog',
-                'color' => '#71717a',
-            ],
-            [
-                'name' => 'Playing',
-                'color' => '#3b82f6',
-            ],
-            [
-                'name' => 'Finished',
-                'color' => '#22c55e',
-            ],
-            [
-                'name' => 'Planned',
-                'color' => '#a855f7',
-            ],
-            [
-                'name' => 'Dropped',
-                'color' => '#ef4444',
-            ],
+            ['name' => 'Backlog', 'color' => '#71717a'],
+            ['name' => 'Playing', 'color' => '#3b82f6'],
+            ['name' => 'Finished', 'color' => '#22c55e'],
+            ['name' => 'Planned', 'color' => '#a855f7'],
+            ['name' => 'Dropped', 'color' => '#ef4444'],
         ];
     }
 }

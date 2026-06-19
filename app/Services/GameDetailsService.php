@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Helpers\GameTitleNormalizer;
 use App\Models\Game;
+use App\Helpers\CacheKeys;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class GameDetailsService
@@ -26,75 +28,83 @@ class GameDetailsService
 
     public function customGameDetails(string $gameId): array
     {
-        $customGame = Auth::user()
-            ->customGames()
-            ->findOrFail($this->customGameDatabaseId($gameId));
+        $user = Auth::user();
 
-        $meta = $this->meta->metaFor($gameId);
+        return Cache::remember(
+            "user:{$user->id}:game-details:{$gameId}",
+            now()->addMinutes(30),
+            function () use ($user, $gameId) {
+                $customGame = $user
+                    ->customGames()
+                    ->findOrFail($this->customGameDatabaseId($gameId));
 
-        $achievementsUnlocked = $customGame->achievements_unlocked !== null
-            ? (int) $customGame->achievements_unlocked
-            : null;
+                $meta = $this->meta->metaFor($gameId);
 
-        $achievementsTotal = $customGame->achievements_total !== null
-            ? (int) $customGame->achievements_total
-            : null;
+                $achievementsUnlocked = $customGame->achievements_unlocked !== null
+                    ? (int) $customGame->achievements_unlocked
+                    : null;
 
-        return [
-            'id' => $gameId,
-            'database_id' => null,
-            'slug' => null,
-            'public_url' => null,
+                $achievementsTotal = $customGame->achievements_total !== null
+                    ? (int) $customGame->achievements_total
+                    : null;
 
-            'custom_game_id' => $customGame->id,
-            'appid' => null,
+                return [
+                    'id' => $gameId,
+                    'database_id' => null,
+                    'slug' => null,
+                    'public_url' => null,
 
-            'title' => $customGame->title,
-            'publisher' => $customGame->publisher,
-            'developer' => $customGame->developer,
+                    'custom_game_id' => $customGame->id,
+                    'appid' => null,
 
-            'cover_url' => $customGame->cover_url,
-            'header_image' => $customGame->header_image_url ?: $customGame->cover_url,
-            'header_image_url' => $customGame->header_image_url,
+                    'title' => $customGame->title,
+                    'publisher' => $customGame->publisher,
+                    'developer' => $customGame->developer,
 
-            'description' => $customGame->description,
-            'about' => $customGame->description,
+                    'cover_url' => $customGame->cover_url,
+                    'header_image' => $customGame->header_image_url ?: $customGame->cover_url,
+                    'header_image_url' => $customGame->header_image_url,
 
-            'developers' => $customGame->developer ? [$customGame->developer] : [],
-            'publishers' => $customGame->publisher ? [$customGame->publisher] : [],
+                    'description' => $customGame->description,
+                    'about' => $customGame->description,
 
-            'genres' => [],
-            'screenshots' => [],
-            'platforms' => [],
+                    'developers' => $customGame->developer ? [$customGame->developer] : [],
+                    'publishers' => $customGame->publisher ? [$customGame->publisher] : [],
 
-            'release_date' => $customGame->release_date
-                ? $customGame->release_date->translatedFormat('M j, Y')
-                : null,
+                    'genres' => [],
+                    'screenshots' => [],
+                    'platforms' => [],
 
-            'steam_url' => null,
-            'igdb_id' => $customGame->igdb_id,
-            'igdb_slug' => $customGame->igdb_slug,
-            'igdb_url' => $customGame->igdb_url,
-            'platform' => $customGame->platform,
+                    'release_date' => $customGame->release_date
+                        ? $customGame->release_date->translatedFormat('M j, Y')
+                        : null,
 
-            'playtime_forever' => (int) ($customGame->playtime_minutes ?? 0),
-            'playtime_hours' => $customGame->playtime_minutes !== null
-                ? round($customGame->playtime_minutes / 60, 1)
-                : null,
+                    'steam_url' => null,
+                    'igdb_id' => $customGame->igdb_id,
+                    'igdb_slug' => $customGame->igdb_slug,
+                    'igdb_url' => $customGame->igdb_url,
+                    'platform' => $customGame->platform,
 
-            'achievements_unlocked' => $achievementsUnlocked,
-            'achievements_total' => $achievementsTotal,
-            'achievement_percent' => $achievementsTotal
-                ? (int) round(($achievementsUnlocked / max($achievementsTotal, 1)) * 100)
-                : 0,
+                    'playtime_forever' => (int) ($customGame->playtime_minutes ?? 0),
+                    'playtime_hours' => $customGame->playtime_minutes !== null
+                        ? round($customGame->playtime_minutes / 60, 1)
+                        : null,
 
-            'is_custom' => true,
-            'source' => $customGame->source ?? 'manual',
+                    'achievements_unlocked' => $achievementsUnlocked,
+                    'achievements_total' => $achievementsTotal,
+                    'achievement_percent' => $achievementsTotal
+                        ? (int) round(($achievementsUnlocked / max($achievementsTotal, 1)) * 100)
+                        : 0,
 
-            'suggested_game' => null,
+                    'is_custom' => true,
+                    'source' => $customGame->source ?? 'manual',
 
-            ...$this->meta->metaPayload($meta),
-        ];
+                    'suggested_game' => null,
+
+                    ...$this->meta->metaPayload($meta),
+                ];
+            }
+        );
     }
 
     public function steamGameDetails(string $gameId, SteamService $steam): array
@@ -102,74 +112,80 @@ class GameDetailsService
         $user = Auth::user();
         $steamId = (string) $user->steam_id;
 
-        $details = $this->cachedAppDetails($steam, $gameId);
+        return Cache::remember(
+            "user:{$user->id}:game-details:{$gameId}",
+            now()->addMinutes(30),
+            function () use ($user, $steamId, $gameId, $steam) {
+                $details = $this->cachedAppDetails($steam, $gameId);
 
-        abort_if(! $details, 404);
+                abort_if(! $details, 404);
 
-        $canonicalGame = $this->findOrCreateCanonicalSteamGame($gameId, $details);
+                $canonicalGame = $this->findOrCreateCanonicalSteamGame($gameId, $details);
 
-        $ownedGame = $this->ownedGame($steam, $steamId, $gameId);
-        $achievements = $this->cachedAchievements($steam, $steamId, $gameId);
-        $meta = $this->meta->metaFor($gameId);
+                $ownedGame = $this->ownedGame($steam, $steamId, $gameId);
+                $achievements = $this->cachedAchievements($steam, $steamId, $gameId);
+                $meta = $this->meta->metaFor($gameId);
 
-        $achievementPercent = ! empty($achievements['total'])
-            ? (int) round(((int) ($achievements['unlocked'] ?? 0) / max((int) $achievements['total'], 1)) * 100)
-            : 0;
+                $achievementPercent = ! empty($achievements['total'])
+                    ? (int) round(((int) ($achievements['unlocked'] ?? 0) / max((int) $achievements['total'], 1)) * 100)
+                    : 0;
 
-        $genres = $this->genreNames($details);
+                $genres = $this->genreNames($details);
 
-        $suggestedGame = $this->suggestedGameFromOwnedLibrary(
-            $gameId,
-            $genres,
-            $this->ownedGames($steam, $steamId)
+                $suggestedGame = $this->suggestedGameFromOwnedLibrary(
+                    $gameId,
+                    $genres,
+                    $this->ownedGames($steam, $steamId)
+                );
+
+                return [
+                    'id' => $gameId,
+                    'database_id' => $canonicalGame->id,
+                    'slug' => $canonicalGame->slug,
+                    'public_url' => route('games.public.show', $canonicalGame),
+
+                    'appid' => $gameId,
+                    'steam_app_id' => $gameId,
+
+                    'title' => $details['name'] ?? $canonicalGame->title ?? 'Unknown game',
+                    'publisher' => $details['publishers'][0] ?? null,
+                    'developer' => $details['developers'][0] ?? null,
+
+                    'cover_url' => $details['capsule_imagev5']
+                        ?? $details['header_image']
+                        ?? $canonicalGame->cover_url
+                        ?? $this->steamCoverUrl($gameId),
+
+                    'header_image' => $details['header_image'] ?? $canonicalGame->header_image_url,
+                    'header_image_url' => $details['header_image'] ?? $canonicalGame->header_image_url,
+
+                    'description' => $this->plainTextFromHtml($details['short_description'] ?? ''),
+                    'about' => $this->plainTextFromHtml($details['about_the_game'] ?? ''),
+
+                    'developers' => $details['developers'] ?? [],
+                    'publishers' => $details['publishers'] ?? [],
+                    'genres' => $genres,
+                    'screenshots' => $this->screenshotUrls($details),
+                    'platforms' => $details['platforms'] ?? [],
+
+                    'release_date' => $details['release_date']['date'] ?? null,
+                    'steam_url' => "https://store.steampowered.com/app/{$gameId}",
+                    'igdb_url' => null,
+
+                    'playtime_hours' => $this->playtimeHours($ownedGame),
+                    'achievements_unlocked' => $achievements['unlocked'] ?? null,
+                    'achievements_total' => $achievements['total'] ?? null,
+                    'achievement_percent' => $achievementPercent,
+
+                    'is_custom' => false,
+                    'source' => 'steam',
+
+                    'suggested_game' => $suggestedGame,
+
+                    ...$this->meta->metaPayload($meta),
+                ];
+            }
         );
-
-        return [
-            'id' => $gameId,
-            'database_id' => $canonicalGame->id,
-            'slug' => $canonicalGame->slug,
-            'public_url' => route('games.public.show', $canonicalGame),
-
-            'appid' => $gameId,
-            'steam_app_id' => $gameId,
-
-            'title' => $details['name'] ?? $canonicalGame->title ?? 'Unknown game',
-            'publisher' => $details['publishers'][0] ?? null,
-            'developer' => $details['developers'][0] ?? null,
-
-            'cover_url' => $details['capsule_imagev5']
-                ?? $details['header_image']
-                ?? $canonicalGame->cover_url
-                ?? $this->steamCoverUrl($gameId),
-
-            'header_image' => $details['header_image'] ?? $canonicalGame->header_image_url,
-            'header_image_url' => $details['header_image'] ?? $canonicalGame->header_image_url,
-
-            'description' => $this->plainTextFromHtml($details['short_description'] ?? ''),
-            'about' => $this->plainTextFromHtml($details['about_the_game'] ?? ''),
-
-            'developers' => $details['developers'] ?? [],
-            'publishers' => $details['publishers'] ?? [],
-            'genres' => $genres,
-            'screenshots' => $this->screenshotUrls($details),
-            'platforms' => $details['platforms'] ?? [],
-
-            'release_date' => $details['release_date']['date'] ?? null,
-            'steam_url' => "https://store.steampowered.com/app/{$gameId}",
-            'igdb_url' => null,
-
-            'playtime_hours' => $this->playtimeHours($ownedGame),
-            'achievements_unlocked' => $achievements['unlocked'] ?? null,
-            'achievements_total' => $achievements['total'] ?? null,
-            'achievement_percent' => $achievementPercent,
-
-            'is_custom' => false,
-            'source' => 'steam',
-
-            'suggested_game' => $suggestedGame,
-
-            ...$this->meta->metaPayload($meta),
-        ];
     }
 
     private function suggestedGameFromOwnedLibrary(
@@ -302,7 +318,11 @@ class GameDetailsService
     private function cachedAppDetails(SteamService $steam, string $gameId): ?array
     {
         return $this->appDetailsCache[$gameId]
-            ??= $steam->getAppDetails($gameId);
+            ??= Cache::remember(
+                CacheKeys::steamAppDetails($gameId),
+                now()->addDays(7),
+                fn () => $steam->getAppDetails($gameId)
+            );
     }
 
     private function ownedGames(
@@ -331,7 +351,11 @@ class GameDetailsService
         $cacheKey = "{$steamId}:{$gameId}";
 
         return $this->achievementsCache[$cacheKey]
-            ??= $steam->getPlayerAchievements($steamId, $gameId);
+            ??= Cache::remember(
+                CacheKeys::steamAchievements($steamId, $gameId),
+                now()->addHours(6),
+                fn () => $steam->getPlayerAchievements($steamId, $gameId)
+            );
     }
 
     private function genreNames(array $details): array
