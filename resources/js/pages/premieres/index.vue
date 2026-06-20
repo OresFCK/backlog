@@ -49,11 +49,7 @@ const groupedGames = computed(() => {
     const groups = {}
 
     filteredGames.value.forEach((game) => {
-        const month = new Date(game.release_date)
-            .toLocaleDateString('en-US', {
-                month: 'long',
-                year: 'numeric',
-            })
+        const month = game.month_label
 
         if (!groups[month]) {
             groups[month] = []
@@ -65,28 +61,13 @@ const groupedGames = computed(() => {
     return groups
 })
 
-const firstMonth = computed(() => {
-    return Object.keys(groupedGames.value)[0] ?? null
-})
-
-watch(
-    firstMonth,
-    (month) => {
-        if (month && openMonths.value[month] === undefined) {
-            openMonths.value[month] = true
-        }
-    },
-    {
-        immediate: true,
-    }
-)
 
 const toggleMonth = (month) => {
-    openMonths.value[month] = !openMonths.value[month]
+    openMonths.value[month] = !isMonthOpen(month)
 }
 
 const isMonthOpen = (month) => {
-    return openMonths.value[month] === false
+    return openMonths.value[month] === true
 }
 
 const toggleAnticipated = (game) => {
@@ -94,18 +75,6 @@ const toggleAnticipated = (game) => {
         preserveScroll: true,
         preserveState: true,
     })
-}
-
-const formatDate = (date) => {
-    if (!date) {
-        return ''
-    }
-
-    return new Date(date).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-    }).toUpperCase()
 }
 </script>
 
@@ -137,7 +106,6 @@ const formatDate = (date) => {
                         <p class="text-sm font-bold uppercase tracking-[0.2em] text-emerald-400">
                             Your most anticipated
                         </p>
-                        
                     </div>
 
                     <div class="mt-5 grid gap-4 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8">
@@ -158,7 +126,7 @@ const formatDate = (date) => {
 
                             <div class="p-3">
                                 <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
-                                    {{ formatDate(game.release_date) }}
+                                    {{ game.formatted_release_date }}
                                 </p>
 
                                 <h3 class="mt-1 line-clamp-2 text-sm font-bold leading-snug text-white group-hover:text-emerald-400">
@@ -253,7 +221,7 @@ const formatDate = (date) => {
 
                                         <div class="p-3">
                                             <div class="text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
-                                                {{ formatDate(game.release_date) }}
+                                                {{ game.formatted_release_date }}
                                             </div>
 
                                             <h3 class="mt-1 line-clamp-2 text-sm font-bold leading-snug text-white group-hover:text-emerald-400">
