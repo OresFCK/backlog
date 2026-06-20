@@ -76,25 +76,42 @@ const activeSection = ref(initialSection.value)
 let timeout = null
 let removeStart = null
 let removeFinish = null
+let removeError = null
+let removeInvalid = null
+let removeException = null
+
+const stopLoader = () => {
+    if (timeout) {
+        clearTimeout(timeout)
+        timeout = null
+    }
+
+    pageLoading.value = false
+}
 
 onMounted(() => {
     removeStart = router.on('start', () => {
+        stopLoader()
+
         timeout = setTimeout(() => {
             pageLoading.value = true
         }, 500)
     })
 
-    removeFinish = router.on('finish', () => {
-        if (timeout) {
-            clearTimeout(timeout)
-        }
-        pageLoading.value = false
-    })
+    removeFinish = router.on('finish', stopLoader)
+    removeError = router.on('error', stopLoader)
+    removeInvalid = router.on('invalid', stopLoader)
+    removeException = router.on('exception', stopLoader)
 })
 
 onUnmounted(() => {
+    stopLoader()
+
     removeStart?.()
     removeFinish?.()
+    removeError?.()
+    removeInvalid?.()
+    removeException?.()
 })
 
 const toggleSection = (section) => {
