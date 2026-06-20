@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\PayloadHelper as Payload;
+use App\Models\CustomList;
 use App\Models\PublicReview;
 use App\Models\User;
 use App\Models\UserConnection;
-use App\Models\CustomList;
 use App\Services\SteamService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,6 +18,8 @@ class MiniCuratorController extends Controller
     public function index(SteamService $steam): Response
     {
         $currentUserId = auth()->id();
+        $perTypeLimit = 8;
+        $feedLimit = 12;
 
         $followingIds = UserConnection::query()
             ->where('sender_id', $currentUserId)
@@ -27,6 +30,7 @@ class MiniCuratorController extends Controller
             ->where('is_curator', true)
             ->where('id', '!=', $currentUserId)
             ->latest()
+            ->limit(50)
             ->get()
             ->map(fn (User $user) => [
                 'id' => $user->id,
@@ -40,8 +44,9 @@ class MiniCuratorController extends Controller
         $reviews = PublicReview::query()
             ->with('user')
             ->whereIn('user_id', $followingIds)
+            ->where('is_public', true)
             ->latest()
-            ->limit(20)
+            ->limit($perTypeLimit)
             ->get()
             ->map(fn (PublicReview $review) => [
                 'type' => 'review',
@@ -59,13 +64,19 @@ class MiniCuratorController extends Controller
                 'game_title' => $review->game_title,
                 'rating' => $review->rating,
                 'recommended' => $review->recommended,
+                'not_recommended' => $review->not_recommended,
+                'screenshot_url' => $review->screenshot_path
+                    ? Storage::url($review->screenshot_path)
+                    : null,
             ]);
 
         $lists = CustomList::query()
-            ->with('user')
+            ->with(['user', 'items'])
+            ->withCount('items')
             ->whereIn('user_id', $followingIds)
+            ->where('visibility', 'public')
             ->latest()
-            ->limit(20)
+            ->limit($perTypeLimit)
             ->get()
             ->map(fn (CustomList $list) => [
                 'type' => 'list',
@@ -81,12 +92,26 @@ class MiniCuratorController extends Controller
                 'title' => $list->title,
                 'description' => $list->description,
                 'visibility' => $list->visibility,
+                'items_count' => $list->items_count,
+                'items' => $list->items
+                    ->map(fn ($item) => [
+                        'id' => $item->id,
+                        'game_id' => $item->game_id,
+                        'title' => $item->game_title ?? 'Unknown game',
+                        'cover_url' => $item->game_cover_url,
+                        'slug' => $item->game_slug,
+                        'steam_app_id' => $item->steam_app_id,
+                        'position' => $item->position,
+                        'note' => $item->note,
+                    ])
+                    ->values()
+                    ->toArray(),
             ]);
 
         $feed = $reviews
             ->merge($lists)
             ->sortByDesc('created_at')
-            ->take(40)
+            ->take($feedLimit)
             ->values();
 
         return Inertia::render('mini-curators/index', [
