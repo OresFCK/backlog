@@ -270,13 +270,16 @@ const activeTab = ref('games')
                                     100% achievements
                                 </h2>
 
-                                <div class="mt-6 space-y-3">
+                                <div
+                                    v-if="stats.games.perfected_games.length"
+                                    class="perfected-scroll mt-6 max-h-[430px] space-y-3 overflow-y-auto pr-2"
+                                >
                                     <div
                                         v-for="game in stats.games.perfected_games"
                                         :key="game.id"
                                         class="rounded-2xl border border-zinc-800 bg-black px-4 py-3"
                                     >
-                                        <p class="font-bold text-white">
+                                        <p class="truncate font-bold text-white">
                                             {{ game.title }}
                                         </p>
 
@@ -284,14 +287,14 @@ const activeTab = ref('games')
                                             {{ game.achievement_percent }}% achievements
                                         </p>
                                     </div>
-
-                                    <p
-                                        v-if="!stats.games.perfected_games.length"
-                                        class="text-sm text-zinc-500"
-                                    >
-                                        No perfected games yet.
-                                    </p>
                                 </div>
+
+                                <p
+                                    v-else
+                                    class="mt-6 text-sm text-zinc-500"
+                                >
+                                    No perfected games yet.
+                                </p>
                             </div>
                         </div>
                     </section>
@@ -495,3 +498,28 @@ const activeTab = ref('games')
         </div>
     </div>
 </template>
+
+<style scoped>
+.perfected-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(82 82 91) transparent;
+}
+
+.perfected-scroll::-webkit-scrollbar {
+    width: 10px;
+}
+
+.perfected-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.perfected-scroll::-webkit-scrollbar-thumb {
+    background: rgb(63 63 70);
+    border-radius: 999px;
+    border: 3px solid rgb(9 9 11);
+}
+
+.perfected-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgb(113 113 122);
+}
+</style>
