@@ -562,6 +562,21 @@ class PayloadHelper
                 'description' => $list->description,
                 'items_count' => $list->items_count,
                 'created_at' => $list->created_at?->diffForHumans(),
+
+                'items' => $list->items
+                ->map(fn ($item) => [
+                    'id' => $item->id,
+                    'game_id' => $item->game_id,
+                    'title' => $item->game_title
+                        ?? $item->title
+                        ?? $item->name
+                        ?? $item->game_id
+                        ?? 'Unknown game',
+                    'cover_url' => $item->game_cover_url,
+                    'position' => $item->position,
+                ])
+                ->values()
+                ->toArray(),
             ])
             ->values()
             ->toArray();

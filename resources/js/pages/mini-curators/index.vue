@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
-import { X } from 'lucide-vue-next'
+import { Package, X } from 'lucide-vue-next'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
@@ -21,6 +21,7 @@ const props = defineProps({
 const searchQuery = ref('')
 const showCuratorManager = ref(false)
 const selectedReview = ref(null)
+const selectedList = ref(null)
 
 const filteredCurators = computed(() => {
     const query = searchQuery.value.trim().toLowerCase()
@@ -57,6 +58,14 @@ function openReview(item) {
 
 function closeReview() {
     selectedReview.value = null
+}
+
+function openList(item) {
+    selectedList.value = item
+}
+
+function closeList() {
+    selectedList.value = null
 }
 </script>
 
@@ -166,6 +175,13 @@ function closeReview() {
                             </button>
                         </div>
                     </div>
+
+                    <p
+                        v-else
+                        class="mt-5 rounded-2xl border border-dashed border-zinc-700 p-6 text-center text-sm text-zinc-500"
+                    >
+                        No Mini Curators found.
+                    </p>
                 </section>
 
                 <section class="min-h-[calc(100vh-230px)] rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
@@ -263,16 +279,42 @@ function closeReview() {
                                     {{ item.description }}
                                 </p>
 
-                                <button
-                                    v-if="item.type === 'review'"
-                                    type="button"
-                                    class="mt-4 rounded-xl bg-white px-4 py-2 text-sm font-bold text-black transition hover:bg-zinc-200"
-                                    @click="openReview(item)"
-                                >
-                                    Read more
-                                </button>
+                                <div class="mt-4 flex flex-wrap gap-2">
+                                    <button
+                                        v-if="item.type === 'review'"
+                                        type="button"
+                                        class="rounded-xl bg-white px-4 py-2 text-sm font-bold text-black transition hover:bg-zinc-200"
+                                        @click="openReview(item)"
+                                    >
+                                        Read more
+                                    </button>
+
+                                    <button
+                                        v-if="item.type !== 'review'"
+                                        type="button"
+                                        class="rounded-xl bg-white px-4 py-2 text-sm font-bold text-black transition hover:bg-zinc-200"
+                                        @click="openList(item)"
+                                    >
+                                        View list
+                                    </button>
+                                </div>
                             </div>
                         </article>
+                    </div>
+
+                    <div
+                        v-else
+                        class="mt-6 flex min-h-[420px] items-center justify-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-950 p-10 text-center"
+                    >
+                        <div>
+                            <p class="text-lg font-bold">
+                                Your wall is empty.
+                            </p>
+
+                            <p class="mt-2 text-sm text-zinc-500">
+                                Follow Mini Curators to see their reviews, lists and activity here.
+                            </p>
+                        </div>
                     </div>
                 </section>
             </main>
@@ -348,6 +390,85 @@ function closeReview() {
                         class="mt-6 whitespace-pre-line text-sm leading-7 text-zinc-200"
                     >
                         {{ selectedReview.body }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div
+            v-if="selectedList"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
+            @click.self="closeList"
+        >
+            <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl">
+                <div class="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-950/95 p-5 backdrop-blur">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">
+                            Custom List
+                        </p>
+
+                        <h2 class="mt-1 text-2xl font-black">
+                            {{ selectedList.title }}
+                        </h2>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="rounded-xl bg-zinc-800 p-2 text-zinc-300 transition hover:bg-zinc-700 hover:text-white"
+                        @click="closeList"
+                    >
+                        <X class="h-5 w-5" />
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <p
+                        v-if="selectedList.description"
+                        class="mb-6 whitespace-pre-line text-sm leading-7 text-zinc-300"
+                    >
+                        {{ selectedList.description }}
+                    </p>
+
+                    <div
+                        v-if="selectedList.items?.length"
+                        class="grid gap-4 md:grid-cols-2"
+                    >
+                        <div
+                            v-for="game in selectedList.items"
+                            :key="game.id"
+                            class="flex gap-4 rounded-2xl border border-zinc-800 bg-zinc-900 p-4"
+                        >
+                            <img
+                                v-if="game.cover_url"
+                                :src="game.cover_url"
+                                :alt="game.title"
+                                class="h-24 w-16 rounded-xl object-cover"
+                            />
+
+                            <div
+                                v-else
+                                class="flex h-24 w-16 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-zinc-500"
+                            >
+                                <Package class="h-7 w-7" />
+                            </div>
+
+                            <div>
+                                <p class="text-xs font-bold text-zinc-500">
+                                    #{{ game.position ?? '' }}
+                                </p>
+
+                                <h3 class="mt-1 font-black">
+                                    {{ game.title }}
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p
+                        v-else
+                        class="rounded-2xl border border-dashed border-zinc-800 p-8 text-center text-sm text-zinc-500"
+                    >
+                        This list has no games yet.
                     </p>
                 </div>
             </div>
