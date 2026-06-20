@@ -91,33 +91,27 @@ const stopLoader = () => {
 
 onMounted(() => {
     removeStart = router.on('start', event => {
-        console.log('INERTIA start', event)
 
         stopLoader()
 
         timeout = setTimeout(() => {
-            console.log('LOADER true')
             pageLoading.value = true
         }, 500)
     })
 
     removeFinish = router.on('finish', event => {
-        console.log('INERTIA finish', event)
         stopLoader()
     })
 
     removeError = router.on('error', event => {
-        console.log('INERTIA error', event)
         stopLoader()
     })
 
     removeInvalid = router.on('invalid', event => {
-        console.log('INERTIA invalid', event)
         stopLoader()
     })
 
     removeException = router.on('exception', event => {
-        console.log('INERTIA exception', event)
         stopLoader()
     })
 })
