@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\Auth\SteamAuthController;
 use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\CustomGameController;
+use App\Http\Controllers\AnticipatedGameController;
 use App\Http\Controllers\IgdbDumpController;
 use App\Http\Controllers\IgdbGameSearchController;
 use App\Http\Controllers\PublicReviewController;
@@ -104,6 +105,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/premieres', [PremiereController::class, 'index'])
         ->name('premieres.index');
+
+    Route::post('/premieres/{gameId}/anticipate', [
+        AnticipatedGameController::class,
+        'toggle',
+    ])->name('premieres.anticipate');
 
     Route::get('/backlog', fn (SteamService $steam) =>
         Inertia::render('backlog/index', Payload::backlogPageData($steam))

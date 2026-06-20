@@ -1,11 +1,12 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, router } from '@inertiajs/vue3'
 
 import {
     ChevronDown,
     Search,
+    Star,
 } from 'lucide-vue-next'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
@@ -38,6 +39,10 @@ const filteredGames = computed(() => {
             ?.toLowerCase()
             .includes(query)
     })
+})
+
+const anticipatedGames = computed(() => {
+    return props.games.filter(game => game.is_anticipated)
 })
 
 const groupedGames = computed(() => {
@@ -84,6 +89,13 @@ const isMonthOpen = (month) => {
     return openMonths.value[month] === false
 }
 
+const toggleAnticipated = (game) => {
+    router.post(`/premieres/${game.id}/anticipate`, {}, {
+        preserveScroll: true,
+        preserveState: true,
+    })
+}
+
 const formatDate = (date) => {
     if (!date) {
         return ''
@@ -93,7 +105,7 @@ const formatDate = (date) => {
         day: '2-digit',
         month: 'short',
         year: 'numeric',
-    })
+    }).toUpperCase()
 }
 </script>
 
@@ -116,6 +128,49 @@ const formatDate = (date) => {
                         Discover games releasing soon according to IGDB.
                     </p>
                 </div>
+
+                <section
+                    v-if="anticipatedGames.length"
+                    class="rounded-3xl border border-emerald-500/30 bg-emerald-500/5 p-6"
+                >
+                    <div>
+                        <p class="text-sm font-bold uppercase tracking-[0.2em] text-emerald-400">
+                            Your most anticipated
+                        </p>
+
+                        <h2 class="mt-2 text-2xl font-black text-white">
+                            Games you are waiting for
+                        </h2>
+                    </div>
+
+                    <div class="mt-5 grid gap-4 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8">
+                        <Link
+                            v-for="game in anticipatedGames"
+                            :key="game.id"
+                            :href="`/${game.slug}`"
+                            class="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 transition-all duration-200 hover:border-emerald-500/50 hover:bg-zinc-900"
+                        >
+                            <div class="aspect-[3/4] overflow-hidden bg-zinc-800">
+                                <img
+                                    :src="game.igdb_cover_url"
+                                    :alt="game.title"
+                                    loading="lazy"
+                                    class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                >
+                            </div>
+
+                            <div class="p-3">
+                                <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
+                                    {{ formatDate(game.release_date) }}
+                                </p>
+
+                                <h3 class="mt-1 line-clamp-2 text-sm font-bold leading-snug text-white group-hover:text-emerald-400">
+                                    {{ game.title }}
+                                </h3>
+                            </div>
+                        </Link>
+                    </div>
+                </section>
 
                 <div class="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-5">
                     <div class="flex items-center gap-4">
@@ -176,8 +231,20 @@ const formatDate = (date) => {
                                         v-for="game in monthGames"
                                         :key="game.id"
                                         :href="`/${game.slug}`"
-                                        class="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900"
+                                        class="group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900"
                                     >
+                                        <button
+                                            type="button"
+                                            class="absolute right-2 top-2 z-10 rounded-full border border-white/10 bg-black/70 p-2 text-white backdrop-blur transition hover:bg-emerald-500"
+                                            :class="game.is_anticipated ? 'bg-emerald-500 text-white' : ''"
+                                            @click.prevent.stop="toggleAnticipated(game)"
+                                        >
+                                            <Star
+                                                class="h-4 w-4"
+                                                :class="game.is_anticipated ? 'fill-current' : ''"
+                                            />
+                                        </button>
+
                                         <div class="aspect-[3/4] overflow-hidden bg-zinc-800">
                                             <img
                                                 :src="game.igdb_cover_url"
