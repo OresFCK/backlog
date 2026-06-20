@@ -30,6 +30,7 @@ use App\Http\Controllers\AccountSettingsController;
 use App\Http\Controllers\CuratorController;
 use App\Http\Controllers\PublicGameController;
 use App\Http\Controllers\CustomListController;
+use App\Http\Controllers\PublicGameSearchController;
 use App\Models\Game;
 use Illuminate\Support\Facades\Response;
 use App\Models\UserSubmission;
@@ -649,3 +650,6 @@ Route::get('/sitemap.xml', function () {
         'urls' => $urls,
     ])->header('Content-Type', 'application/xml');
 })->name('sitemap');
+
+Route::get('/public-games/search', [PublicGameSearchController::class, 'index'])
+    ->name('public-games.search');

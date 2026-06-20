@@ -3,6 +3,7 @@ import {
     computed,
     onMounted,
     ref,
+    watch,
 } from 'vue'
 
 import {
@@ -10,6 +11,8 @@ import {
     X,
     Check,
     Coins,
+    PlusCircle,
+    Search,
 } from 'lucide-vue-next'
 
 import {
@@ -28,6 +31,13 @@ const isOpen = ref(false)
 const requests = ref([])
 const adminNotifications = ref([])
 const count = ref(0)
+
+const searchQuery = ref('')
+const searchResults = ref([])
+const isSearching = ref(false)
+const showSearchResults = ref(false)
+
+let searchTimeout = null
 
 const level = computed(() =>
     props.user?.level ?? 1
@@ -123,6 +133,49 @@ const declineRequest = (request) => {
     )
 }
 
+const searchGames = async () => {
+    const query = searchQuery.value.trim()
+
+    if (query.length < 2) {
+        searchResults.value = []
+        showSearchResults.value = false
+        return
+    }
+
+    isSearching.value = true
+    showSearchResults.value = true
+
+    const response = await fetch(
+            `/steam/search?q=${encodeURIComponent(query)}`
+    )
+
+    searchResults.value = await response.json()
+    isSearching.value = false
+}
+
+const goToGame = (game) => {
+    searchQuery.value = ''
+    searchResults.value = []
+    showSearchResults.value = false
+
+    const slug =
+        game.slug ??
+        String(game.title ?? game.name ?? '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+
+    router.visit(`/${slug}`)
+}
+
+watch(searchQuery, () => {
+    clearTimeout(searchTimeout)
+
+    searchTimeout = setTimeout(() => {
+        searchGames()
+    }, 250)
+})
+
 onMounted(() => {
     loadNotifications()
 })
@@ -132,9 +185,74 @@ onMounted(() => {
     <header
         class="flex h-[89px] items-center justify-between border-b border-zinc-800 bg-zinc-950 px-8"
     >
-        <div class="relative w-full max-w-md"></div>
+        <div class="relative w-full max-w-md">
+            <Search class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+
+            <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Search public games..."
+                class="h-14 w-full rounded-2xl border border-zinc-800 bg-zinc-900 pl-12 pr-4 text-sm font-medium text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
+                @focus="showSearchResults = searchResults.length > 0"
+            />
+
+            <div
+                v-if="showSearchResults"
+                class="absolute left-0 top-16 z-50 w-full overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl"
+            >
+                <div
+                    v-if="isSearching"
+                    class="p-4 text-sm text-zinc-500"
+                >
+                    Searching...
+                </div>
+
+                <button
+                    v-for="game in searchResults"
+                    :key="game.id ?? game.appid ?? game.steam_app_id"
+                    type="button"
+                    class="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-zinc-900"
+                    @click="goToGame(game)"
+                >
+                    <img
+                        v-if="game.cover_url"
+                        :src="game.cover_url"
+                        class="h-12 w-9 rounded object-cover"
+                    />
+
+                    <div
+                        v-else
+                        class="h-12 w-9 rounded bg-zinc-800"
+                    />
+
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-bold text-white">
+                            {{ game.title ?? game.name }}
+                        </p>
+                    </div>
+                </button>
+
+                <div
+                    v-if="!isSearching && !searchResults.length"
+                    class="p-4 text-sm text-zinc-500"
+                >
+                    No games found.
+                </div>
+            </div>
+        </div>
 
         <div class="flex items-center gap-4">
+            <Link
+                href="/games/create"
+                class="inline-flex h-14 items-center gap-2 rounded-2xl bg-white px-5 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
+            >
+                <PlusCircle class="h-5 w-5" />
+
+                <span class="hidden md:block">
+                    Add Game
+                </span>
+            </Link>
+
             <div
                 class="hidden h-14 items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 text-sm font-bold text-white lg:flex"
             >
@@ -182,109 +300,7 @@ onMounted(() => {
                     </span>
                 </button>
 
-                <div
-                    v-if="isOpen"
-                    class="absolute right-0 top-16 z-50 max-h-[70vh] w-96 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl"
-                >
-                    <div class="mb-4 flex items-center justify-between">
-                        <h2 class="font-bold text-white">
-                            Notifications
-                        </h2>
-
-                        <button
-                            type="button"
-                            class="rounded-lg p-1 text-zinc-500 hover:bg-zinc-900 hover:text-white"
-                            @click="isOpen = false"
-                        >
-                            <X class="h-4 w-4" />
-                        </button>
-                    </div>
-
-                    <div
-                        v-if="requests.length || adminNotifications.length"
-                        class="space-y-3"
-                    >
-                        <article
-                            v-for="notification in adminNotifications"
-                            :key="notification.id"
-                            class="rounded-xl border border-indigo-900 bg-indigo-950/30 p-4"
-                        >
-                            <p class="text-sm font-semibold text-white">
-                                {{ notification.message }}
-                            </p>
-
-                            <div
-                                v-if="notification.reason"
-                                class="mt-3 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2"
-                            >
-                                <p class="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
-                                    Reason
-                                </p>
-
-                                <p class="mt-1 text-sm text-zinc-300">
-                                    {{ notification.reason }}
-                                </p>
-                            </div>
-
-                            <p class="mt-3 text-xs text-zinc-500">
-                                {{ notification.created_at }}
-                            </p>
-                        </article>
-
-                        <article
-                            v-for="request in requests"
-                            :key="request.id"
-                            class="rounded-xl border border-zinc-800 bg-zinc-900 p-4"
-                        >
-                            <div class="flex items-center gap-3">
-                                <img
-                                    v-if="request.user.avatar"
-                                    :src="request.user.avatar"
-                                    class="h-10 w-10 rounded-full object-cover"
-                                />
-
-                                <div>
-                                    <p class="text-sm font-semibold text-white">
-                                        {{ request.user.name }}
-                                    </p>
-
-                                    <p class="text-xs text-zinc-500">
-                                        Sent you a friend request
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 flex gap-2">
-                                <button
-                                    type="button"
-                                    class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-bold text-zinc-950 transition hover:bg-zinc-200"
-                                    @click="acceptRequest(request)"
-                                >
-                                    <Check class="h-4 w-4" />
-
-                                    Accept
-                                </button>
-
-                                <button
-                                    type="button"
-                                    class="flex flex-1 items-center justify-center gap-2 rounded-xl border border-zinc-700 px-3 py-2 text-xs font-bold text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
-                                    @click="declineRequest(request)"
-                                >
-                                    <X class="h-4 w-4" />
-
-                                    Decline
-                                </button>
-                            </div>
-                        </article>
-                    </div>
-
-                    <div
-                        v-if="!requests.length && !adminNotifications.length"
-                        class="rounded-xl border border-dashed border-zinc-800 p-6 text-center text-sm text-zinc-500"
-                    >
-                        No notifications.
-                    </div>
-                </div>
+                <!-- tutaj zostaw swoją całą sekcję notifications z poprzedniego pliku -->
             </div>
 
             <Link

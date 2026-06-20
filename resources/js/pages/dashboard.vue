@@ -214,14 +214,6 @@ const mappedGames = computed(() => {
                         </div>
 
                         <div class="flex flex-wrap items-center gap-4">
-                            <Link
-                                href="/games/create"
-                                class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
-                            >
-                                <PlusCircle class="h-5 w-5" />
-                                Add game
-                            </Link>
-
                             <button
                                 type="button"
                                 class="rounded-xl border border-zinc-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-900"
