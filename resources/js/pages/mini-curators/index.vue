@@ -1,19 +1,22 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
+
 import CuratorManager from '@/components/mini-curators/CuratorManager.vue'
 import FeedPost from '@/components/mini-curators/FeedPost.vue'
 import ReviewModal from '@/components/mini-curators/ReviewModal.vue'
 import ListModal from '@/components/mini-curators/ListModal.vue'
 
-defineProps({
+const props = defineProps({
     user: Object,
+
     curators: {
         type: Array,
         default: () => [],
     },
+
     feed: {
         type: Array,
         default: () => [],
@@ -21,8 +24,34 @@ defineProps({
 })
 
 const showCuratorManager = ref(false)
+
 const selectedReview = ref(null)
 const selectedList = ref(null)
+
+const contentTypeFilter = ref('all')
+const userFilter = ref('all')
+
+const feedUsers = computed(() =>
+    [...new Map(
+        props.feed
+            .filter((item) => item.user)
+            .map((item) => [item.user.id, item.user])
+    ).values()]
+)
+
+const filteredFeed = computed(() =>
+    props.feed.filter((item) => {
+        const matchesType =
+            contentTypeFilter.value === 'all'
+            || item.type === contentTypeFilter.value
+
+        const matchesUser =
+            userFilter.value === 'all'
+            || String(item.user?.id) === String(userFilter.value)
+
+        return matchesType && matchesUser
+    })
+)
 </script>
 
 <template>
@@ -58,23 +87,61 @@ const selectedList = ref(null)
                     :curators="curators"
                 />
 
-                <section class="min-h-[calc(100vh-230px)] rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
+                <section class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
                     <div class="flex items-center justify-between">
-                        <h2 class="text-xl font-bold">
-                            Wall
-                        </h2>
+                        <div>
+                            <h2 class="text-xl font-bold">
+                                Wall
+                            </h2>
 
-                        <p class="text-sm text-zinc-500">
-                            Only followed Mini Curators.
-                        </p>
+                            <p class="text-sm text-zinc-500">
+                                Only followed Mini Curators.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 flex flex-wrap gap-3">
+                        <select
+                            v-model="contentTypeFilter"
+                            class="rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                        >
+                            <option value="all">
+                                All content
+                            </option>
+
+                            <option value="review">
+                                Reviews
+                            </option>
+
+                            <option value="list">
+                                Custom Lists
+                            </option>
+                        </select>
+
+                        <select
+                            v-model="userFilter"
+                            class="rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                        >
+                            <option value="all">
+                                All users
+                            </option>
+
+                            <option
+                                v-for="feedUser in feedUsers"
+                                :key="feedUser.id"
+                                :value="feedUser.id"
+                            >
+                                {{ feedUser.name }}
+                            </option>
+                        </select>
                     </div>
 
                     <div
-                        v-if="feed.length"
+                        v-if="filteredFeed.length"
                         class="mt-6 space-y-4"
                     >
                         <FeedPost
-                            v-for="item in feed"
+                            v-for="item in filteredFeed"
                             :key="item.id"
                             :item="item"
                             @open-review="selectedReview = $event"
@@ -88,11 +155,11 @@ const selectedList = ref(null)
                     >
                         <div>
                             <p class="text-lg font-bold">
-                                Your wall is empty.
+                                No posts match your filters.
                             </p>
 
                             <p class="mt-2 text-sm text-zinc-500">
-                                Follow Mini Curators to see their reviews, lists and activity here.
+                                Try changing the selected content type or curator.
                             </p>
                         </div>
                     </div>

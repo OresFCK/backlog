@@ -1,6 +1,9 @@
 <script setup>
 import { computed, ref } from 'vue'
-
+import PageLoader from '@/components/layout/PageLoader.vue'
+import { pageLoading } from '@/stores/pageLoader'
+import { router } from '@inertiajs/vue3'
+import { onMounted, onUnmounted } from 'vue'
 import {
     Link,
     usePage,
@@ -69,6 +72,30 @@ const initialSection = computed(() => {
 })
 
 const activeSection = ref(initialSection.value)
+
+let timeout = null
+let removeStart = null
+let removeFinish = null
+
+onMounted(() => {
+    removeStart = router.on('start', () => {
+        timeout = setTimeout(() => {
+            pageLoading.value = true
+        }, 500)
+    })
+
+    removeFinish = router.on('finish', () => {
+        if (timeout) {
+            clearTimeout(timeout)
+        }
+        pageLoading.value = false
+    })
+})
+
+onUnmounted(() => {
+    removeStart?.()
+    removeFinish?.()
+})
 
 const toggleSection = (section) => {
     activeSection.value = activeSection.value === section
@@ -206,6 +233,8 @@ const settingsItems = [
 </script>
 
 <template>
+    <PageLoader :visible="pageLoading" />
+
     <aside class="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-zinc-800 bg-zinc-950">
         <div class="flex h-[89px] flex-col justify-center border-b border-zinc-800 px-6">
             <h1 class="text-2xl font-bold tracking-tight text-white">
