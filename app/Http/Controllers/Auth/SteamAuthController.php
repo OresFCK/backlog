@@ -31,7 +31,7 @@ class SteamAuthController extends Controller
     public function callback(Request $request, SteamService $steamService)
     {
         if ($request->input('openid_mode') !== 'id_res') {
-            return redirect('/login');
+            return redirect('/home');
         }
 
         $params = [];
@@ -48,7 +48,7 @@ class SteamAuthController extends Controller
         );
 
         if (! str_contains($response->body(), 'is_valid:true')) {
-            return redirect('/login');
+            return redirect('/home');
         }
 
         $claimedId = $request->input('openid_claimed_id');
@@ -58,7 +58,7 @@ class SteamAuthController extends Controller
         $steamId = $matches[1] ?? null;
 
         if (! $steamId) {
-            return redirect('/login');
+            return redirect('/home ');
         }
 
         $profile = $steamService->getPlayerSummary($steamId);

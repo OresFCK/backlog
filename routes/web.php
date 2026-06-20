@@ -43,7 +43,7 @@ use Inertia\Inertia;
 Route::redirect('/', '/home');
 
 Route::inertia('/home', 'home')->name('home');
-Route::inertia('/login', 'auth/login')->name('login');
+Route::inertia('/home', 'auth/home')->name('login');
 
 Route::inertia('/terms', 'terms')->name('terms');
 Route::inertia('/privacy', 'privacy')->name('privacy');
