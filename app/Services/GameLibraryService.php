@@ -10,7 +10,7 @@ use App\Models\User;
 use App\Models\UserGameMeta;
 use App\Models\UserSteamGame;
 use App\Helpers\CacheKeys;
-use App\Support\UserCache;
+use App\Helpers\UserCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;

@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Http\Requests\StoreCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Helpers\CacheKeys;
-use App\Support\UserCache;
+use App\Helpers\UserCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;

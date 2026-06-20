@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Models\UserGameMeta;
 use App\Helpers\CacheKeys;
-use App\Support\UserCache;
+use App\Helpers\UserCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
