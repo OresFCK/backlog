@@ -22,6 +22,8 @@ use App\Http\Controllers\UserConnectionController;
 use App\Http\Controllers\WardrobeController;
 use App\Http\Requests\StoreCustomGameRequest;
 use App\Http\Requests\StoreCustomLabelRequest;
+use App\Http\Requests\UpdateCustomLabelRequest;
+use App\Models\CustomStatus;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
@@ -111,7 +113,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/premieres/month/{month}', [PremiereController::class, 'month'])
         ->name('premieres.month');
-
 
     Route::post('/premieres/{gameId}/anticipate', [
         AnticipatedGameController::class,
@@ -258,6 +259,20 @@ Route::middleware('auth')->group(function () {
             Route::post('/labels', fn (
                 StoreCustomLabelRequest $request
             ) => Payload::storeCustomLabel($request))->name('labels.store');
+
+            Route::put('/labels/{customLabel}', fn (
+                UpdateCustomLabelRequest $request,
+                CustomStatus $customLabel
+            ) => Payload::updateCustomLabel(
+                $request,
+                $customLabel
+            ))->name('labels.update');
+
+            Route::delete('/labels/{customLabel}', fn (
+                CustomStatus $customLabel
+            ) => Payload::deleteCustomLabel(
+                $customLabel
+            ))->name('labels.destroy');
 
             Route::get('/report-bug', [
                 UserSubmissionController::class,

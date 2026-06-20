@@ -4,11 +4,13 @@ namespace App\Helpers;
 
 use App\Http\Requests\StoreCustomGameRequest;
 use App\Http\Requests\StoreCustomLabelRequest;
+use App\Http\Requests\UpdateCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Models\PublicReview;
 use App\Models\PublicReviewReport;
 use App\Models\User;
+use App\Models\CustomStatus;
 use App\Models\UserGameMeta;
 use App\Models\UserShopItem;
 use App\Services\GameDetailsService;
@@ -313,6 +315,30 @@ class PayloadHelper
         self::flushUserCache(Auth::id());
 
         return $response;
+    }
+
+    public static function updateCustomLabel(
+        UpdateCustomLabelRequest $request,
+        CustomStatus $customLabel
+    ): RedirectResponse {
+        $customLabel->update([
+            'name' => $request->name,
+            'color' => $request->color,
+        ]);
+
+        self::flushUserCache(Auth::id());
+
+        return back();
+    }
+
+    public static function deleteCustomLabel(
+        CustomStatus $customLabel
+    ): RedirectResponse {
+        $customLabel->delete();
+
+        self::flushUserCache(Auth::id());
+
+        return back();
     }
 
     public static function storeStatus(
