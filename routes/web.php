@@ -31,6 +31,7 @@ use App\Http\Controllers\CuratorController;
 use App\Http\Controllers\PublicGameController;
 use App\Http\Controllers\CustomListController;
 use App\Http\Controllers\PublicGameSearchController;
+use App\Http\Controllers\PremiereController;
 use App\Models\Game;
 use Illuminate\Support\Facades\Response;
 use App\Models\UserSubmission;
@@ -100,6 +101,9 @@ Route::middleware('auth')->group(function () {
         CuratorController::class,
         'showGame',
     ])->name('curators.game');
+
+    Route::get('/premieres', [PremiereController::class, 'index'])
+        ->name('premieres.index');
 
     Route::get('/backlog', fn (SteamService $steam) =>
         Inertia::render('backlog/index', Payload::backlogPageData($steam))

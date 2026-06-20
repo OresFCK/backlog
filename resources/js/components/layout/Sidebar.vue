@@ -14,7 +14,7 @@ import {
     Ban,
     Sparkles,
     Star,
-    PlusCircle,
+    CalendarDays,
     ChevronDown,
     Settings,
     Tags,
@@ -33,6 +33,13 @@ import {
 const page = usePage()
 
 const initialSection = computed(() => {
+    if (
+        ['/curators', '/premieres']
+            .some(route => page.url.startsWith(route))
+    ) {
+        return 'curators'
+    }
+
     if (
         ['/backlog', '/playing', '/finished', '/dropped', '/stats']
             .some(route => page.url.startsWith(route))
@@ -90,10 +97,18 @@ const mainItems = [
         href: '/recommendations',
         icon: Sparkles,
     },
+]
+
+const curatorsItems = [
     {
         label: 'Curators Index',
         href: '/curators',
         icon: Star,
+    },
+    {
+        label: 'Premieres',
+        href: '/premieres',
+        icon: CalendarDays,
     },
 ]
 
@@ -213,6 +228,50 @@ const settingsItems = [
 
                     <span>{{ item.label }}</span>
                 </Link>
+            </div>
+
+            <div class="mt-8">
+                <button
+                    type="button"
+                    :class="sectionButtonClass"
+                    @click="toggleSection('curators')"
+                >
+                    <span>Curators</span>
+
+                    <ChevronDown
+                        class="h-4 w-4 transition-transform duration-200"
+                        :class="isSectionOpen('curators') ? 'rotate-180' : ''"
+                    />
+                </button>
+
+                <Transition
+                    enter-active-class="transition-all duration-200"
+                    enter-from-class="opacity-0 -translate-y-1"
+                    enter-to-class="opacity-100 translate-y-0"
+                    leave-active-class="transition-all duration-150"
+                    leave-from-class="opacity-100 translate-y-0"
+                    leave-to-class="opacity-0 -translate-y-1"
+                >
+                    <div
+                        v-if="isSectionOpen('curators')"
+                        class="space-y-2 border-l border-zinc-800 pl-3"
+                    >
+                        <Link
+                            v-for="item in curatorsItems"
+                            :key="item.href"
+                            :href="item.href"
+                            class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200"
+                            :class="navItemClass(item.href)"
+                        >
+                            <component
+                                :is="item.icon"
+                                class="h-5 w-5 shrink-0"
+                            />
+
+                            <span>{{ item.label }}</span>
+                        </Link>
+                    </div>
+                </Transition>
             </div>
 
             <div class="mt-8">

@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Helpers\GameTitleNormalizer;
 use App\Models\Game;
 use App\Services\IgdbDumpService;
+use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -39,6 +40,7 @@ class ImportIgdbGamesCsv implements ShouldQueue
         while (($row = fgetcsv($handle)) !== false) {
             if (count($row) !== count($headers)) {
                 $skipped++;
+
                 continue;
             }
 
@@ -60,9 +62,9 @@ class ImportIgdbGamesCsv implements ShouldQueue
                     ? (int) $data['cover']
                     : null,
 
-                'release_date' => ! empty($data['first_release_date'])
-                    ? date('Y-m-d', (int) $data['first_release_date'])
-                    : null,
+                'release_date' => $this->parseReleaseDate(
+                    $data['first_release_date'] ?? null
+                ),
 
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -70,6 +72,7 @@ class ImportIgdbGamesCsv implements ShouldQueue
 
             if (count($batch) >= 1000) {
                 $this->upsertBatch($batch);
+
                 $batch = [];
             }
         }
@@ -83,6 +86,32 @@ class ImportIgdbGamesCsv implements ShouldQueue
         Log::info('IGDB games import finished', [
             'skipped_rows' => $skipped,
         ]);
+    }
+
+    private function parseReleaseDate(?string $value): ?string
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        if (is_numeric($value)) {
+            $timestamp = (int) $value;
+
+            if ($timestamp <= 0) {
+                return null;
+            }
+
+            return Carbon::createFromTimestamp(
+                $timestamp
+            )->toDateString();
+        }
+
+        try {
+            return Carbon::parse($value)
+                ->toDateString();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private function upsertBatch(array $batch): void
