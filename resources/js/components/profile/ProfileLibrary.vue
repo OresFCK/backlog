@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { Link } from '@inertiajs/vue3'
 import { normalizeStatus, ratingStars, statusColor } from '@/lib/profile'
 
 const props = defineProps({
@@ -22,6 +23,16 @@ const openStatuses = ref({})
 const statuses = computed(() =>
     Object.keys(props.groupedGames ?? {})
 )
+
+const gameUrl = (game) => {
+    const id =
+        game.id ??
+        game.appid ??
+        game.steam_app_id ??
+        game.database_id
+
+    return `/games/${id}`
+}
 
 const filteredGames = computed(() => {
     return props.games.filter((game) => {
@@ -196,10 +207,11 @@ const clearFilters = () => {
                     v-if="openStatuses[status]"
                     class="grid gap-4 border-t border-zinc-800 p-4 md:grid-cols-2 2xl:grid-cols-3"
                 >
-                    <div
+                    <Link
                         v-for="game in statusGames"
-                        :key="game.id"
-                        class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900"
+                        :key="game.id ?? game.appid ?? game.steam_app_id ?? game.database_id"
+                        :href="gameUrl(game)"
+                        class="block overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition hover:border-zinc-600 hover:bg-zinc-800"
                     >
                         <img
                             v-if="game.cover_url"
@@ -208,7 +220,7 @@ const clearFilters = () => {
                         />
 
                         <div class="p-4">
-                            <h3 class="truncate font-semibold">
+                            <h3 class="truncate font-semibold text-white">
                                 {{ game.title ?? game.name }}
                             </h3>
 
@@ -240,7 +252,7 @@ const clearFilters = () => {
                                 {{ game.updated_at ?? 'No updates' }}
                             </p>
                         </div>
-                    </div>
+                    </Link>
                 </div>
             </div>
         </div>
