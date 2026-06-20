@@ -107,9 +107,53 @@ class CustomListController extends Controller
 
         return Inertia::render('lists/show', [
             'user' => Payload::currentUser(),
-            'list' => $list->load('items'),
+            'list' => $list->load(['items' => fn ($query) => $query->orderBy('position')]),
             'games' => $libraryGames,
         ]);
+    }
+
+    public function update(Request $request, CustomList $list): RedirectResponse
+    {
+        abort_if($list->user_id !== Auth::id(), 403);
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:120'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'visibility' => ['required', 'in:public,friends,private'],
+        ]);
+
+        $baseSlug = Str::slug($data['title']) ?: 'list';
+        $slug = $baseSlug;
+        $counter = 2;
+
+        while (
+            CustomList::query()
+                ->where('user_id', Auth::id())
+                ->where('id', '!=', $list->id)
+                ->where('slug', $slug)
+                ->exists()
+        ) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        $list->update([
+            'title' => $data['title'],
+            'slug' => $slug,
+            'description' => $data['description'] ?? null,
+            'visibility' => $data['visibility'],
+        ]);
+
+        return back();
+    }
+
+    public function destroy(CustomList $list): RedirectResponse
+    {
+        abort_if($list->user_id !== Auth::id(), 403);
+
+        $list->delete();
+
+        return redirect()->route('lists.index');
     }
 
     public function storeItem(

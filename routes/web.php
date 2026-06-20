@@ -215,6 +215,12 @@ Route::middleware('auth')->group(function () {
             CustomListController::class,
             'destroyItem',
         ])->name('items.destroy');
+
+        Route::patch('/{list}', [CustomListController::class, 'update'])
+            ->name('lists.update');
+
+        Route::delete('/{list}', [CustomListController::class, 'destroy'])
+            ->name('lists.destroy');
     });
 
     Route::post('/statuses', fn (

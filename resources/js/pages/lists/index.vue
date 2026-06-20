@@ -20,6 +20,14 @@ const form = ref({
     visibility: 'private',
 })
 
+const editingListId = ref(null)
+
+const editForm = ref({
+    title: '',
+    description: '',
+    visibility: 'private',
+})
+
 const createList = () => {
     router.post('/lists', form.value, {
         preserveScroll: true,
@@ -30,6 +38,45 @@ const createList = () => {
                 visibility: 'private',
             }
         },
+    })
+}
+
+const startEditing = (list) => {
+    editingListId.value = list.id
+
+    editForm.value = {
+        title: list.title,
+        description: list.description || '',
+        visibility: list.visibility,
+    }
+}
+
+const cancelEditing = () => {
+    editingListId.value = null
+
+    editForm.value = {
+        title: '',
+        description: '',
+        visibility: 'private',
+    }
+}
+
+const updateList = (list) => {
+    router.patch(`/lists/${list.id}`, editForm.value, {
+        preserveScroll: true,
+        onSuccess: () => {
+            cancelEditing()
+        },
+    })
+}
+
+const deleteList = (list) => {
+    if (!confirm(`Usunąć listę "${list.title}"?`)) {
+        return
+    }
+
+    router.delete(`/lists/${list.id}`, {
+        preserveScroll: true,
     })
 }
 </script>
@@ -120,32 +167,106 @@ const createList = () => {
                             v-if="lists.length"
                             class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
                         >
-                            <Link
+                            <div
                                 v-for="list in lists"
                                 :key="list.id"
-                                :href="`/lists/${list.id}`"
                                 class="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-600 hover:bg-zinc-900"
                             >
-                                <div class="flex items-start justify-between gap-4">
-                                    <div>
-                                        <h3 class="font-black text-white">
-                                            {{ list.title }}
-                                        </h3>
+                                <form
+                                    v-if="editingListId === list.id"
+                                    class="space-y-4"
+                                    @submit.prevent="updateList(list)"
+                                >
+                                    <input
+                                        v-model="editForm.title"
+                                        type="text"
+                                        required
+                                        class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-500"
+                                    />
 
-                                        <p class="mt-2 line-clamp-2 text-sm text-zinc-400">
-                                            {{ list.description || 'No description yet.' }}
-                                        </p>
+                                    <textarea
+                                        v-model="editForm.description"
+                                        rows="4"
+                                        class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-500"
+                                    />
+
+                                    <select
+                                        v-model="editForm.visibility"
+                                        class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
+                                    >
+                                        <option value="public">
+                                            Public
+                                        </option>
+
+                                        <option value="friends">
+                                            Friends Only
+                                        </option>
+
+                                        <option value="private">
+                                            Private
+                                        </option>
+                                    </select>
+
+                                    <div class="flex gap-2">
+                                        <button
+                                            type="submit"
+                                            class="flex-1 rounded-xl bg-white px-4 py-2 text-sm font-black text-zinc-950 transition hover:bg-zinc-200"
+                                        >
+                                            Save
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="flex-1 rounded-xl border border-zinc-700 px-4 py-2 text-sm font-bold text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                                            @click="cancelEditing"
+                                        >
+                                            Cancel
+                                        </button>
                                     </div>
+                                </form>
 
-                                    <span class="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-                                        {{ list.visibility }}
-                                    </span>
-                                </div>
+                                <template v-else>
+                                    <Link :href="`/lists/${list.id}`">
+                                        <div class="flex items-start justify-between gap-4">
+                                            <div>
+                                                <h3 class="font-black text-white">
+                                                    {{ list.title }}
+                                                </h3>
 
-                                <p class="mt-5 text-sm text-zinc-500">
-                                    {{ list.items_count }} games
-                                </p>
-                            </Link>
+                                                <p class="mt-2 line-clamp-2 text-sm text-zinc-400">
+                                                    {{ list.description || 'No description yet.' }}
+                                                </p>
+                                            </div>
+
+                                            <span class="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
+                                                {{ list.visibility }}
+                                            </span>
+                                        </div>
+
+                                        <p class="mt-5 text-sm text-zinc-500">
+                                            {{ list.items_count }} games
+                                        </p>
+                                    </Link>
+
+                                    <div class="mt-5 flex gap-2">
+                                        <button
+                                            type="button"
+                                            class="flex-1 rounded-xl border border-zinc-700 px-4 py-2 text-sm font-bold text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                                            @click="startEditing(list)"
+                                        >
+                                            Edit
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="flex-1 rounded-xl border border-red-900/70 px-4 py-2 text-sm font-bold text-red-400 transition hover:border-red-700 hover:bg-red-950/40"
+                                            @click="deleteList(list)"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
 
                         <div
