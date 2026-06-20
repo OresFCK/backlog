@@ -28,6 +28,7 @@ class User extends Authenticatable
         'profile_level_multiplier_enabled',
         'xp_multiplier',
         'is_admin',
+        'is_curator',
         'coins',
     ];
 
@@ -42,6 +43,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'is_curator' => 'boolean',
             'coins' => 'integer',
         ];
     }
@@ -94,7 +96,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(ActivityLog::class);
     }
-    
+
     public function steamGames()
     {
         return $this->hasMany(\App\Models\UserSteamGame::class);

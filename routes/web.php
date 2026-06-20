@@ -33,7 +33,10 @@ use App\Http\Controllers\PublicGameController;
 use App\Http\Controllers\CustomListController;
 use App\Http\Controllers\PublicGameSearchController;
 use App\Http\Controllers\PremiereController;
+use App\Http\Controllers\MiniCuratorController;
 use App\Models\Game;
+use Illuminate\Support\Facades\Cache;
+use App\Helpers\CacheKeys;
 use Illuminate\Support\Facades\Response;
 use App\Models\UserSubmission;
 use App\Models\User;
@@ -278,6 +281,23 @@ Route::middleware('auth')->group(function () {
             ])->name('account.update');
         });
 
+    Route::middleware('auth')->group(function () {
+        Route::get('/mini-curators', [
+            MiniCuratorController::class,
+            'index',
+        ])->name('mini-curators.index');
+
+        Route::post('/mini-curators/{user}/follow', [
+            MiniCuratorController::class,
+            'follow',
+        ])->name('mini-curators.follow');
+
+        Route::delete('/mini-curators/{user}/follow', [
+            MiniCuratorController::class,
+            'unfollow',
+        ])->name('mini-curators.unfollow');
+    });
+
     Route::prefix('profile')
         ->name('profile.')
         ->group(function () {
@@ -309,6 +329,15 @@ Route::middleware('auth')->group(function () {
 
                 return back();
             })->name('banner.update');
+
+            Route::patch('/curator', function () {
+                $user = auth()->user();
+                $user->update([
+                    'is_curator' => ! $user->is_curator,
+                ]);
+                Cache::forget(CacheKeys::profilePage($user->id));
+                return back();
+            })->name('curator.toggle');
         });
 
     Route::prefix('reviews')

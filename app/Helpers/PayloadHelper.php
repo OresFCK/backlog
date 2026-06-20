@@ -211,6 +211,7 @@ class PayloadHelper
             'level' => $level,
             'xp_for_current_level' => LevelSystem::xpForNextLevel($level - 1),
             'xp_for_next_level' => LevelSystem::xpForNextLevel($level),
+            'is_curator' => $user->is_curator,
         ];
     }
 

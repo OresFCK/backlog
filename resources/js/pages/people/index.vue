@@ -284,17 +284,6 @@ const removeConnection = (connection) => {
                                     Request sent
                                 </span>
 
-                                <button
-                                    v-if="! result.is_following"
-                                    type="button"
-                                    class="flex items-center gap-2 rounded-xl border border-zinc-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-zinc-800"
-                                    @click="addConnection(result.id, 'follow')"
-                                >
-                                    <Eye class="h-4 w-4" />
-
-                                    Follow
-                                </button>
-
                                 <span
                                     v-else
                                     class="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-bold text-zinc-400"
@@ -317,7 +306,7 @@ const removeConnection = (connection) => {
                     </div>
                 </section>
 
-                <div class="mt-10 grid gap-8 lg:grid-cols-2">
+                <div class="mt-10 grid gap-8">
                     <section>
                         <h2 class="mb-4 text-2xl font-black text-white">
                             Friends
@@ -361,53 +350,6 @@ const removeConnection = (connection) => {
                                 class="rounded-2xl border border-dashed border-zinc-800 p-10 text-center text-zinc-500"
                             >
                                 No friends yet.
-                            </div>
-                        </div>
-                    </section>
-
-                    <section>
-                        <h2 class="mb-4 text-2xl font-black text-white">
-                            Following
-                        </h2>
-
-                        <div class="space-y-4">
-                            <article
-                                v-for="connection in followed"
-                                :key="connection.id"
-                                class="flex items-center justify-between gap-4 rounded-2xl border border-zinc-800 bg-zinc-900 p-5"
-                            >
-                                <div class="flex items-center gap-4">
-                                    <img
-                                        v-if="connection.user.avatar"
-                                        :src="connection.user.avatar"
-                                        class="h-12 w-12 rounded-2xl object-cover"
-                                    />
-
-                                    <div>
-                                        <p class="font-bold text-white">
-                                            {{ connection.user.name }}
-                                        </p>
-
-                                        <p class="text-sm text-zinc-500">
-                                            {{ connection.user.steam_id }}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    class="rounded-xl p-2 text-zinc-500 transition hover:bg-zinc-800 hover:text-red-300"
-                                    @click="removeConnection(connection)"
-                                >
-                                    <Trash2 class="h-5 w-5" />
-                                </button>
-                            </article>
-
-                            <div
-                                v-if="! followed.length"
-                                class="rounded-2xl border border-dashed border-zinc-800 p-10 text-center text-zinc-500"
-                            >
-                                You are not following anyone yet.
                             </div>
                         </div>
                     </section>

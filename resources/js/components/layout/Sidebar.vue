@@ -34,7 +34,7 @@ const page = usePage()
 
 const initialSection = computed(() => {
     if (
-        ['/curators', '/premieres']
+        ['/curators', '/mini-curators', '/premieres']
             .some(route => page.url.startsWith(route))
     ) {
         return 'curators'
@@ -104,6 +104,11 @@ const curatorsItems = [
         label: 'Curators Index',
         href: '/curators',
         icon: Star,
+    },
+    {
+        label: 'Mini Curators',
+        href: '/mini-curators',
+        icon: Users,
     },
     {
         label: 'Premieres',

@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { router } from '@inertiajs/vue3'
 import { Check, Copy } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -20,6 +21,18 @@ const copyPublicProfileLink = async () => {
     setTimeout(() => {
         copied.value = false
     }, 2000)
+}
+
+const toggleCurator = () => {
+    router.patch('/profile/curator', {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            router.reload({
+                only: ['user'],
+                preserveScroll: true,
+            })
+        },
+    })
 }
 </script>
 
@@ -106,6 +119,23 @@ const copyPublicProfileLink = async () => {
                     >
                         Open Wardrobe
                     </a>
+
+                    <button
+                        type="button"
+                        :class="[
+                            'inline-flex rounded-xl px-5 py-3 text-sm font-bold backdrop-blur transition',
+                            user?.is_curator
+                                ? 'border border-red-700 bg-red-950/60 text-red-200 hover:bg-red-900/70'
+                                : 'border border-purple-700 bg-purple-950/60 text-purple-200 hover:bg-purple-900/70',
+                        ]"
+                        @click="toggleCurator"
+                    >
+                        {{
+                            user?.is_curator
+                                ? 'Disable Mini Curator'
+                                : 'Enable Mini Curator'
+                        }}
+                    </button>
 
                     <button
                         type="button"

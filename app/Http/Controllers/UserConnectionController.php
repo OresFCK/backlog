@@ -264,6 +264,7 @@ class UserConnectionController extends Controller
             'xp' => $user->xp ?? 0,
             'xp_for_current_level' => LevelSystem::xpForNextLevel($level - 1),
             'xp_for_next_level' => LevelSystem::xpForNextLevel($level),
+            'is_curator' => $user->is_curator,
         ];
     }
 
