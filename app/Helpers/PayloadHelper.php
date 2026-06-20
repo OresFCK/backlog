@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Models\PublicReview;
+use App\Models\CustomList;
 use App\Models\PublicReviewReport;
 use App\Models\User;
 use App\Models\CustomStatus;
@@ -84,6 +85,7 @@ class PayloadHelper
                     'featuredGames' => self::featuredGames($user, $games),
                     'featuredReviews' => self::featuredReviews($user),
                     'featuredWardrobeItems' => self::featuredWardrobeItems($user),
+                    'publicCustomLists' => self::publicCustomLists($user),
                 ];
             }
         );
@@ -543,5 +545,25 @@ class PayloadHelper
     private static function status(): StatusService
     {
         return app(StatusService::class);
+    }
+
+    private static function publicCustomLists(User $user): array
+    {
+        return CustomList::query()
+            ->withCount('items')
+            ->where('user_id', $user->id)
+            ->where('visibility', 'public')
+            ->latest()
+            ->get()
+            ->map(fn (CustomList $list) => [
+                'id' => $list->id,
+                'title' => $list->title,
+                'slug' => $list->slug,
+                'description' => $list->description,
+                'items_count' => $list->items_count,
+                'created_at' => $list->created_at?->diffForHumans(),
+            ])
+            ->values()
+            ->toArray();
     }
 }

@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
+import { X } from 'lucide-vue-next'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
@@ -19,6 +20,7 @@ const props = defineProps({
 
 const searchQuery = ref('')
 const showCuratorManager = ref(false)
+const selectedReview = ref(null)
 
 const filteredCurators = computed(() => {
     const query = searchQuery.value.trim().toLowerCase()
@@ -47,6 +49,14 @@ const unfollow = (curator) => {
     router.delete(`/mini-curators/${curator.id}/follow`, {
         preserveScroll: true,
     })
+}
+
+function openReview(item) {
+    selectedReview.value = item
+}
+
+function closeReview() {
+    selectedReview.value = null
 }
 </script>
 
@@ -110,27 +120,32 @@ const unfollow = (curator) => {
                             :key="curator.id"
                             class="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3"
                         >
-                            <img
-                                v-if="curator.avatar"
-                                :src="curator.avatar"
-                                :alt="curator.name"
-                                class="h-11 w-11 rounded-xl object-cover"
-                            />
+                            <Link
+                                :href="`/u/${curator.steam_id}`"
+                                class="flex min-w-0 flex-1 items-center gap-3"
+                            >
+                                <img
+                                    v-if="curator.avatar"
+                                    :src="curator.avatar"
+                                    :alt="curator.name"
+                                    class="h-11 w-11 rounded-xl object-cover transition hover:opacity-80"
+                                />
 
-                            <div
-                                v-else
-                                class="h-11 w-11 rounded-xl bg-zinc-800"
-                            />
+                                <div
+                                    v-else
+                                    class="h-11 w-11 rounded-xl bg-zinc-800 transition hover:bg-zinc-700"
+                                />
 
-                            <div class="min-w-0 flex-1">
-                                <p class="truncate font-bold">
-                                    {{ curator.name }}
-                                </p>
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate font-bold hover:text-indigo-300">
+                                        {{ curator.name }}
+                                    </p>
 
-                                <p class="truncate text-xs text-zinc-500">
-                                    {{ curator.steam_id }}
-                                </p>
-                            </div>
+                                    <p class="truncate text-xs text-zinc-500">
+                                        {{ curator.steam_id }}
+                                    </p>
+                                </div>
+                            </Link>
 
                             <button
                                 v-if="curator.is_following"
@@ -151,18 +166,9 @@ const unfollow = (curator) => {
                             </button>
                         </div>
                     </div>
-
-                    <p
-                        v-else
-                        class="mt-5 rounded-2xl border border-dashed border-zinc-700 p-6 text-center text-sm text-zinc-500"
-                    >
-                        No Mini Curators found.
-                    </p>
                 </section>
 
-                <section
-                    class="min-h-[calc(100vh-230px)] rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
-                >
+                <section class="min-h-[calc(100vh-230px)] rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
                     <div class="flex items-center justify-between">
                         <h2 class="text-xl font-bold">
                             Wall
@@ -183,12 +189,22 @@ const unfollow = (curator) => {
                             class="rounded-2xl border border-zinc-800 bg-zinc-950 p-5"
                         >
                             <div class="flex items-center gap-3">
-                                <img
-                                    v-if="item.user.avatar"
-                                    :src="item.user.avatar"
-                                    :alt="item.user.name"
-                                    class="h-10 w-10 rounded-xl object-cover"
-                                />
+                                <Link
+                                    v-if="item.user?.steam_id"
+                                    :href="`/u/${item.user.steam_id}`"
+                                >
+                                    <img
+                                        v-if="item.user.avatar"
+                                        :src="item.user.avatar"
+                                        :alt="item.user.name"
+                                        class="h-10 w-10 rounded-xl object-cover transition hover:opacity-80"
+                                    />
+
+                                    <div
+                                        v-else
+                                        class="h-10 w-10 rounded-xl bg-zinc-800 transition hover:bg-zinc-700"
+                                    />
+                                </Link>
 
                                 <div
                                     v-else
@@ -196,7 +212,18 @@ const unfollow = (curator) => {
                                 />
 
                                 <div>
-                                    <p class="font-bold">
+                                    <Link
+                                        v-if="item.user?.steam_id"
+                                        :href="`/u/${item.user.steam_id}`"
+                                        class="font-bold hover:text-indigo-300"
+                                    >
+                                        {{ item.user.name }}
+                                    </Link>
+
+                                    <p
+                                        v-else
+                                        class="font-bold"
+                                    >
                                         {{ item.user.name }}
                                     </p>
 
@@ -235,26 +262,95 @@ const unfollow = (curator) => {
                                 >
                                     {{ item.description }}
                                 </p>
+
+                                <button
+                                    v-if="item.type === 'review'"
+                                    type="button"
+                                    class="mt-4 rounded-xl bg-white px-4 py-2 text-sm font-bold text-black transition hover:bg-zinc-200"
+                                    @click="openReview(item)"
+                                >
+                                    Read more
+                                </button>
                             </div>
                         </article>
                     </div>
+                </section>
+            </main>
+        </div>
 
-                    <div
-                        v-else
-                        class="mt-6 flex min-h-[420px] items-center justify-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-950 p-10 text-center"
+        <div
+            v-if="selectedReview"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
+            @click.self="closeReview"
+        >
+            <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl">
+                <div class="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-950/95 p-5 backdrop-blur">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-purple-300">
+                            Review
+                        </p>
+
+                        <h2 class="mt-1 text-2xl font-black">
+                            {{ selectedReview.title }}
+                        </h2>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="rounded-xl bg-zinc-800 p-2 text-zinc-300 transition hover:bg-zinc-700 hover:text-white"
+                        @click="closeReview"
                     >
+                        <X class="h-5 w-5" />
+                    </button>
+                </div>
+
+                <div class="p-6">
+                    <div class="mb-5 flex items-center gap-3">
+                        <img
+                            v-if="selectedReview.user?.avatar"
+                            :src="selectedReview.user.avatar"
+                            :alt="selectedReview.user.name"
+                            class="h-11 w-11 rounded-xl object-cover"
+                        />
+
+                        <div
+                            v-else
+                            class="h-11 w-11 rounded-xl bg-zinc-800"
+                        />
+
                         <div>
-                            <p class="text-lg font-bold">
-                                Your wall is empty.
+                            <p class="font-bold">
+                                {{ selectedReview.user?.name }}
                             </p>
 
-                            <p class="mt-2 text-sm text-zinc-500">
-                                Follow Mini Curators to see their reviews, lists and activity here.
+                            <p class="text-xs text-zinc-500">
+                                {{ selectedReview.created_at_human }}
                             </p>
                         </div>
                     </div>
-                </section>
-            </main>
+
+                    <p
+                        v-if="selectedReview.game_title"
+                        class="text-sm font-bold text-indigo-300"
+                    >
+                        {{ selectedReview.game_title }}
+                    </p>
+
+                    <img
+                        v-if="selectedReview.screenshot_url"
+                        :src="selectedReview.screenshot_url"
+                        :alt="selectedReview.title"
+                        class="mt-5 max-h-[520px] w-full rounded-2xl border border-zinc-800 object-cover"
+                    />
+
+                    <p
+                        v-if="selectedReview.body"
+                        class="mt-6 whitespace-pre-line text-sm leading-7 text-zinc-200"
+                    >
+                        {{ selectedReview.body }}
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 </template>

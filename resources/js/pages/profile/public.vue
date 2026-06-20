@@ -1,5 +1,6 @@
 <script setup>
 import {
+    List,
     Package,
     Star,
     ThumbsUp,
@@ -20,6 +21,11 @@ defineProps({
     },
 
     featuredWardrobeItems: {
+        type: Array,
+        default: () => [],
+    },
+
+    publicCustomLists: {
         type: Array,
         default: () => [],
     },
@@ -251,6 +257,82 @@ defineProps({
 
                     <p class="mt-2 text-zinc-500">
                         This user has not featured any reviews yet.
+                    </p>
+                </div>
+            </section>
+
+            <section class="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-2xl shadow-black/20">
+                <div class="mb-6 flex items-end justify-between gap-4">
+                    <div>
+                        <h2 class="text-3xl font-black">
+                            Public Custom Lists
+                        </h2>
+
+                        <p class="mt-1 text-sm text-zinc-500">
+                            Public lists created by this user.
+                        </p>
+                    </div>
+
+                    <span class="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1 text-xs font-bold text-zinc-400">
+                        {{ publicCustomLists.length }} public
+                    </span>
+                </div>
+
+                <div
+                    v-if="publicCustomLists.length"
+                    class="grid gap-5 md:grid-cols-2 xl:grid-cols-3"
+                >
+                    <article
+                        v-for="list in publicCustomLists"
+                        :key="list.id"
+                        class="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 transition hover:-translate-y-1 hover:border-zinc-700"
+                    >
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-300">
+                                <List class="h-6 w-6" />
+                            </div>
+
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-widest text-indigo-300">
+                                    Custom List
+                                </p>
+
+                                <h3 class="mt-1 text-2xl font-black">
+                                    {{ list.title }}
+                                </h3>
+                            </div>
+                        </div>
+
+                        <p
+                            v-if="list.description"
+                            class="mt-4 line-clamp-4 text-sm leading-6 text-zinc-300"
+                        >
+                            {{ list.description }}
+                        </p>
+
+                        <p
+                            v-else
+                            class="mt-4 text-sm text-zinc-500"
+                        >
+                            No description.
+                        </p>
+
+                        <p class="mt-5 text-xs text-zinc-600">
+                            {{ list.items_count }} items · Created {{ list.created_at ?? 'recently' }}
+                        </p>
+                    </article>
+                </div>
+
+                <div
+                    v-else
+                    class="rounded-3xl border border-dashed border-zinc-800 bg-zinc-950 p-10 text-center"
+                >
+                    <h3 class="text-xl font-bold">
+                        No Public Custom Lists Yet
+                    </h3>
+
+                    <p class="mt-2 text-zinc-500">
+                        This user has not made any custom lists public yet.
                     </p>
                 </div>
             </section>
