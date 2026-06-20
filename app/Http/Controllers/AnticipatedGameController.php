@@ -5,13 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\AnticipatedGame;
 use App\Models\Game;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class AnticipatedGameController extends Controller
 {
-    public function toggle(Request $request, int $gameId)
+    public function toggle(Request $request, Game $game)
     {
-        $game = Game::query()->findOrFail($gameId);
-
         $anticipated = AnticipatedGame::query()
             ->where('user_id', $request->user()->id)
             ->where('game_id', $game->id)
@@ -19,14 +18,16 @@ class AnticipatedGameController extends Controller
 
         if ($anticipated) {
             $anticipated->delete();
-
-            return back();
+        } else {
+            AnticipatedGame::query()->create([
+                'user_id' => $request->user()->id,
+                'game_id' => $game->id,
+            ]);
         }
 
-        AnticipatedGame::create([
-            'user_id' => $request->user()->id,
-            'game_id' => $game->id,
-        ]);
+        Cache::forget('premieres:' . $request->user()->id . ':' . now()->year);
+        Cache::forget('premieres:anticipated:v1:' . $request->user()->id . ':' . now()->year);
+        Cache::forget('premieres:month:v1:' . $request->user()->id . ':' . now()->format('Y-m'));
 
         return back();
     }

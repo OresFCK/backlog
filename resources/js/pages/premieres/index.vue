@@ -1,10 +1,11 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import { Head, Link, router } from '@inertiajs/vue3'
 
 import {
     ChevronDown,
+    Loader2,
     Search,
     Star,
 } from 'lucide-vue-next'
@@ -18,7 +19,12 @@ const props = defineProps({
         required: true,
     },
 
-    games: {
+    months: {
+        type: Array,
+        required: true,
+    },
+
+    anticipatedGames: {
         type: Array,
         required: true,
     },
@@ -26,54 +32,99 @@ const props = defineProps({
 
 const searchQuery = ref('')
 const openMonths = ref({})
+const loadedMonths = ref({})
+const loadingMonths = ref({})
 
-const filteredGames = computed(() => {
+const filteredMonths = computed(() => {
     const query = searchQuery.value.trim().toLowerCase()
 
     if (!query) {
-        return props.games
+        return props.months
     }
 
-    return props.games.filter((game) => {
+    return props.months.filter((month) => {
+        const games = loadedMonths.value[month.month] ?? []
+
+        return month.label.toLowerCase().includes(query)
+            || games.some((game) => game.title?.toLowerCase().includes(query))
+    })
+})
+
+const isMonthOpen = (month) => {
+    return openMonths.value[month] === true
+}
+
+const isMonthLoading = (month) => {
+    return loadingMonths.value[month] === true
+}
+
+const monthGames = (month) => {
+    const games = loadedMonths.value[month] ?? []
+    const query = searchQuery.value.trim().toLowerCase()
+
+    if (!query) {
+        return games
+    }
+
+    return games.filter((game) => {
         return game.title
             ?.toLowerCase()
             .includes(query)
     })
-})
-
-const anticipatedGames = computed(() => {
-    return props.games.filter(game => game.is_anticipated)
-})
-
-const groupedGames = computed(() => {
-    const groups = {}
-
-    filteredGames.value.forEach((game) => {
-        const month = game.month_label
-
-        if (!groups[month]) {
-            groups[month] = []
-        }
-
-        groups[month].push(game)
-    })
-
-    return groups
-})
-
-
-const toggleMonth = (month) => {
-    openMonths.value[month] = !isMonthOpen(month)
 }
 
-const isMonthOpen = (month) => {
-    return openMonths.value[month] === true
+const loadMonth = async (month) => {
+    if (loadedMonths.value[month] || loadingMonths.value[month]) {
+        return
+    }
+
+    loadingMonths.value[month] = true
+
+    try {
+        const response = await fetch(`/premieres/month/${month}`, {
+            headers: {
+                Accept: 'application/json',
+            },
+        })
+
+        if (!response.ok) {
+            throw new Error('Failed to load month')
+        }
+
+        const data = await response.json()
+
+        loadedMonths.value[month] = data.games ?? []
+    } finally {
+        loadingMonths.value[month] = false
+    }
+}
+
+const toggleMonth = async (month) => {
+    openMonths.value[month] = !isMonthOpen(month)
+
+    if (isMonthOpen(month)) {
+        await loadMonth(month)
+    }
 }
 
 const toggleAnticipated = (game) => {
     router.post(`/premieres/${game.id}/anticipate`, {}, {
         preserveScroll: true,
         preserveState: true,
+        onSuccess: () => {
+            Object.keys(loadedMonths.value).forEach((month) => {
+                loadedMonths.value[month] = loadedMonths.value[month].map((item) => {
+                    if (item.id !== game.id) {
+                        return item
+                    }
+
+                    return {
+                        ...item,
+                        is_anticipated: !item.is_anticipated,
+                    }
+                })
+            })
+        },
     })
 }
 </script>
@@ -144,41 +195,46 @@ const toggleAnticipated = (game) => {
                         <input
                             v-model="searchQuery"
                             type="search"
-                            placeholder="Search upcoming games..."
+                            placeholder="Search loaded upcoming games..."
                             class="w-full bg-transparent text-sm font-medium text-white outline-none placeholder:text-zinc-500"
                         >
                     </div>
                 </div>
 
-                <template v-if="filteredGames.length">
+                <template v-if="filteredMonths.length">
                     <section
-                        v-for="(monthGames, month) in groupedGames"
-                        :key="month"
+                        v-for="month in filteredMonths"
+                        :key="month.month"
                         class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/40"
                     >
                         <button
                             type="button"
                             class="group flex w-full items-center justify-between gap-6 p-6 text-left transition hover:bg-zinc-900"
-                            @click="toggleMonth(month)"
+                            @click="toggleMonth(month.month)"
                         >
                             <div>
                                 <h2 class="text-2xl font-black text-white group-hover:text-emerald-400">
-                                    {{ month }}
+                                    {{ month.label }}
                                 </h2>
 
                                 <p class="mt-1 text-sm text-zinc-400">
-                                    {{ monthGames.length }} upcoming releases
+                                    {{ month.total }} upcoming releases
                                 </p>
                             </div>
 
                             <div class="flex items-center gap-4">
+                                <Loader2
+                                    v-if="isMonthLoading(month.month)"
+                                    class="h-5 w-5 animate-spin text-zinc-500"
+                                />
+
                                 <span class="rounded-full border border-zinc-700 px-4 py-2 text-sm font-bold text-zinc-300">
-                                    {{ isMonthOpen(month) ? 'Hide' : 'Show' }}
+                                    {{ isMonthOpen(month.month) ? 'Hide' : 'Show' }}
                                 </span>
 
                                 <ChevronDown
                                     class="h-6 w-6 text-zinc-500 transition-transform duration-200"
-                                    :class="isMonthOpen(month) ? 'rotate-180' : ''"
+                                    :class="isMonthOpen(month.month) ? 'rotate-180' : ''"
                                 />
                             </div>
                         </button>
@@ -188,12 +244,22 @@ const toggleAnticipated = (game) => {
                             leave-active-class="transition-all duration-200"
                         >
                             <div
-                                v-if="isMonthOpen(month)"
+                                v-if="isMonthOpen(month.month)"
                                 class="border-t border-zinc-800 p-6"
                             >
-                                <div class="grid gap-4 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8">
+                                <div
+                                    v-if="isMonthLoading(month.month)"
+                                    class="py-10 text-center text-sm font-semibold text-zinc-500"
+                                >
+                                    Loading releases...
+                                </div>
+
+                                <div
+                                    v-else-if="monthGames(month.month).length"
+                                    class="grid gap-4 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8"
+                                >
                                     <Link
-                                        v-for="game in monthGames"
+                                        v-for="game in monthGames(month.month)"
                                         :key="game.id"
                                         :href="`/${game.slug}`"
                                         class="group relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900"
@@ -229,6 +295,13 @@ const toggleAnticipated = (game) => {
                                             </h3>
                                         </div>
                                     </Link>
+                                </div>
+
+                                <div
+                                    v-else
+                                    class="py-10 text-center text-sm font-semibold text-zinc-500"
+                                >
+                                    No releases found in this month.
                                 </div>
                             </div>
                         </Transition>

@@ -109,6 +109,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/premieres', [PremiereController::class, 'index'])
         ->name('premieres.index');
 
+    Route::get('/premieres/month/{month}', [PremiereController::class, 'month'])
+        ->name('premieres.month');
+
+
     Route::post('/premieres/{gameId}/anticipate', [
         AnticipatedGameController::class,
         'toggle',
