@@ -137,10 +137,7 @@ const formatDate = (date) => {
                         <p class="text-sm font-bold uppercase tracking-[0.2em] text-emerald-400">
                             Your most anticipated
                         </p>
-
-                        <h2 class="mt-2 text-2xl font-black text-white">
-                            Games you are waiting for
-                        </h2>
+                        
                     </div>
 
                     <div class="mt-5 grid gap-4 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8">
