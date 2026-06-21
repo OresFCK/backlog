@@ -259,14 +259,6 @@ const schemaOrg = computed(() => {
                             </div>
                         </div>
 
-                        <div class="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5">
-                            <div class="text-3xl font-black">
-                                {{ game.metacritic_score || '—' }}
-                            </div>
-                            <div class="mt-1 text-xs font-bold uppercase text-zinc-500">
-                                Metacritic
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
