@@ -71,8 +71,6 @@ const initialSection = computed(() => {
     return null
 })
 
-const activeSection = ref(initialSection.value)
-
 let timeout = null
 let removeStart = null
 let removeFinish = null
@@ -126,13 +124,25 @@ onUnmounted(() => {
     removeException?.()
 })
 
+const openSections = ref(
+    initialSection.value
+        ? [initialSection.value]
+        : []
+)
+
 const toggleSection = (section) => {
-    activeSection.value = activeSection.value === section
-        ? null
-        : section
+    openSections.value = openSections.value.includes(section)
+        ? openSections.value.filter(
+            item => item !== section
+        )
+        : [
+            ...openSections.value,
+            section,
+        ]
 }
 
-const isSectionOpen = (section) => activeSection.value === section
+const isSectionOpen = (section) =>
+    openSections.value.includes(section)
 
 const navItemClass = (href) =>
     page.url.startsWith(href)
@@ -275,7 +285,7 @@ const settingsItems = [
             </p>
         </div>
 
-        <nav class="flex-1 overflow-y-auto px-4 py-5">
+        <nav class="sidebar-scroll flex-1 overflow-y-auto px-4 py-5">
             <div class="space-y-2">
                 <Link
                     v-for="item in mainItems"
@@ -518,3 +528,33 @@ const settingsItems = [
         </nav>
     </aside>
 </template>
+
+<style scoped>
+.sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(82 82 91) transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+    background: rgb(63 63 70);
+    border-radius: 999px;
+    border: 3px solid rgb(9 9 11);
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgb(113 113 122);
+}
+
+.sidebar-scroll::-webkit-resizer {
+    background: rgb(9 9 11);
+}
+</style>

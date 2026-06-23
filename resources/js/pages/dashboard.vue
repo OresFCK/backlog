@@ -1,12 +1,13 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { Link, router, usePage } from '@inertiajs/vue3'
-import { PlusCircle } from 'lucide-vue-next'
+import { router, usePage } from '@inertiajs/vue3'
+import { Grid3X3, List } from 'lucide-vue-next'
 
 import Sidebar from '@/components/layout/Sidebar.vue'
 import Topbar from '@/components/layout/Topbar.vue'
 
 import GameGrid from '@/components/game/GameGrid.vue'
+import GameList from '@/components/game/GameList.vue'
 import RecommendationsSection from '@/components/recommendations/RecommendationsSection.vue'
 
 const props = defineProps({
@@ -43,6 +44,7 @@ const page = usePage()
 const sortBy = ref('name')
 const searchQuery = ref('')
 const selectedStatus = ref('all')
+const viewMode = ref('grid')
 const showNoProductCardPopup = ref(false)
 
 const selectionMode = ref(false)
@@ -110,33 +112,21 @@ const mappedGames = computed(() => {
         return {
             id: game.appid ?? game.id,
 
-            title:
-                game.name ??
-                game.title ??
-                'Unknown game',
+            title: game.name ?? game.title ?? 'Unknown game',
 
             cover_url:
                 game.cover_url ??
                 `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appid}/library_600x900.jpg`,
 
-            status:
-                status?.name ??
-                'Backlog',
+            status: status?.name ?? 'Backlog',
 
-            status_color:
-                status?.color ??
-                '#71717a',
+            status_color: status?.color ?? '#71717a',
 
-            average_playtime_minutes:
-                game.playtime_forever ?? 0,
+            average_playtime_minutes: game.playtime_forever ?? 0,
 
-            platform:
-                game.is_custom
-                    ? 'Custom'
-                    : 'Steam',
+            platform: game.is_custom ? 'Custom' : 'Steam',
 
-            rating:
-                game.rating ?? null,
+            rating: game.rating ?? null,
         }
     })
 
@@ -150,9 +140,7 @@ const mappedGames = computed(() => {
 
     if (selectedStatus.value !== 'all') {
         games = games.filter(
-            (game) =>
-                game.status ===
-                selectedStatus.value
+            (game) => game.status === selectedStatus.value
         )
     }
 
@@ -166,15 +154,12 @@ const mappedGames = computed(() => {
 
         case 'rating':
             return games.sort(
-                (a, b) =>
-                    (b.rating ?? 0) - (a.rating ?? 0)
+                (a, b) => (b.rating ?? 0) - (a.rating ?? 0)
             )
 
         default:
             return games.sort((a, b) =>
-                String(a.title).localeCompare(
-                    String(b.title)
-                )
+                String(a.title).localeCompare(String(b.title))
             )
     }
 })
@@ -266,10 +251,49 @@ const mappedGames = computed(() => {
                                     {{ status.name }}
                                 </option>
                             </select>
+
+                            <div class="flex overflow-hidden rounded-xl border border-zinc-700">
+                                <button
+                                    type="button"
+                                    class="flex items-center gap-2 px-4 py-3 text-sm font-bold transition"
+                                    :class="
+                                        viewMode === 'grid'
+                                            ? 'bg-white text-zinc-950'
+                                            : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                                    "
+                                    @click="viewMode = 'grid'"
+                                >
+                                    <Grid3X3 class="h-4 w-4" />
+                                    Grid
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="flex items-center gap-2 px-4 py-3 text-sm font-bold transition"
+                                    :class="
+                                        viewMode === 'list'
+                                            ? 'bg-white text-zinc-950'
+                                            : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                                    "
+                                    @click="viewMode = 'list'"
+                                >
+                                    <List class="h-4 w-4" />
+                                    List
+                                </button>
+                            </div>
                         </div>
                     </div>
 
                     <GameGrid
+                        v-if="viewMode === 'grid'"
+                        :games="mappedGames"
+                        :selected-game-ids="selectedGameIds"
+                        :selection-mode="selectionMode"
+                        @toggle-game-selection="toggleGameSelection"
+                    />
+
+                    <GameList
+                        v-else
                         :games="mappedGames"
                         :selected-game-ids="selectedGameIds"
                         :selection-mode="selectionMode"
