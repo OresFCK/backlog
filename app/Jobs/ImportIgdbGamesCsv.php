@@ -57,7 +57,9 @@ class ImportIgdbGamesCsv implements ShouldQueue
                 'slug' => $data['slug'] ?? null,
                 'summary' => $data['summary'] ?? null,
                 'source' => 'igdb',
-
+                'genres' => json_encode(
+    $this->parseGenres($data['genres'] ?? null)
+),
                 'igdb_cover_id' => ! empty($data['cover'])
                     ? (int) $data['cover']
                     : null,
@@ -128,7 +130,24 @@ class ImportIgdbGamesCsv implements ShouldQueue
                 'igdb_cover_id',
                 'release_date',
                 'updated_at',
+                'genres',
             ]
         );
     }
+
+    private function parseGenres(?string $value): array
+{
+    if (blank($value)) {
+        return [];
+    }
+
+    $value = trim($value, '{}');
+
+    return collect(explode(',', $value))
+        ->map(fn ($id) => trim($id))
+        ->filter()
+        ->map(fn ($id) => (int) $id)
+        ->values()
+        ->all();
+}
 }

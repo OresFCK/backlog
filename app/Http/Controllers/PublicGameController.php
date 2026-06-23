@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Game;
 use App\Models\PublicReview;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,6 +19,8 @@ class PublicGameController extends Controller
             ->where('is_public', true)
             ->latest()
             ->get();
+
+        $relatedGames = $this->relatedGames($game);
 
         return Inertia::render('games/public-show', [
             'game' => [
@@ -45,7 +48,9 @@ class PublicGameController extends Controller
                 'steam_rating_percent' => $game->steam_rating_percent,
                 'average_playtime_minutes' => $game->average_playtime_minutes,
 
-                'genres' => [],
+                'genres' => $this->genreNames(
+                    $game->genres ?? []
+                ),
             ],
 
             'reviews' => $reviews
@@ -85,6 +90,8 @@ class PublicGameController extends Controller
                     ->map->count(),
             ],
 
+            'relatedGames' => $relatedGames,
+
             'auth' => [
                 'user' => auth()->user()
                     ? [
@@ -94,5 +101,101 @@ class PublicGameController extends Controller
                     : null,
             ],
         ]);
+    }
+
+    private function relatedGames(Game $game): Collection
+    {
+        $gameGenres = collect($game->genres ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->values();
+
+        if ($gameGenres->isEmpty()) {
+            return collect();
+        }
+
+        return Game::query()
+            ->where('id', '!=', $game->id)
+            ->whereNotNull('slug')
+            ->whereNotNull('genres')
+            ->where(function ($query) {
+                $query
+                    ->whereNotNull('cover_url')
+                    ->orWhereNotNull('igdb_cover_url');
+            })
+            ->limit(500)
+            ->get()
+            ->map(function (Game $relatedGame) use ($gameGenres) {
+                $relatedGenres = collect($relatedGame->genres ?? [])
+                    ->map(fn ($id) => (int) $id)
+                    ->filter();
+
+                $matchingGenresCount = $relatedGenres
+                    ->intersect($gameGenres)
+                    ->count();
+
+                return [
+                    'game' => $relatedGame,
+                    'matching_genres_count' => $matchingGenresCount,
+                ];
+            })
+            ->filter(fn (array $item) => $item['matching_genres_count'] > 0)
+            ->sortByDesc('matching_genres_count')
+            ->take(12)
+            ->map(fn (array $item) => [
+                'id' => $item['game']->id,
+                'slug' => $item['game']->slug,
+                'title' => $item['game']->title,
+                'name' => $item['game']->title,
+
+                'cover_url' => $item['game']->cover_url
+                    ?: $item['game']->igdb_cover_url,
+
+                'score' => $item['game']->metacritic_score
+                    ?: $item['game']->steam_rating_percent,
+
+                'metacritic_score' => $item['game']->metacritic_score,
+                'steam_rating_percent' => $item['game']->steam_rating_percent,
+                'matching_genres_count' => $item['matching_genres_count'],
+
+                'genres' => $this->genreNames(
+                    $item['game']->genres ?? []
+                ),
+            ])
+            ->values();
+    }
+
+    private function genreNames(array $genreIds): array
+    {
+        $labels = [
+            2 => 'Point-and-click',
+            4 => 'Fighting',
+            5 => 'Shooter',
+            7 => 'Music',
+            8 => 'Platform',
+            9 => 'Puzzle',
+            10 => 'Racing',
+            11 => 'RTS',
+            12 => 'RPG',
+            13 => 'Simulator',
+            14 => 'Sport',
+            15 => 'Strategy',
+            16 => 'TBS',
+            24 => 'Tactical',
+            26 => 'Quiz',
+            30 => 'Pinball',
+            31 => 'Adventure',
+            32 => 'Indie',
+            33 => 'Arcade',
+            34 => 'Visual Novel',
+            35 => 'Card & Board Game',
+            36 => 'MOBA',
+        ];
+
+        return collect($genreIds)
+            ->map(fn ($id) => $labels[(int) $id] ?? null)
+            ->filter()
+            ->values()
+            ->all();
     }
 }

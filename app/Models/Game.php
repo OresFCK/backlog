@@ -27,11 +27,13 @@ class Game extends Model
         'metacritic_score',
         'steam_rating_percent',
         'average_playtime_minutes',
+        'genres',
     ];
 
     protected $casts = [
         'release_date' => 'date',
         'igdb_id' => 'integer',
+        'genres' => 'array',
     ];
 
     protected static function booted(): void
