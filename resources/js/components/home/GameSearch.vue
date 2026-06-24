@@ -23,7 +23,7 @@ const searchGames = async () => {
     showSearchResults.value = true
 
     const response = await fetch(
-        /public-games/search?q=${encodeURIComponent(query)}`
+        `/public-games/search?q=${encodeURIComponent(query)}`
     )
 
     searchResults.value = await response.json()
