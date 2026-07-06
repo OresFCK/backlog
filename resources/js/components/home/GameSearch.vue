@@ -9,40 +9,55 @@ const isSearching = ref(false)
 const showSearchResults = ref(false)
 
 let searchTimeout = null
+let searchController = null
 
 const searchGames = async () => {
     const query = searchQuery.value.trim()
 
-    if (query.length < 2) {
+    if (query.length < 3) {
+        searchController?.abort()
         searchResults.value = []
         showSearchResults.value = false
+        isSearching.value = false
         return
     }
+
+    searchController?.abort()
+    searchController = new AbortController()
 
     isSearching.value = true
     showSearchResults.value = true
 
-    const response = await fetch(
-        `/public-games/search?q=${encodeURIComponent(query)}`
-    )
+    try {
+        const response = await fetch(
+            `/public-games/search?q=${encodeURIComponent(query)}`,
+            {
+                signal: searchController.signal,
+            }
+        )
 
-    searchResults.value = await response.json()
-    isSearching.value = false
+        if (!response.ok) {
+            throw new Error('Search request failed')
+        }
+
+        searchResults.value = await response.json()
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            console.error(error)
+        }
+    } finally {
+        isSearching.value = false
+    }
 }
 
 const goToGame = (game) => {
+    searchController?.abort()
+
     searchQuery.value = ''
     searchResults.value = []
     showSearchResults.value = false
 
-    const slug =
-        game.slug ??
-        String(game.title ?? game.name ?? '')
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '')
-
-    router.visit(`/${slug}`)
+    router.visit(`/${game.slug}`)
 }
 
 watch(searchQuery, () => {
@@ -50,7 +65,7 @@ watch(searchQuery, () => {
 
     searchTimeout = setTimeout(() => {
         searchGames()
-    }, 250)
+    }, 400)
 })
 </script>
 
@@ -87,8 +102,8 @@ watch(searchQuery, () => {
                 @click="goToGame(game)"
             >
                 <img
-                    v-if="game.cover_url"
-                    :src="game.cover_url"
+                    v-if="game.cover_url || game.igdb_cover_url || game.header_image_url"
+                    :src="game.cover_url || game.igdb_cover_url || game.header_image_url"
                     class="h-12 w-9 rounded object-cover"
                 >
 

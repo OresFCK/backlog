@@ -16,26 +16,36 @@ class PublicGameSearchController extends Controller
             return response()->json([]);
         }
 
-        return response()->json(
-            Game::query()
-                ->whereNotNull('slug')
-                ->where(function ($builder) use ($query) {
-                    $builder
-                        ->where('title', 'like', "%{$query}%")
-                        ->orWhere('slug', 'like', "%{$query}%")
-                        ->orWhere('steam_app_id', 'like', "%{$query}%");
-                })
-                ->orderBy('title')
-                ->limit(8)
-                ->get()
-                ->map(fn (Game $game) => [
+        $games = Game::query()
+            ->whereNotNull('slug')
+            ->where(function ($builder) use ($query) {
+                $builder
+                    ->where('title', 'like', "%{$query}%")
+                    ->orWhere('slug', 'like', "%{$query}%")
+                    ->orWhere('steam_app_id', 'like', "%{$query}%");
+            })
+            ->orderBy('title')
+            ->limit(8)
+            ->get()
+            ->map(function (Game $game) {
+                $coverUrl = $game->cover_url
+                    ?? $game->igdb_cover_url
+                    ?? $game->header_image_url;
+
+                if ($coverUrl && str_starts_with($coverUrl, '//')) {
+                    $coverUrl = 'https:' . $coverUrl;
+                }
+
+                return [
                     'id' => $game->id,
                     'title' => $game->title,
                     'slug' => $game->slug,
                     'steam_app_id' => $game->steam_app_id,
-                    'cover_url' => $game->cover_url,
-                ])
-                ->values()
-        );
+                    'cover_url' => $coverUrl,
+                ];
+            })
+            ->values();
+
+        return response()->json($games);
     }
 }
