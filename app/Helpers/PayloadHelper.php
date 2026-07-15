@@ -40,14 +40,15 @@ class PayloadHelper
     public static function pageData(SteamService $steam): array
     {
         $userId = Auth::id();
+        $games = Cache::remember(
+            CacheKeys::userLibrary($userId),
+            self::externalCacheTtl(),
+            fn () => self::library()->allGames($steam)
+        );
 
         return [
             ...self::basePageData(),
-            'games' => Cache::remember(
-                CacheKeys::userLibrary($userId),
-                self::viewCacheTtl(),
-                fn () => self::library()->allGames($steam)
-            ),
+            'games' => self::withFreshUserMetadata($games, $userId),
         ];
     }
 
@@ -125,14 +126,20 @@ class PayloadHelper
         string $status
     ): array {
         $userId = Auth::id();
+        $games = Cache::remember(
+            CacheKeys::userLibrary($userId),
+            self::externalCacheTtl(),
+            fn () => self::library()->allGames($steam)
+        );
+
+        $games = collect(self::withFreshUserMetadata($games, $userId))
+            ->filter(fn (array $game) => $game['status'] === $status)
+            ->values()
+            ->toArray();
 
         return [
             ...self::basePageData(),
-            'games' => Cache::remember(
-                CacheKeys::userLibraryStatus($userId, $status),
-                self::viewCacheTtl(),
-                fn () => self::library()->gamesByStatus($steam, $status)
-            ),
+            'games' => $games,
         ];
     }
 
@@ -142,10 +149,13 @@ class PayloadHelper
 
         return [
             ...self::basePageData(),
-            'games' => Cache::remember(
-                CacheKeys::userWishlist($userId),
-                self::viewCacheTtl(),
-                fn () => self::library()->wishlistGames($steam)
+            'games' => self::withFreshUserMetadata(
+                Cache::remember(
+                    CacheKeys::userWishlist($userId),
+                    self::externalCacheTtl(),
+                    fn () => self::library()->wishlistGames($steam)
+                ),
+                $userId
             ),
         ];
     }
@@ -531,6 +541,44 @@ class PayloadHelper
                 ->values()
                 ->toArray()
         );
+    }
+
+    /**
+     * Merge volatile per-user fields into cached library data. The cache may
+     * contain an old status, so every metadata field is explicitly replaced,
+     * including with null/false when the row no longer exists.
+     */
+    private static function withFreshUserMetadata(
+        iterable $games,
+        int $userId
+    ): array {
+        $metadata = UserGameMeta::query()
+            ->where('user_id', $userId)
+            ->get()
+            ->keyBy(fn (UserGameMeta $meta) => (string) $meta->game_id);
+
+        return collect($games)
+            ->map(function (array $game) use ($metadata) {
+                $meta = $metadata->get((string) $game['id']);
+
+                return [
+                    ...$game,
+                    'status' => $meta?->status,
+                    'note' => $meta?->note,
+                    'rating' => $meta?->rating,
+                    'recommended' => (bool) (
+                        $meta?->recommended ?? false
+                    ),
+                    'not_recommended' => (bool) (
+                        $meta?->not_recommended ?? false
+                    ),
+                    'show_on_public_profile' => (bool) (
+                        $meta?->show_on_public_profile ?? false
+                    ),
+                ];
+            })
+            ->values()
+            ->toArray();
     }
 
     private static function flushUserCache(int $userId): void
