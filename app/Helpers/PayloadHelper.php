@@ -28,6 +28,15 @@ use Illuminate\Support\Facades\Storage;
 
 class PayloadHelper
 {
+    /**
+     * Keep view caches deliberately short. Cache invalidation covers writes made
+     * through this helper, but changes made by jobs, observers or other services
+     * must also become visible without waiting for tens of minutes.
+     */
+    private const VIEW_CACHE_TTL_SECONDS = 60;
+    private const LOOKUP_CACHE_TTL_SECONDS = 300;
+    private const EXTERNAL_CACHE_TTL_SECONDS = 600;
+
     public static function pageData(SteamService $steam): array
     {
         $userId = Auth::id();
@@ -36,7 +45,7 @@ class PayloadHelper
             ...self::basePageData(),
             'games' => Cache::remember(
                 CacheKeys::userLibrary($userId),
-                now()->addMinutes(30),
+                self::viewCacheTtl(),
                 fn () => self::library()->allGames($steam)
             ),
         ];
@@ -48,7 +57,7 @@ class PayloadHelper
 
         return Cache::remember(
             CacheKeys::userBase($userId),
-            now()->addMinutes(10),
+            self::viewCacheTtl(),
             fn () => [
                 'user' => self::currentUser(),
                 'statuses' => self::statuses(),
@@ -62,12 +71,12 @@ class PayloadHelper
     ): array {
         return Cache::remember(
             CacheKeys::publicProfile($user->id),
-            now()->addMinutes(30),
+            self::viewCacheTtl(),
             function () use ($user, $steam) {
                 $games = collect(
                     Cache::remember(
                         CacheKeys::userLibraryForUser($user->id),
-                        now()->addMinutes(30),
+                        self::viewCacheTtl(),
                         fn () => self::library()->allGamesForUser($user, $steam)
                     )
                 )->keyBy(fn ($game) => (string) $game['id']);
@@ -121,7 +130,7 @@ class PayloadHelper
             ...self::basePageData(),
             'games' => Cache::remember(
                 CacheKeys::userLibraryStatus($userId, $status),
-                now()->addMinutes(30),
+                self::viewCacheTtl(),
                 fn () => self::library()->gamesByStatus($steam, $status)
             ),
         ];
@@ -135,7 +144,7 @@ class PayloadHelper
             ...self::basePageData(),
             'games' => Cache::remember(
                 CacheKeys::userWishlist($userId),
-                now()->addMinutes(30),
+                self::viewCacheTtl(),
                 fn () => self::library()->wishlistGames($steam)
             ),
         ];
@@ -147,12 +156,12 @@ class PayloadHelper
 
         return Cache::remember(
             CacheKeys::profilePage($user->id),
-            now()->addMinutes(15),
+            self::viewCacheTtl(),
             function () use ($user, $steam) {
                 $gamesForUser = collect(
                     Cache::remember(
                         CacheKeys::userLibraryForUser($user->id),
-                        now()->addMinutes(30),
+                        self::viewCacheTtl(),
                         fn () => self::library()->allGamesForUser($user, $steam)
                     )
                 )->keyBy(fn ($game) => (string) $game['id']);
@@ -162,13 +171,13 @@ class PayloadHelper
 
                     'games' => Cache::remember(
                         CacheKeys::userLibrary($user->id),
-                        now()->addMinutes(30),
+                        self::viewCacheTtl(),
                         fn () => self::library()->allGames($steam)
                     ),
 
                     'activity' => Cache::remember(
                         CacheKeys::userActivity($user->id),
-                        now()->addMinutes(15),
+                        self::viewCacheTtl(),
                         fn () => self::library()->activityLog($steam)
                     ),
 
@@ -185,15 +194,34 @@ class PayloadHelper
         string $gameId,
         SteamService $steam
     ): array {
+        $game = Cache::remember(
+            CacheKeys::gameDetails($gameId),
+            self::externalCacheTtl(),
+            fn () => self::details()->gameDetails($gameId, $steam)
+        );
+
+        // User metadata must never be stored in the shared game-details cache.
+        // Read it on every request so a full page refresh always reflects the
+        // latest note, rating, recommendation and status.
+        $meta = UserGameMeta::query()
+            ->where('user_id', Auth::id())
+            ->where('game_id', (string) $gameId)
+            ->first();
+
         return [
             'user' => self::currentUser(),
             'statuses' => self::statuses(),
-
-            'game' => Cache::remember(
-                CacheKeys::gameDetails($gameId),
-                now()->addDay(),
-                fn () => self::details()->gameDetails($gameId, $steam)
-            ),
+            'game' => [
+                ...$game,
+                'status' => $meta?->status,
+                'note' => $meta?->note,
+                'rating' => $meta?->rating,
+                'recommended' => (bool) ($meta?->recommended ?? false),
+                'not_recommended' => (bool) ($meta?->not_recommended ?? false),
+                'show_on_public_profile' => (bool) (
+                    $meta?->show_on_public_profile ?? false
+                ),
+            ],
         ];
     }
 
@@ -225,7 +253,7 @@ class PayloadHelper
 
         return Cache::remember(
             CacheKeys::userEquippedItems($userId),
-            now()->addMinutes(30),
+            self::viewCacheTtl(),
             fn () => UserShopItem::query()
                 ->with('item')
                 ->where('user_id', $userId)
@@ -249,7 +277,7 @@ class PayloadHelper
     {
         return Cache::remember(
             CacheKeys::reviewReports(),
-            now()->addMinutes(5),
+            self::viewCacheTtl(),
             fn () => PublicReviewReport::query()
                 ->with([
                     'review.user',
@@ -295,7 +323,7 @@ class PayloadHelper
     {
         return Cache::remember(
             CacheKeys::userStatuses(Auth::id()),
-            now()->addHour(),
+            self::lookupCacheTtl(),
             fn () => self::status()->statuses()
         );
     }
@@ -304,7 +332,7 @@ class PayloadHelper
     {
         return Cache::remember(
             CacheKeys::userCustomLabels(Auth::id()),
-            now()->addHour(),
+            self::lookupCacheTtl(),
             fn () => self::status()->customLabels()
         );
     }
@@ -370,7 +398,6 @@ class PayloadHelper
         $response = self::meta()->storeMeta($request, $gameId);
 
         self::flushUserCache(Auth::id());
-        Cache::forget(CacheKeys::gameDetails($gameId));
 
         return $response;
     }
@@ -412,7 +439,7 @@ class PayloadHelper
             $query
                 ? Cache::remember(
                     CacheKeys::steamSearch($query),
-                    now()->addMinutes(15),
+                    self::externalCacheTtl(),
                     fn () => $steam->searchStore($query)
                 )
                 : []
@@ -425,7 +452,7 @@ class PayloadHelper
     ): array {
         return Cache::remember(
             CacheKeys::featuredGames($user->id),
-            now()->addMinutes(30),
+            self::viewCacheTtl(),
             fn () => UserGameMeta::query()
                 ->where('user_id', $user->id)
                 ->where('show_on_public_profile', true)
@@ -458,7 +485,7 @@ class PayloadHelper
     {
         return Cache::remember(
             CacheKeys::featuredReviews($user->id),
-            now()->addMinutes(30),
+            self::viewCacheTtl(),
             fn () => PublicReview::query()
                 ->where('user_id', $user->id)
                 ->where('is_featured_on_profile', true)
@@ -484,7 +511,7 @@ class PayloadHelper
     {
         return Cache::remember(
             CacheKeys::featuredWardrobeItems($user->id),
-            now()->addMinutes(30),
+            self::viewCacheTtl(),
             fn () => UserShopItem::query()
                 ->with('item')
                 ->where('user_id', $user->id)
@@ -525,6 +552,21 @@ class PayloadHelper
         foreach (['Backlog', 'Playing', 'Finished', 'Dropped'] as $status) {
             Cache::forget(CacheKeys::userLibraryStatus($userId, $status));
         }
+    }
+
+    private static function viewCacheTtl(): \DateTimeInterface
+    {
+        return now()->addSeconds(self::VIEW_CACHE_TTL_SECONDS);
+    }
+
+    private static function lookupCacheTtl(): \DateTimeInterface
+    {
+        return now()->addSeconds(self::LOOKUP_CACHE_TTL_SECONDS);
+    }
+
+    private static function externalCacheTtl(): \DateTimeInterface
+    {
+        return now()->addSeconds(self::EXTERNAL_CACHE_TTL_SECONDS);
     }
 
     private static function library(): GameLibraryService
