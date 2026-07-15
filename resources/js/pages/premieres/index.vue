@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { Head, Link, router } from '@inertiajs/vue3'
 
@@ -34,6 +34,16 @@ const searchQuery = ref('')
 const openMonths = ref({})
 const loadedMonths = ref({})
 const loadingMonths = ref({})
+const updatingAnticipated = ref({})
+const anticipateError = ref('')
+const anticipatedList = ref([...props.anticipatedGames])
+
+watch(
+    () => props.anticipatedGames,
+    (games) => {
+        anticipatedList.value = [...games]
+    }
+)
 
 const filteredMonths = computed(() => {
     const query = searchQuery.value.trim().toLowerCase()
@@ -108,24 +118,68 @@ const toggleMonth = async (month) => {
 }
 
 const toggleAnticipated = (game) => {
-    router.post(`/premieres/${game.id}/anticipate`, {}, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => {
-            Object.keys(loadedMonths.value).forEach((month) => {
-                loadedMonths.value[month] = loadedMonths.value[month].map((item) => {
-                    if (item.id !== game.id) {
-                        return item
-                    }
+    if (!game.id) {
+        console.error('Missing local game ID.', game)
+        return
+    }
 
-                    return {
-                        ...item,
-                        is_anticipated: !item.is_anticipated,
-                    }
+    const key = String(game.id)
+    const willBeAnticipated = !game.is_anticipated
+
+    if (updatingAnticipated.value[key]) {
+        return
+    }
+
+    updatingAnticipated.value[key] = true
+    anticipateError.value = ''
+
+    router.post(
+        `/premieres/${game.id}/anticipate`,
+        {},
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                Object.keys(loadedMonths.value).forEach((month) => {
+                    loadedMonths.value[month] = loadedMonths.value[month]
+                        .map((item) => {
+                            if (String(item.id) !== key) {
+                                return item
+                            }
+
+                            return {
+                                ...item,
+                                is_anticipated: willBeAnticipated,
+                            }
+                        })
                 })
-            })
-        },
-    })
+
+                if (willBeAnticipated) {
+                    const alreadyListed = anticipatedList.value
+                        .some((item) => String(item.id) === key)
+
+                    if (!alreadyListed) {
+                        anticipatedList.value = [
+                            {
+                                ...game,
+                                is_anticipated: true,
+                            },
+                            ...anticipatedList.value,
+                        ]
+                    }
+                } else {
+                    anticipatedList.value = anticipatedList.value
+                        .filter((item) => String(item.id) !== key)
+                }
+            },
+            onError: () => {
+                anticipateError.value = 'Could not update this game.'
+            },
+            onFinish: () => {
+                updatingAnticipated.value[key] = false
+            },
+        }
+    )
 }
 </script>
 
@@ -147,10 +201,17 @@ const toggleAnticipated = (game) => {
                     <p class="mt-2 text-zinc-400">
                         Discover games releasing soon according to IGDB.
                     </p>
+
+                    <p
+                        v-if="anticipateError"
+                        class="mt-3 text-sm font-semibold text-red-400"
+                    >
+                        {{ anticipateError }}
+                    </p>
                 </div>
 
                 <section
-                    v-if="anticipatedGames.length"
+                    v-if="anticipatedList.length"
                     class="rounded-3xl border border-emerald-500/30 bg-emerald-500/5 p-6"
                 >
                     <div>
@@ -161,7 +222,7 @@ const toggleAnticipated = (game) => {
 
                     <div class="mt-5 grid gap-4 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8">
                         <Link
-                            v-for="game in anticipatedGames"
+                            v-for="game in anticipatedList"
                             :key="game.id"
                             :href="`/${game.slug}`"
                             class="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 transition-all duration-200 hover:border-emerald-500/50 hover:bg-zinc-900"
@@ -266,8 +327,9 @@ const toggleAnticipated = (game) => {
                                     >
                                         <button
                                             type="button"
-                                            class="absolute right-2 top-2 z-10 rounded-full border border-white/10 bg-black/70 p-2 text-white backdrop-blur transition hover:bg-emerald-500"
+                                            class="absolute right-2 top-2 z-10 rounded-full border border-white/10 bg-black/70 p-2 text-white backdrop-blur transition hover:bg-emerald-500 disabled:cursor-wait disabled:opacity-60"
                                             :class="game.is_anticipated ? 'bg-emerald-500 text-white' : ''"
+                                            :disabled="updatingAnticipated[String(game.id)]"
                                             @click.prevent.stop="toggleAnticipated(game)"
                                         >
                                             <Star

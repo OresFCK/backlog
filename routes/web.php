@@ -114,10 +114,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/premieres/month/{month}', [PremiereController::class, 'month'])
         ->name('premieres.month');
 
-    Route::post('/premieres/{gameId}/anticipate', [
+Route::post(
+    '/premieres/{gameIdentifier}/anticipate',
+    [
         AnticipatedGameController::class,
         'toggle',
-    ])->name('premieres.anticipate');
+    ]
+)->name('premieres.anticipate');
 
     Route::get('/backlog', fn (SteamService $steam) =>
         Inertia::render('backlog/index', Payload::backlogPageData($steam))

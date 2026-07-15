@@ -316,18 +316,13 @@ class GameLibraryService
 
     private function metasForUser(User $user): Collection
     {
-        if (isset($this->metaCache[$user->id])) {
-            return $this->metaCache[$user->id];
-        }
-
-        return $this->metaCache[$user->id] = Cache::remember(
-            CacheKeys::userMetas($user->id),
-            now()->addMinutes(30),
-            fn () => UserGameMeta::query()
-                ->where('user_id', $user->id)
-                ->get()
-                ->keyBy(fn ($meta) => (string) $meta->game_id)
-        );
+        return UserGameMeta::query()
+            ->where('user_id', $user->id)
+            ->get()
+            ->keyBy(
+                fn (UserGameMeta $meta) =>
+                    (string) $meta->game_id
+            );
     }
 
     private function metaPayloadFromCollection(Collection $metas, string $gameId): array
