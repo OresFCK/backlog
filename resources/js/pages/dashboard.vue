@@ -118,7 +118,7 @@ const mappedGames = computed(() => {
                 game.cover_url ??
                 `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appid}/library_600x900.jpg`,
 
-            status: status?.name ?? 'Backlog',
+            status: status?.name ?? 'No status',
 
             status_color: status?.color ?? '#71717a',
 
@@ -201,14 +201,15 @@ const mappedGames = computed(() => {
                         <div class="flex flex-wrap items-center gap-4">
                             <button
                                 type="button"
-                                class="rounded-xl border border-zinc-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-900"
+                                :class="[
+                                    'rounded-xl px-5 py-3 text-sm font-bold shadow-lg transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-950',
+                                    selectionMode
+                                        ? 'bg-red-500 text-white shadow-red-500/20 hover:bg-red-400 focus:ring-red-400'
+                                        : 'bg-white text-zinc-950 shadow-white/10 hover:bg-zinc-200 focus:ring-white',
+                                ]"
                                 @click="toggleSelectionMode"
                             >
-                                {{
-                                    selectionMode
-                                        ? 'Cancel'
-                                        : 'Update statuses'
-                                }}
+                                {{ selectionMode ? 'Cancel' : 'Update statuses' }}
                             </button>
 
                             <input

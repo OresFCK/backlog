@@ -110,12 +110,8 @@ const gameHref = computed(() => {
             </h3>
 
             <StatusBadge
-                v-if="game.status"
-                :status="game.status"
-                :color="
-                    game.status_color ??
-                    '#71717a'
-                "
+                :status="game.status || 'No status'"
+                :color="game.status_color || '#71717a'"
             />
         </div>
     </Link>
