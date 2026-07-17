@@ -1,6 +1,6 @@
 <script setup>
-import { computed, nextTick, watch } from 'vue'
-import { Sparkles, Star } from 'lucide-vue-next'
+import { computed, nextTick, watch } from 'vue';
+import { Sparkles, Star } from 'lucide-vue-next';
 
 const props = defineProps({
     modelValue: {
@@ -12,61 +12,60 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-})
+});
 
 const emit = defineEmits([
     'update:modelValue',
     'update:showOnPublicProfile',
     'save',
-])
+]);
 
-const maxLength = 255
+const maxLength = 255;
 
 const normalizedValue = computed(() =>
-    String(props.modelValue ?? '').slice(0, maxLength)
-)
+    String(props.modelValue ?? '').slice(0, maxLength),
+);
 
-const charactersLeft = computed(() =>
-    maxLength - normalizedValue.value.length
-)
+const charactersLeft = computed(() => maxLength - normalizedValue.value.length);
 
 const updateNote = (event) => {
-    const value = event.target.value.slice(0, maxLength)
+    const value = event.target.value.slice(0, maxLength);
 
-    event.target.value = value
+    event.target.value = value;
 
-    emit('update:modelValue', value)
-}
+    emit('update:modelValue', value);
+};
 
 const save = async () => {
-    emit('update:modelValue', normalizedValue.value)
+    emit('update:modelValue', normalizedValue.value);
 
-    await nextTick()
+    await nextTick();
 
-    emit('save')
-}
+    emit('save');
+};
 
 watch(
     () => props.modelValue,
     (value) => {
         if (String(value ?? '').length > maxLength) {
-            emit('update:modelValue', String(value).slice(0, maxLength))
+            emit('update:modelValue', String(value).slice(0, maxLength));
         }
     },
-    { immediate: true }
-)
+    { immediate: true },
+);
 </script>
 
 <template>
-    <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+    <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
-                <h2 class="text-2xl font-bold text-white">
+                <h2 class="text-xl font-bold text-white sm:text-2xl">
                     Your notes
                 </h2>
 
                 <p class="mt-1 text-sm text-zinc-500">
-                    Write your thoughts and choose whether to feature them publicly.
+                    Write your thoughts and choose whether to feature them
+                    publicly.
                 </p>
             </div>
 
@@ -91,10 +90,7 @@ watch(
                     Featured on Profile
                 </span>
 
-                <span
-                    v-else
-                    class="flex items-center gap-2"
-                >
+                <span v-else class="flex items-center gap-2">
                     <Sparkles class="h-4 w-4" />
                     Add to Showcase
                 </span>
@@ -105,7 +101,7 @@ watch(
             :value="normalizedValue"
             :maxlength="maxLength"
             placeholder="Write your thoughts about this game..."
-            class="mt-5 min-h-40 w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-sm text-zinc-200 outline-none placeholder:text-zinc-500 focus:border-zinc-600"
+            class="mt-4 min-h-32 w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-200 outline-none placeholder:text-zinc-500 focus:border-zinc-600 sm:mt-5 sm:min-h-40 sm:p-4"
             @input="updateNote"
             @blur="save"
         />
@@ -120,11 +116,7 @@ watch(
 
             <span
                 class="ml-auto text-xs font-semibold"
-                :class="
-                    charactersLeft <= 20
-                        ? 'text-red-400'
-                        : 'text-zinc-500'
-                "
+                :class="charactersLeft <= 20 ? 'text-red-400' : 'text-zinc-500'"
             >
                 {{ charactersLeft }} characters left
             </span>

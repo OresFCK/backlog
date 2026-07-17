@@ -10,7 +10,11 @@ class PublicGameSearchController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = trim((string) $request->query('q', ''));
+        $data = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $query = trim((string) ($data['q'] ?? ''));
 
         if (mb_strlen($query) < 2) {
             return response()->json([]);

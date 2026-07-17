@@ -1,12 +1,12 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref } from 'vue';
 
-import ReviewPageHeader from '@/components/reviews/ReviewPageHeader.vue'
-import ReviewHero from '@/components/reviews/ReviewHero.vue'
-import ReviewList from '@/components/reviews/ReviewList.vue'
-import ReviewSidebar from '@/components/reviews/ReviewSidebar.vue'
-import RelatedGames from '@/components/game/RelatedGames.vue'
-import PublicReviewModal from '@/components/games/PublicReviewModal.vue'
+import ReviewPageHeader from '@/components/reviews/ReviewPageHeader.vue';
+import ReviewHero from '@/components/reviews/ReviewHero.vue';
+import ReviewList from '@/components/reviews/ReviewList.vue';
+import ReviewSidebar from '@/components/reviews/ReviewSidebar.vue';
+import RelatedGames from '@/components/game/RelatedGames.vue';
+import PublicReviewModal from '@/components/games/PublicReviewModal.vue';
 
 const props = defineProps({
     game: {
@@ -35,20 +35,20 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-})
+});
 
-const selectedPlatform = ref('all')
-const isReviewModalOpen = ref(false)
+const selectedPlatform = ref('all');
+const isReviewModalOpen = ref(false);
 
 const filteredReviews = computed(() => {
     if (selectedPlatform.value === 'all') {
-        return props.reviews
+        return props.reviews;
     }
 
     return props.reviews.filter((review) => {
-        return review.platform === selectedPlatform.value
-    })
-})
+        return review.platform === selectedPlatform.value;
+    });
+});
 </script>
 
 <template>
@@ -58,13 +58,12 @@ const filteredReviews = computed(() => {
             @write-review="isReviewModalOpen = true"
         />
 
-        <ReviewHero
-            :game="game"
-            :stats="stats"
-        />
+        <ReviewHero :game="game" :stats="stats" />
 
-        <main class="mx-auto max-w-7xl px-6 py-10">
-            <div class="grid gap-8 lg:grid-cols-[1fr_340px]">
+        <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
+            <div
+                class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_340px]"
+            >
                 <ReviewList
                     v-model:platform="selectedPlatform"
                     :game="game"
@@ -74,16 +73,10 @@ const filteredReviews = computed(() => {
                     @write-review="isReviewModalOpen = true"
                 />
 
-                <ReviewSidebar
-                    :game="game"
-                    :stats="stats"
-                />
+                <ReviewSidebar :game="game" :stats="stats" />
             </div>
 
-            <RelatedGames
-                class="mt-10"
-                :games="relatedGames"
-            />
+            <RelatedGames class="mt-8 sm:mt-10" :games="relatedGames" />
         </main>
 
         <PublicReviewModal

@@ -1,15 +1,15 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { computed, ref } from 'vue';
+import { router } from '@inertiajs/vue3';
 
 const props = defineProps({
     game: {
         type: Object,
         required: true,
     },
-})
+});
 
-const isOpen = ref(false)
+const isOpen = ref(false);
 
 const platforms = [
     'Steam',
@@ -39,7 +39,7 @@ const platforms = [
     'Arcade',
     'Physical',
     'Other',
-]
+];
 
 const form = ref({
     title: props.game.title ?? '',
@@ -50,41 +50,32 @@ const form = ref({
     release_date: props.game.release_date ?? '',
     cover_url: props.game.cover_url ?? '',
     header_image_url:
-        props.game.header_image_url ??
-        props.game.header_image ??
-        '',
+        props.game.header_image_url ?? props.game.header_image ?? '',
     igdb_url: props.game.igdb_url ?? '',
 
-    playtime_hours:
-        props.game.playtime_hours ?? '',
+    playtime_hours: props.game.playtime_hours ?? '',
 
-    achievements_unlocked:
-        props.game.achievements_unlocked ?? '',
+    achievements_unlocked: props.game.achievements_unlocked ?? '',
 
-    achievements_total:
-        props.game.achievements_total ?? '',
-})
+    achievements_total: props.game.achievements_total ?? '',
+});
 
 const achievementPercent = computed(() => {
-    const unlocked = Number(form.value.achievements_unlocked)
-    const total = Number(form.value.achievements_total)
+    const unlocked = Number(form.value.achievements_unlocked);
+    const total = Number(form.value.achievements_total);
 
     if (!total) {
-        return 0
+        return 0;
     }
 
-    return Math.round((unlocked / total) * 100)
-})
+    return Math.round((unlocked / total) * 100);
+});
 
 const save = () => {
-    router.patch(
-        `/custom-games/${props.game.custom_game_id}`,
-        form.value,
-        {
-            preserveScroll: true,
-        }
-    )
-}
+    router.patch(`/custom-games/${props.game.custom_game_id}`, form.value, {
+        preserveScroll: true,
+    });
+};
 </script>
 
 <template>
@@ -123,10 +114,7 @@ const save = () => {
             </svg>
         </button>
 
-        <div
-            v-if="isOpen"
-            class="border-t border-zinc-800 p-6"
-        >
+        <div v-if="isOpen" class="border-t border-zinc-800 p-6">
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="mb-2 block text-sm font-medium text-zinc-300">
@@ -135,6 +123,8 @@ const save = () => {
 
                     <input
                         v-model="form.title"
+                        required
+                        maxlength="255"
                         class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     />
                 </div>
@@ -158,6 +148,7 @@ const save = () => {
 
                     <input
                         v-model="form.developer"
+                        maxlength="255"
                         class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     />
                 </div>
@@ -169,6 +160,7 @@ const save = () => {
 
                     <input
                         v-model="form.publisher"
+                        maxlength="255"
                         class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     />
                 </div>
@@ -182,9 +174,7 @@ const save = () => {
                         v-model="form.platform"
                         class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     >
-                        <option value="">
-                            Select platform
-                        </option>
+                        <option value="">Select platform</option>
 
                         <option
                             v-for="platform in platforms"
@@ -205,6 +195,7 @@ const save = () => {
                         v-model="form.playtime_hours"
                         type="number"
                         min="0"
+                        max="100000"
                         step="0.1"
                         class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     />
@@ -231,6 +222,8 @@ const save = () => {
                         v-model="form.achievements_unlocked"
                         type="number"
                         min="0"
+                        max="100000"
+                        step="1"
                         class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     />
                 </div>
@@ -244,6 +237,8 @@ const save = () => {
                         v-model="form.achievements_total"
                         type="number"
                         min="0"
+                        max="100000"
+                        step="1"
                         class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     />
                 </div>
@@ -255,6 +250,8 @@ const save = () => {
 
                     <input
                         v-model="form.cover_url"
+                        type="url"
+                        maxlength="2000"
                         class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     />
                 </div>
@@ -266,6 +263,8 @@ const save = () => {
 
                     <input
                         v-model="form.header_image_url"
+                        type="url"
+                        maxlength="2000"
                         class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     />
                 </div>
@@ -277,6 +276,8 @@ const save = () => {
 
                     <input
                         v-model="form.igdb_url"
+                        type="url"
+                        maxlength="2000"
                         class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     />
                 </div>
@@ -289,6 +290,7 @@ const save = () => {
                     <textarea
                         v-model="form.description"
                         rows="6"
+                        maxlength="10000"
                         class="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-white outline-none focus:border-zinc-600"
                     />
                 </div>

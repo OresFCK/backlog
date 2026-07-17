@@ -4,14 +4,14 @@ defineProps({
         type: Object,
         required: true,
     },
-})
+});
 </script>
 
 <template>
-    <div class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
-        <h2 class="text-lg font-black">
-            About this page
-        </h2>
+    <div
+        class="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:rounded-3xl sm:p-6"
+    >
+        <h2 class="text-lg font-black">About this page</h2>
 
         <p class="mt-3 text-sm leading-6 text-zinc-400">
             This page collects public player reviews for {{ game.title }},

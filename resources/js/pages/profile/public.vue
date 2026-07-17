@@ -1,12 +1,6 @@
 <script setup>
-import { ref } from 'vue'
-import {
-    List,
-    Package,
-    Star,
-    ThumbsUp,
-    X,
-} from 'lucide-vue-next'
+import { ref } from 'vue';
+import { List, Package, Star, ThumbsUp, X } from 'lucide-vue-next';
 
 defineProps({
     profileUser: Object,
@@ -30,16 +24,16 @@ defineProps({
         type: Array,
         default: () => [],
     },
-})
+});
 
-const selectedList = ref(null)
+const selectedList = ref(null);
 
 function openList(list) {
-    selectedList.value = list
+    selectedList.value = list;
 }
 
 function closeList() {
-    selectedList.value = null
+    selectedList.value = null;
 }
 </script>
 
@@ -55,58 +49,75 @@ function closeList() {
                 backgroundPosition: 'center',
             }"
         >
-            <div class="absolute inset-0 bg-gradient-to-b from-transparent to-zinc-950/80" />
+            <div
+                class="absolute inset-0 bg-gradient-to-b from-transparent to-zinc-950/80"
+            />
 
-            <div class="relative mx-auto flex max-w-7xl items-end gap-8 px-8 py-20">
+            <div
+                class="relative mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 py-10 text-center sm:flex-row sm:items-end sm:gap-8 sm:px-8 sm:py-20 sm:text-left"
+            >
                 <img
                     v-if="profileUser.avatar"
                     :src="profileUser.avatar"
                     :alt="profileUser.name"
-                    class="h-32 w-32 rounded-3xl border-4 border-zinc-950 object-cover shadow-2xl"
+                    class="h-24 w-24 rounded-2xl border-4 border-zinc-950 object-cover shadow-2xl sm:h-32 sm:w-32 sm:rounded-3xl"
                 />
 
                 <div>
-                    <p class="text-sm font-bold uppercase tracking-[0.3em] text-indigo-300">
+                    <p
+                        class="text-sm font-bold tracking-[0.3em] text-indigo-300 uppercase"
+                    >
                         Public Profile
                     </p>
 
-                    <h1 class="mt-3 text-6xl font-black tracking-tight">
+                    <h1
+                        class="mt-2 text-3xl font-black tracking-tight break-words sm:mt-3 sm:text-6xl"
+                    >
                         {{ profileUser.name }}
                     </h1>
 
-                    <p class="mt-3 text-zinc-400">
+                    <p
+                        class="mt-2 text-sm break-all text-zinc-400 sm:mt-3 sm:text-base"
+                    >
                         Steam ID: {{ profileUser.steam_id }}
                     </p>
                 </div>
             </div>
         </section>
 
-        <main class="mx-auto max-w-7xl space-y-10 px-8 py-10">
-            <section class="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-2xl shadow-black/20">
+        <main
+            class="mx-auto max-w-7xl space-y-6 px-3 py-6 sm:space-y-10 sm:px-8 sm:py-10"
+        >
+            <section
+                class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 shadow-2xl shadow-black/20 sm:rounded-3xl sm:p-6"
+            >
                 <div class="mb-6 flex items-end justify-between gap-4">
                     <div>
-                        <h2 class="text-3xl font-black">
+                        <h2 class="text-xl font-black sm:text-3xl">
                             Featured Games
                         </h2>
 
                         <p class="mt-1 text-sm text-zinc-500">
-                            Games selected by this user for their public showcase.
+                            Games selected by this user for their public
+                            showcase.
                         </p>
                     </div>
 
-                    <span class="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1 text-xs font-bold text-zinc-400">
+                    <span
+                        class="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1 text-xs font-bold text-zinc-400"
+                    >
                         {{ featuredGames.length }} featured
                     </span>
                 </div>
 
                 <div
                     v-if="featuredGames.length"
-                    class="grid gap-5 md:grid-cols-2 xl:grid-cols-3"
+                    class="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 xl:grid-cols-3"
                 >
                     <article
                         v-for="item in featuredGames"
                         :key="item.id"
-                        class="group overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 transition hover:-translate-y-1 hover:border-zinc-700"
+                        class="group min-w-0 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 transition hover:-translate-y-1 hover:border-zinc-700 sm:rounded-3xl"
                     >
                         <div class="relative overflow-hidden">
                             <img
@@ -123,10 +134,12 @@ function closeList() {
                                 <Package class="h-10 w-10" />
                             </div>
 
-                            <div class="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent" />
+                            <div
+                                class="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent"
+                            />
                         </div>
 
-                        <div class="p-6">
+                        <div class="p-3 sm:p-6">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     <h3 class="text-xl font-black">
@@ -176,9 +189,7 @@ function closeList() {
                     v-else
                     class="rounded-3xl border border-dashed border-zinc-800 bg-zinc-950 p-10 text-center"
                 >
-                    <h3 class="text-xl font-bold">
-                        No Featured Games Yet
-                    </h3>
+                    <h3 class="text-xl font-bold">No Featured Games Yet</h3>
 
                     <p class="mt-2 text-zinc-500">
                         This user has not featured any games yet.
@@ -186,10 +197,12 @@ function closeList() {
                 </div>
             </section>
 
-            <section class="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-2xl shadow-black/20">
+            <section
+                class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 shadow-2xl shadow-black/20 sm:rounded-3xl sm:p-6"
+            >
                 <div class="mb-6 flex items-end justify-between gap-4">
                     <div>
-                        <h2 class="text-3xl font-black">
+                        <h2 class="text-xl font-black sm:text-3xl">
                             Featured Reviews
                         </h2>
 
@@ -198,7 +211,9 @@ function closeList() {
                         </p>
                     </div>
 
-                    <span class="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1 text-xs font-bold text-zinc-400">
+                    <span
+                        class="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1 text-xs font-bold text-zinc-400"
+                    >
                         {{ featuredReviews.length }} featured
                     </span>
                 </div>
@@ -210,7 +225,7 @@ function closeList() {
                     <article
                         v-for="review in featuredReviews"
                         :key="review.id"
-                        class="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 transition hover:-translate-y-1 hover:border-zinc-700"
+                        class="rounded-xl border border-zinc-800 bg-zinc-950 p-4 transition hover:-translate-y-1 hover:border-zinc-700 sm:rounded-3xl sm:p-6"
                     >
                         <p class="text-sm font-bold text-indigo-300">
                             {{ review.game_title || 'Unknown game' }}
@@ -248,7 +263,9 @@ function closeList() {
                             </span>
                         </div>
 
-                        <p class="mt-5 line-clamp-6 whitespace-pre-line text-sm leading-6 text-zinc-300">
+                        <p
+                            class="mt-5 line-clamp-6 text-sm leading-6 whitespace-pre-line text-zinc-300"
+                        >
                             {{ review.body }}
                         </p>
 
@@ -262,9 +279,7 @@ function closeList() {
                     v-else
                     class="rounded-3xl border border-dashed border-zinc-800 bg-zinc-950 p-10 text-center"
                 >
-                    <h3 class="text-xl font-bold">
-                        No Featured Reviews Yet
-                    </h3>
+                    <h3 class="text-xl font-bold">No Featured Reviews Yet</h3>
 
                     <p class="mt-2 text-zinc-500">
                         This user has not featured any reviews yet.
@@ -272,10 +287,12 @@ function closeList() {
                 </div>
             </section>
 
-            <section class="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-2xl shadow-black/20">
+            <section
+                class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 shadow-2xl shadow-black/20 sm:rounded-3xl sm:p-6"
+            >
                 <div class="mb-6 flex items-end justify-between gap-4">
                     <div>
-                        <h2 class="text-3xl font-black">
+                        <h2 class="text-xl font-black sm:text-3xl">
                             Public Custom Lists
                         </h2>
 
@@ -284,7 +301,9 @@ function closeList() {
                         </p>
                     </div>
 
-                    <span class="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1 text-xs font-bold text-zinc-400">
+                    <span
+                        class="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1 text-xs font-bold text-zinc-400"
+                    >
                         {{ publicCustomLists.length }} public
                     </span>
                 </div>
@@ -296,15 +315,19 @@ function closeList() {
                     <article
                         v-for="list in publicCustomLists"
                         :key="list.id"
-                        class="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 transition hover:-translate-y-1 hover:border-zinc-700"
+                        class="rounded-xl border border-zinc-800 bg-zinc-950 p-4 transition hover:-translate-y-1 hover:border-zinc-700 sm:rounded-3xl sm:p-6"
                     >
                         <div class="flex items-center gap-3">
-                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-300">
+                            <div
+                                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-300"
+                            >
                                 <List class="h-6 w-6" />
                             </div>
 
                             <div>
-                                <p class="text-xs font-bold uppercase tracking-widest text-indigo-300">
+                                <p
+                                    class="text-xs font-bold tracking-widest text-indigo-300 uppercase"
+                                >
                                     Custom List
                                 </p>
 
@@ -321,15 +344,13 @@ function closeList() {
                             {{ list.description }}
                         </p>
 
-                        <p
-                            v-else
-                            class="mt-4 text-sm text-zinc-500"
-                        >
+                        <p v-else class="mt-4 text-sm text-zinc-500">
                             No description.
                         </p>
 
                         <p class="mt-5 text-xs text-zinc-600">
-                            {{ list.items_count }} items · Created {{ list.created_at ?? 'recently' }}
+                            {{ list.items_count }} items · Created
+                            {{ list.created_at ?? 'recently' }}
                         </p>
 
                         <button
@@ -356,10 +377,12 @@ function closeList() {
                 </div>
             </section>
 
-            <section class="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 shadow-2xl shadow-black/20">
+            <section
+                class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 shadow-2xl shadow-black/20 sm:rounded-3xl sm:p-6"
+            >
                 <div class="mb-6 flex items-end justify-between gap-4">
                     <div>
-                        <h2 class="text-3xl font-black">
+                        <h2 class="text-xl font-black sm:text-3xl">
                             Featured Wardrobe Items
                         </h2>
 
@@ -368,21 +391,25 @@ function closeList() {
                         </p>
                     </div>
 
-                    <span class="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1 text-xs font-bold text-zinc-400">
+                    <span
+                        class="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1 text-xs font-bold text-zinc-400"
+                    >
                         {{ featuredWardrobeItems.length }} featured
                     </span>
                 </div>
 
                 <div
                     v-if="featuredWardrobeItems.length"
-                    class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"
+                    class="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-4"
                 >
                     <article
                         v-for="item in featuredWardrobeItems"
                         :key="item.id"
-                        class="group overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 transition hover:-translate-y-1 hover:border-zinc-700"
+                        class="group min-w-0 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 transition hover:-translate-y-1 hover:border-zinc-700 sm:rounded-3xl"
                     >
-                        <div class="flex h-44 items-center justify-center overflow-hidden bg-zinc-900">
+                        <div
+                            class="flex h-44 items-center justify-center overflow-hidden bg-zinc-900"
+                        >
                             <img
                                 v-if="item.image_url"
                                 :src="item.image_url"
@@ -399,7 +426,9 @@ function closeList() {
                         </div>
 
                         <div class="p-5">
-                            <p class="text-xs font-bold uppercase tracking-widest text-indigo-300">
+                            <p
+                                class="text-xs font-bold tracking-widest text-indigo-300 uppercase"
+                            >
                                 {{ item.type }}
                             </p>
 
@@ -431,13 +460,19 @@ function closeList() {
 
         <div
             v-if="selectedList"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
+            class="fixed inset-0 z-50 flex items-end justify-center bg-black/80 sm:items-center sm:p-6"
             @click.self="closeList"
         >
-            <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl">
-                <div class="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-950/95 p-5 backdrop-blur">
+            <div
+                class="max-h-[94dvh] w-full max-w-4xl overflow-y-auto rounded-t-3xl border border-zinc-800 bg-zinc-950 shadow-2xl sm:max-h-[90vh] sm:rounded-3xl"
+            >
+                <div
+                    class="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-950/95 p-5 backdrop-blur"
+                >
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">
+                        <p
+                            class="text-xs font-bold tracking-[0.2em] text-indigo-300 uppercase"
+                        >
                             Custom List
                         </p>
 
@@ -458,7 +493,7 @@ function closeList() {
                 <div class="p-6">
                     <p
                         v-if="selectedList.description"
-                        class="mb-6 whitespace-pre-line text-sm leading-7 text-zinc-300"
+                        class="mb-6 text-sm leading-7 whitespace-pre-line text-zinc-300"
                     >
                         {{ selectedList.description }}
                     </p>

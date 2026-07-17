@@ -9,14 +9,14 @@ defineProps({
         type: Object,
         required: true,
     },
-})
+});
 </script>
 
 <template>
-    <div class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
-        <h2 class="text-lg font-black">
-            {{ game.title }} review breakdown
-        </h2>
+    <div
+        class="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:rounded-3xl sm:p-6"
+    >
+        <h2 class="text-lg font-black">{{ game.title }} review breakdown</h2>
 
         <div class="mt-5 space-y-3 text-sm text-zinc-300">
             <div class="flex justify-between">

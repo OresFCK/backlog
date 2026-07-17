@@ -1,21 +1,21 @@
 <script setup>
-import { computed } from 'vue'
-import { Trophy, Calendar } from 'lucide-vue-next'
+import { computed } from 'vue';
+import { Trophy, Calendar } from 'lucide-vue-next';
 
 const props = defineProps({
     game: {
         type: Object,
         required: true,
     },
-})
+});
 
 const playtimeLabel = computed(() =>
-    props.game.is_custom ? 'Manual' : 'From Steam'
-)
+    props.game.is_custom ? 'Manual' : 'From Steam',
+);
 
 const achievementsLabel = computed(() =>
-    props.game.is_custom ? 'Manual achievements' : 'Steam achievements'
-)
+    props.game.is_custom ? 'Manual achievements' : 'Steam achievements',
+);
 
 const playtimeHours = computed(() => {
     if (
@@ -23,19 +23,19 @@ const playtimeHours = computed(() => {
         props.game.playtime_hours !== undefined &&
         props.game.playtime_hours !== ''
     ) {
-        return props.game.playtime_hours
+        return props.game.playtime_hours;
     }
 
     if (props.game.playtime_forever) {
-        return Math.round((props.game.playtime_forever / 60) * 10) / 10
+        return Math.round((props.game.playtime_forever / 60) * 10) / 10;
     }
 
-    return null
-})
+    return null;
+});
 
 const achievementText = computed(() => {
-    const unlocked = props.game.achievements_unlocked
-    const total = props.game.achievements_total
+    const unlocked = props.game.achievements_unlocked;
+    const total = props.game.achievements_total;
 
     if (
         unlocked === null ||
@@ -44,39 +44,39 @@ const achievementText = computed(() => {
         total === undefined ||
         Number(total) <= 0
     ) {
-        return '—'
+        return '—';
     }
 
-    return `${unlocked}/${total}`
-})
+    return `${unlocked}/${total}`;
+});
 
 const achievementPercent = computed(() => {
-    const unlocked = Number(props.game.achievements_unlocked ?? 0)
-    const total = Number(props.game.achievements_total ?? 0)
+    const unlocked = Number(props.game.achievements_unlocked ?? 0);
+    const total = Number(props.game.achievements_total ?? 0);
 
     if (!total) {
-        return null
+        return null;
     }
 
-    return Math.round((unlocked / total) * 100)
-})
+    return Math.round((unlocked / total) * 100);
+});
 </script>
 
 <template>
-    <div class="grid gap-5 md:grid-cols-3">
-        <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-            <p class="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+    <div class="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3">
+        <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5">
+            <p
+                class="text-xs font-semibold tracking-wider text-zinc-500 uppercase"
+            >
                 Playtime
             </p>
 
-            <p class="mt-3 text-3xl font-black text-white">
+            <p class="mt-2 text-2xl font-black text-white sm:mt-3 sm:text-3xl">
                 <template v-if="playtimeHours !== null">
                     {{ playtimeHours }}h
                 </template>
 
-                <template v-else>
-                    —
-                </template>
+                <template v-else> — </template>
             </p>
 
             <p class="mt-1 text-xs text-zinc-500">
@@ -84,10 +84,10 @@ const achievementPercent = computed(() => {
             </p>
         </div>
 
-        <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+        <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5">
             <Trophy class="h-6 w-6 text-zinc-400" />
 
-            <p class="mt-3 text-3xl font-black text-white">
+            <p class="mt-2 text-2xl font-black text-white sm:mt-3 sm:text-3xl">
                 {{ achievementText }}
             </p>
 
@@ -99,16 +99,16 @@ const achievementPercent = computed(() => {
             </p>
         </div>
 
-        <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+        <div
+            class="col-span-2 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5 md:col-span-1"
+        >
             <Calendar class="h-6 w-6 text-zinc-400" />
 
-            <p class="mt-3 text-2xl font-black text-white">
+            <p class="mt-2 text-xl font-black text-white sm:mt-3 sm:text-2xl">
                 {{ game.release_date || '—' }}
             </p>
 
-            <p class="mt-1 text-xs text-zinc-500">
-                Release
-            </p>
+            <p class="mt-1 text-xs text-zinc-500">Release</p>
         </div>
     </div>
 </template>

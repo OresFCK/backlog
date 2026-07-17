@@ -1,69 +1,59 @@
 <script setup>
-import { ref } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { ref } from 'vue';
+import { useForm } from '@inertiajs/vue3';
 
-import Sidebar from '@/components/layout/Sidebar.vue'
-import Topbar from '@/components/layout/Topbar.vue'
+import Sidebar from '@/components/layout/Sidebar.vue';
+import Topbar from '@/components/layout/Topbar.vue';
 
 defineProps({
     user: Object,
-})
+});
 
-const fileInput = ref(null)
+const fileInput = ref(null);
 
-const allowedImageTypes = [
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-]
+const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
-const maxImageSize = 4 * 1024 * 1024
+const maxImageSize = 4 * 1024 * 1024;
 
 const form = useForm({
     type: 'suggestion',
     title: '',
     message: '',
     image: null,
-})
+});
 
 const handleImageChange = (event) => {
-    const file = event.target.files?.[0]
+    const file = event.target.files?.[0];
 
-    form.clearErrors('image')
-    form.image = null
+    form.clearErrors('image');
+    form.image = null;
 
     if (!file) {
-        return
+        return;
     }
 
     if (!allowedImageTypes.includes(file.type)) {
-        form.setError(
-            'image',
-            'Only JPG, PNG and WEBP images are allowed.'
-        )
+        form.setError('image', 'Only JPG, PNG and WEBP images are allowed.');
 
-        event.target.value = ''
+        event.target.value = '';
 
-        return
+        return;
     }
 
     if (file.size > maxImageSize) {
-        form.setError(
-            'image',
-            'Image cannot be larger than 4 MB.'
-        )
+        form.setError('image', 'Image cannot be larger than 4 MB.');
 
-        event.target.value = ''
+        event.target.value = '';
 
-        return
+        return;
     }
 
-    form.image = file
-}
+    form.image = file;
+};
 
 const submit = () => {
     if (form.errors.image) {
-        return
+        return;
     }
 
     form.post('/settings/submissions', {
@@ -71,20 +61,16 @@ const submit = () => {
         forceFormData: true,
 
         onSuccess: () => {
-            form.reset(
-                'title',
-                'message',
-                'image'
-            )
+            form.reset('title', 'message', 'image');
 
-            form.clearErrors()
+            form.clearErrors();
 
             if (fileInput.value) {
-                fileInput.value.value = ''
+                fileInput.value.value = '';
             }
         },
-    })
-}
+    });
+};
 </script>
 
 <template>
@@ -95,7 +81,9 @@ const submit = () => {
             <Topbar :user="user" />
 
             <main class="flex-1 p-8">
-                <section class="mx-auto max-w-3xl rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8">
+                <section
+                    class="mx-auto max-w-3xl rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8"
+                >
                     <h1 class="text-3xl font-bold text-white">
                         Send suggestion
                     </h1>
@@ -116,11 +104,10 @@ const submit = () => {
 
                             <select
                                 v-model="form.type"
+                                required
                                 class="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none focus:border-zinc-600"
                             >
-                                <option value="suggestion">
-                                    Suggestion
-                                </option>
+                                <option value="suggestion">Suggestion</option>
 
                                 <option value="admission">
                                     User admission
@@ -136,9 +123,12 @@ const submit = () => {
                             <input
                                 v-model="form.title"
                                 type="text"
+                                required
+                                minlength="3"
+                                maxlength="255"
                                 class="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none focus:border-zinc-600"
                                 placeholder="Short title"
-                            >
+                            />
 
                             <p
                                 v-if="form.errors.title"
@@ -156,6 +146,9 @@ const submit = () => {
                             <textarea
                                 v-model="form.message"
                                 rows="8"
+                                required
+                                minlength="10"
+                                maxlength="5000"
                                 class="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-white outline-none focus:border-zinc-600"
                                 placeholder="Describe your idea or request"
                             />
@@ -179,10 +172,11 @@ const submit = () => {
                                 accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                                 class="mt-2 w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-300 file:mr-4 file:rounded-xl file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-bold file:text-zinc-950"
                                 @change="handleImageChange"
-                            >
+                            />
 
                             <p class="mt-2 text-xs text-zinc-500">
-                                Allowed formats: JPG, PNG, WEBP. Maximum size: 4 MB.
+                                Allowed formats: JPG, PNG, WEBP. Maximum size: 4
+                                MB.
                             </p>
 
                             <p
@@ -198,7 +192,11 @@ const submit = () => {
                             class="rounded-2xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 disabled:opacity-50"
                             :disabled="form.processing"
                         >
-                            {{ form.processing ? 'Sending...' : 'Send suggestion' }}
+                            {{
+                                form.processing
+                                    ? 'Sending...'
+                                    : 'Send suggestion'
+                            }}
                         </button>
                     </form>
                 </section>

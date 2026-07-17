@@ -1,5 +1,5 @@
 <script setup>
-import GameCard from './GameCard.vue'
+import GameCard from './GameCard.vue';
 
 defineProps({
     games: {
@@ -16,41 +16,30 @@ defineProps({
         type: Boolean,
         default: false,
     },
-})
+});
 
-defineEmits([
-    'toggle-game-selection',
-])
+defineEmits(['toggle-game-selection']);
 </script>
 
 <template>
     <div
-        class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+        class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 lg:gap-5 xl:grid-cols-5"
     >
-        <div
-            v-for="game in games"
-            :key="game.id"
-            class="relative"
-        >
+        <div v-for="game in games" :key="game.id" class="relative">
             <button
                 v-if="selectionMode"
                 type="button"
-                class="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white backdrop-blur transition hover:bg-black"
+                class="absolute top-2 right-2 z-20 flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-black/70 text-sm text-white backdrop-blur transition hover:bg-black sm:top-3 sm:right-3 sm:h-8 sm:w-8"
                 :class="{
                     'bg-white text-zinc-950 hover:bg-white':
                         selectedGameIds.includes(game.id),
                 }"
-                @click="
-                    $emit(
-                        'toggle-game-selection',
-                        game.id
-                    )
-                "
+                @click="$emit('toggle-game-selection', game.id)"
             >
                 ✓
             </button>
 
-            <GameCard :game="game" />
+            <GameCard :game="game" :selection-mode="selectionMode" />
         </div>
     </div>
 </template>

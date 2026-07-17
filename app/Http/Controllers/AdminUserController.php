@@ -16,7 +16,11 @@ class AdminUserController extends Controller
 {
     public function search(Request $request): JsonResponse
     {
-        $query = $request->string('q')->toString();
+        $data = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $query = trim((string) ($data['q'] ?? ''));
 
         if (! $query) {
             return response()->json([]);

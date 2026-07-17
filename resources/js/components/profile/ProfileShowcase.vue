@@ -16,14 +16,14 @@ defineProps({
         type: Array,
         default: () => [],
     },
-})
+});
 </script>
 
 <template>
-    <section class="space-y-8">
+    <section class="space-y-6 sm:space-y-8">
         <div
             v-if="showcase?.image_url"
-            class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
+            class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 sm:rounded-3xl"
         >
             <img
                 :src="showcase.image_url"
@@ -33,38 +33,30 @@ defineProps({
         </div>
 
         <div v-if="featuredGames.length">
-            <h2 class="mb-4 text-xl font-black text-white">
-                Featured games
-            </h2>
+            <h2 class="mb-4 text-xl font-black text-white">Featured games</h2>
 
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
                 <div
                     v-for="game in featuredGames"
                     :key="game.id"
-                    class="rounded-2xl border border-zinc-800 bg-zinc-900 p-4"
+                    class="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900 p-3 sm:rounded-2xl sm:p-4"
                 >
                     <img
                         v-if="game.cover_url"
                         :src="game.cover_url"
                         :alt="game.title"
-                        class="mb-3 h-48 w-full rounded-xl object-cover"
+                        class="mb-2 aspect-video h-auto w-full rounded-lg object-cover sm:mb-3 sm:h-48 sm:rounded-xl"
                     />
 
                     <h3 class="font-bold text-white">
                         {{ game.title }}
                     </h3>
 
-                    <p
-                        v-if="game.status"
-                        class="mt-1 text-sm text-zinc-500"
-                    >
+                    <p v-if="game.status" class="mt-1 text-sm text-zinc-500">
                         {{ game.status }}
                     </p>
 
-                    <p
-                        v-if="game.rating"
-                        class="mt-1 text-sm text-amber-400"
-                    >
+                    <p v-if="game.rating" class="mt-1 text-sm text-amber-400">
                         {{ game.rating }}/10
                     </p>
                 </div>
@@ -72,15 +64,13 @@ defineProps({
         </div>
 
         <div v-if="featuredReviews.length">
-            <h2 class="mb-4 text-xl font-black text-white">
-                Featured reviews
-            </h2>
+            <h2 class="mb-4 text-xl font-black text-white">Featured reviews</h2>
 
-            <div class="grid gap-4 lg:grid-cols-2">
+            <div class="grid gap-3 sm:gap-4 lg:grid-cols-2">
                 <div
                     v-for="review in featuredReviews"
                     :key="review.id"
-                    class="rounded-2xl border border-zinc-800 bg-zinc-900 p-5"
+                    class="rounded-xl border border-zinc-800 bg-zinc-900 p-4 sm:rounded-2xl sm:p-5"
                 >
                     <p class="text-sm font-bold text-indigo-300">
                         {{ review.game_title }}
@@ -98,15 +88,13 @@ defineProps({
         </div>
 
         <div v-if="featuredWardrobeItems.length">
-            <h2 class="mb-4 text-xl font-black text-white">
-                Featured items
-            </h2>
+            <h2 class="mb-4 text-xl font-black text-white">Featured items</h2>
 
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
                 <div
                     v-for="item in featuredWardrobeItems"
                     :key="item.id"
-                    class="rounded-2xl border border-zinc-800 bg-zinc-900 p-4"
+                    class="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900 p-3 sm:rounded-2xl sm:p-4"
                 >
                     <img
                         v-if="item.image_url"
@@ -119,10 +107,7 @@ defineProps({
                         {{ item.name }}
                     </h3>
 
-                    <p
-                        v-if="item.type"
-                        class="text-sm text-zinc-500"
-                    >
+                    <p v-if="item.type" class="text-sm text-zinc-500">
                         {{ item.type }}
                     </p>
                 </div>

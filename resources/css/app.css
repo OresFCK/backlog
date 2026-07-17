@@ -79,6 +79,87 @@
     }
 }
 
+@media (max-width: 639px) {
+    html,
+    body {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    main,
+    .flex-1,
+    .min-w-0 {
+        min-width: 0;
+    }
+
+    main > *,
+    section,
+    article,
+    form,
+    img,
+    video,
+    canvas,
+    input,
+    select,
+    textarea {
+        max-width: 100%;
+    }
+
+    [class~='p-10'],
+    [class~='p-8'],
+    [class~='p-6'] {
+        padding: 1rem;
+    }
+
+    [class~='px-10'],
+    [class~='px-8'],
+    [class~='px-6'] {
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    [class~='py-20'],
+    [class~='py-16'],
+    [class~='py-14'],
+    [class~='py-12'],
+    [class~='py-10'] {
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
+    }
+
+    [class~='text-6xl'],
+    [class~='text-5xl'],
+    [class~='text-4xl'] {
+        font-size: 1.875rem;
+        line-height: 2.25rem;
+    }
+
+    [class~='text-3xl'] {
+        font-size: 1.5rem;
+        line-height: 2rem;
+    }
+
+    [class~='rounded-3xl'] {
+        border-radius: 1rem;
+    }
+
+    [class~='gap-10'],
+    [class~='gap-8'] {
+        gap: 1.25rem;
+    }
+
+    [class~='space-y-10'] > :not([hidden]) ~ :not([hidden]),
+    [class~='space-y-8'] > :not([hidden]) ~ :not([hidden]) {
+        margin-top: 1.5rem;
+    }
+
+    [class~='min-w-[420px]'],
+    [class~='min-w-[400px]'],
+    [class~='min-w-[360px]'] {
+        min-width: 0;
+    }
+}
+
 @layer utilities {
     body,
     html {

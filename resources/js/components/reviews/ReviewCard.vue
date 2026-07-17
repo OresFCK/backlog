@@ -1,19 +1,14 @@
 <script setup>
-import { Flag, Star } from 'lucide-vue-next'
+import { Flag, Star } from 'lucide-vue-next';
 
 defineProps({
     review: {
         type: Object,
         required: true,
     },
-})
+});
 
-defineEmits([
-    'read-more',
-    'toggle-vote',
-    'toggle-featured',
-    'report-review',
-])
+defineEmits(['read-more', 'toggle-vote', 'toggle-featured', 'report-review']);
 
 const platformLabel = (platform) => {
     const labels = {
@@ -28,43 +23,45 @@ const platformLabel = (platform) => {
         ios: 'iOS',
         android: 'Android',
         other: 'Other',
-    }
+    };
 
-    return labels[platform] ?? platform
-}
+    return labels[platform] ?? platform;
+};
 
 const shouldTruncate = (body) => {
-    return String(body ?? '').length > 420
-}
+    return String(body ?? '').length > 420;
+};
 
 const truncatedBody = (body) => {
-    const text = String(body ?? '')
+    const text = String(body ?? '');
 
     if (text.length <= 420) {
-        return text
+        return text;
     }
 
-    return `${text.slice(0, 420)}...`
-}
+    return `${text.slice(0, 420)}...`;
+};
 </script>
 
 <template>
-    <article class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
-        <div class="flex items-start gap-4">
+    <article
+        class="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:rounded-3xl sm:p-6"
+    >
+        <div class="flex items-start gap-3 sm:gap-4">
             <img
                 v-if="review.user?.avatar"
                 :src="review.user.avatar"
-                class="h-14 w-14 rounded-2xl object-cover"
+                class="h-10 w-10 shrink-0 rounded-xl object-cover sm:h-14 sm:w-14 sm:rounded-2xl"
             />
 
             <div
                 v-else
-                class="h-14 w-14 shrink-0 rounded-2xl bg-zinc-800"
+                class="h-10 w-10 shrink-0 rounded-xl bg-zinc-800 sm:h-14 sm:w-14 sm:rounded-2xl"
             />
 
             <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-3">
-                    <h2 class="text-lg font-bold text-white">
+                    <h2 class="text-base font-bold text-white sm:text-lg">
                         {{ review.user?.name ?? 'Unknown user' }}
                     </h2>
 
@@ -105,7 +102,9 @@ const truncatedBody = (body) => {
                     {{ review.game_title || 'Unknown game' }}
                 </p>
 
-                <h3 class="mt-1 text-2xl font-black text-white">
+                <h3
+                    class="mt-1 text-xl font-black break-words text-white sm:text-2xl"
+                >
                     {{ review.title || 'Untitled review' }}
                 </h3>
 
@@ -119,11 +118,13 @@ const truncatedBody = (body) => {
                     <img
                         :src="review.screenshot_url"
                         :alt="review.title || review.game_title"
-                        class="max-h-96 w-full object-cover"
-                    >
+                        class="max-h-72 w-full object-cover sm:max-h-96"
+                    />
                 </a>
 
-                <p class="mt-4 whitespace-pre-line text-zinc-300">
+                <p
+                    class="mt-3 text-sm leading-6 break-words whitespace-pre-line text-zinc-300 sm:mt-4 sm:text-base"
+                >
                     {{ truncatedBody(review.body) }}
                 </p>
 

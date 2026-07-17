@@ -9,23 +9,25 @@ defineProps({
         type: String,
         default: 'all',
     },
-})
+});
 
-defineEmits(['update:platform'])
+defineEmits(['update:platform']);
 </script>
 
 <template>
     <nav
         v-if="platforms.length"
-        class="mt-6 flex flex-wrap gap-2"
+        class="mt-4 flex max-w-full gap-2 overflow-x-auto pb-1 sm:mt-6 sm:flex-wrap sm:overflow-visible"
         aria-label="Filter reviews by platform"
     >
         <button
             type="button"
-            class="rounded-xl border px-4 py-2 text-sm font-bold transition"
-            :class="platform === 'all'
-                ? 'border-white bg-white text-zinc-950'
-                : 'border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white'"
+            class="shrink-0 rounded-xl border px-3 py-2 text-sm font-bold transition sm:px-4"
+            :class="
+                platform === 'all'
+                    ? 'border-white bg-white text-zinc-950'
+                    : 'border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white'
+            "
             @click="$emit('update:platform', 'all')"
         >
             All
@@ -35,10 +37,12 @@ defineEmits(['update:platform'])
             v-for="item in platforms"
             :key="item.value"
             type="button"
-            class="rounded-xl border px-4 py-2 text-sm font-bold transition"
-            :class="platform === item.value
-                ? 'border-white bg-white text-zinc-950'
-                : 'border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white'"
+            class="shrink-0 rounded-xl border px-3 py-2 text-sm font-bold transition sm:px-4"
+            :class="
+                platform === item.value
+                    ? 'border-white bg-white text-zinc-950'
+                    : 'border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white'
+            "
             @click="$emit('update:platform', item.value)"
         >
             {{ item.label }} · {{ item.count }}

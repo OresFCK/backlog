@@ -1,18 +1,18 @@
 <script setup>
-import { normalizeStatus, ratingStars, statusColor } from '@/lib/profile'
+import { normalizeStatus, ratingStars, statusColor } from '@/lib/profile';
 
 defineProps({
     activity: Array,
-})
+});
 </script>
 
 <template>
-    <div class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
-        <div class="mb-6 flex items-center justify-between">
+    <div
+        class="rounded-2xl border border-zinc-800 bg-zinc-900 p-3 sm:rounded-3xl sm:p-6"
+    >
+        <div class="mb-4 flex items-center justify-between sm:mb-6">
             <div>
-                <h2 class="text-xl font-semibold">
-                    Recent Activity
-                </h2>
+                <h2 class="text-xl font-semibold">Recent Activity</h2>
 
                 <p class="mt-1 text-sm text-zinc-500">
                     {{ activity.length }} recent updates
@@ -24,12 +24,12 @@ defineProps({
             <div
                 v-for="item in activity"
                 :key="item.id"
-                class="flex gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4"
+                class="flex gap-3 rounded-xl border border-zinc-800 bg-zinc-950 p-3 sm:gap-4 sm:rounded-2xl sm:p-4"
             >
                 <img
                     v-if="item.cover_url"
                     :src="item.cover_url"
-                    class="h-20 w-14 rounded-lg object-cover"
+                    class="h-16 w-12 shrink-0 rounded-lg object-cover sm:h-20 sm:w-14"
                 />
 
                 <div class="min-w-0 flex-1">

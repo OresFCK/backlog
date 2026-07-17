@@ -1,13 +1,11 @@
 <script setup>
-import { computed, ref } from 'vue'
-import PageLoader from '@/components/layout/PageLoader.vue'
-import { pageLoading } from '@/stores/pageLoader'
-import { router } from '@inertiajs/vue3'
-import { onMounted, onUnmounted } from 'vue'
-import {
-    Link,
-    usePage,
-} from '@inertiajs/vue3'
+import { computed, ref, watch } from 'vue';
+import PageLoader from '@/components/layout/PageLoader.vue';
+import { pageLoading } from '@/stores/pageLoader';
+import { closeMobileSidebar, mobileSidebarOpen } from '@/stores/mobileSidebar';
+import { router } from '@inertiajs/vue3';
+import { onMounted, onUnmounted } from 'vue';
+import { Link, usePage } from '@inertiajs/vue3';
 
 import {
     LayoutDashboard,
@@ -31,126 +29,141 @@ import {
     Lightbulb,
     UserCog,
     ListOrdered,
-} from 'lucide-vue-next'
+    X,
+} from 'lucide-vue-next';
 
-const page = usePage()
+const props = defineProps({
+    open: { type: Boolean, default: false },
+});
+
+const emit = defineEmits(['close']);
+
+const isMobileOpen = computed(() => props.open || mobileSidebarOpen.value);
+
+const closeSidebar = () => {
+    closeMobileSidebar();
+    emit('close');
+};
+
+const page = usePage();
+
+watch(
+    () => page.url,
+    () => closeSidebar(),
+);
 
 const initialSection = computed(() => {
     if (
-        ['/curators', '/mini-curators', '/premieres']
-            .some(route => page.url.startsWith(route))
+        ['/curators', '/mini-curators', '/premieres'].some((route) =>
+            page.url.startsWith(route),
+        )
     ) {
-        return 'curators'
+        return 'curators';
     }
 
     if (
-        ['/backlog', '/playing', '/finished', '/dropped', '/stats']
-            .some(route => page.url.startsWith(route))
+        ['/backlog', '/playing', '/finished', '/dropped', '/stats'].some(
+            (route) => page.url.startsWith(route),
+        )
     ) {
-        return 'collection'
+        return 'collection';
     }
 
     if (
-        ['/reviews', '/challenges', '/people']
-            .some(route => page.url.startsWith(route))
+        ['/reviews', '/challenges', '/people'].some((route) =>
+            page.url.startsWith(route),
+        )
     ) {
-        return 'community'
+        return 'community';
     }
 
     if (
-        ['/games/create', '/shop', '/wardrobe']
-            .some(route => page.url.startsWith(route))
+        ['/games/create', '/shop', '/wardrobe'].some((route) =>
+            page.url.startsWith(route),
+        )
     ) {
-        return 'tools'
+        return 'tools';
     }
 
     if (page.url.startsWith('/settings')) {
-        return 'settings'
+        return 'settings';
     }
 
-    return null
-})
+    return null;
+});
 
-let timeout = null
-let removeStart = null
-let removeFinish = null
-let removeError = null
-let removeInvalid = null
-let removeException = null
+let timeout = null;
+let removeStart = null;
+let removeFinish = null;
+let removeError = null;
+let removeInvalid = null;
+let removeException = null;
 
 const stopLoader = () => {
     if (timeout) {
-        clearTimeout(timeout)
-        timeout = null
+        clearTimeout(timeout);
+        timeout = null;
     }
 
-    pageLoading.value = false
-}
+    pageLoading.value = false;
+};
 
 onMounted(() => {
-    removeStart = router.on('start', event => {
+    closeMobileSidebar();
 
-        stopLoader()
+    removeStart = router.on('start', (event) => {
+        closeSidebar();
+        stopLoader();
 
         timeout = setTimeout(() => {
-            pageLoading.value = true
-        }, 500)
-    })
+            pageLoading.value = true;
+        }, 500);
+    });
 
-    removeFinish = router.on('finish', event => {
-        stopLoader()
-    })
+    removeFinish = router.on('finish', (event) => {
+        stopLoader();
+    });
 
-    removeError = router.on('error', event => {
-        stopLoader()
-    })
+    removeError = router.on('error', (event) => {
+        stopLoader();
+    });
 
-    removeInvalid = router.on('invalid', event => {
-        stopLoader()
-    })
+    removeInvalid = router.on('invalid', (event) => {
+        stopLoader();
+    });
 
-    removeException = router.on('exception', event => {
-        stopLoader()
-    })
-})
+    removeException = router.on('exception', (event) => {
+        stopLoader();
+    });
+});
 
 onUnmounted(() => {
-    stopLoader()
+    stopLoader();
 
-    removeStart?.()
-    removeFinish?.()
-    removeError?.()
-    removeInvalid?.()
-    removeException?.()
-})
+    removeStart?.();
+    removeFinish?.();
+    removeError?.();
+    removeInvalid?.();
+    removeException?.();
+});
 
-const openSections = ref(
-    initialSection.value
-        ? [initialSection.value]
-        : []
-)
+const openSections = ref(initialSection.value ? [initialSection.value] : []);
 
 const toggleSection = (section) => {
     openSections.value = openSections.value.includes(section)
-        ? openSections.value.filter(
-            item => item !== section
-        )
-        : [
-            ...openSections.value,
-            section,
-        ]
-}
+        ? openSections.value.filter((item) => item !== section)
+        : [...openSections.value, section];
+};
 
-const isSectionOpen = (section) =>
-    openSections.value.includes(section)
+const isSectionOpen = (section) => openSections.value.includes(section);
 
 const navItemClass = (href) =>
     page.url.startsWith(href)
         ? 'border border-zinc-700 bg-zinc-800 text-white shadow-sm'
-        : 'border border-transparent text-zinc-300 hover:border-zinc-800 hover:bg-zinc-900 hover:text-white'
+        : 'border border-transparent text-zinc-300 hover:border-zinc-800 hover:bg-zinc-900 hover:text-white';
 
 const sectionButtonClass =
-    'mb-3 flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900 hover:text-white'
+    'mb-3 flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900 hover:text-white';
 
 const mainItems = [
     {
@@ -163,7 +176,7 @@ const mainItems = [
         href: '/recommendations',
         icon: Sparkles,
     },
-]
+];
 
 const curatorsItems = [
     {
@@ -181,7 +194,7 @@ const curatorsItems = [
         href: '/premieres',
         icon: CalendarDays,
     },
-]
+];
 
 const collectionItems = [
     {
@@ -209,7 +222,7 @@ const collectionItems = [
         href: '/stats',
         icon: BarChart3,
     },
-]
+];
 
 const communityItems = [
     {
@@ -227,7 +240,7 @@ const communityItems = [
         href: '/people',
         icon: Users,
     },
-]
+];
 
 const toolItems = [
     {
@@ -245,7 +258,7 @@ const toolItems = [
         href: '/lists',
         icon: ListOrdered,
     },
-]
+];
 
 const settingsItems = [
     {
@@ -268,21 +281,40 @@ const settingsItems = [
         href: '/settings/suggestion',
         icon: Lightbulb,
     },
-]
+];
 </script>
 
 <template>
     <PageLoader :visible="pageLoading" />
 
-    <aside class="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-zinc-800 bg-zinc-950">
-        <div class="flex h-[89px] flex-col justify-center border-b border-zinc-800 px-6">
+    <div
+        v-if="isMobileOpen"
+        class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
+        aria-hidden="true"
+        @click="closeSidebar"
+    />
+
+    <aside
+        class="fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(18rem,85vw)] shrink-0 flex-col border-r border-zinc-800 bg-zinc-950 transition-transform duration-300 lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:w-64 lg:translate-x-0"
+        :class="isMobileOpen ? 'translate-x-0' : '-translate-x-full'"
+    >
+        <div
+            class="flex h-[89px] flex-col justify-center border-b border-zinc-800 px-6"
+        >
             <h1 class="text-2xl font-bold tracking-tight text-white">
                 <Link href="/dashboard">Curator.gg</Link>
             </h1>
 
-            <p class="mt-1 text-sm text-zinc-400">
-                Beat your backlog.
-            </p>
+            <p class="mt-1 text-sm text-zinc-400">Beat your backlog.</p>
+
+            <button
+                type="button"
+                class="absolute top-5 right-4 flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 text-zinc-400 hover:text-white lg:hidden"
+                aria-label="Close navigation"
+                @click="closeSidebar"
+            >
+                <X class="h-5 w-5" />
+            </button>
         </div>
 
         <nav class="sidebar-scroll flex-1 overflow-y-auto px-4 py-5">
@@ -291,13 +323,11 @@ const settingsItems = [
                     v-for="item in mainItems"
                     :key="item.href"
                     :href="item.href"
+                    @click="closeSidebar"
                     class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200"
                     :class="navItemClass(item.href)"
                 >
-                    <component
-                        :is="item.icon"
-                        class="h-5 w-5 shrink-0"
-                    />
+                    <component :is="item.icon" class="h-5 w-5 shrink-0" />
 
                     <span>{{ item.label }}</span>
                 </Link>

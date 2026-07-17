@@ -1,15 +1,15 @@
 <script setup>
-import { ref } from 'vue'
-import { router, useForm } from '@inertiajs/vue3'
+import { ref } from 'vue';
+import { router, useForm } from '@inertiajs/vue3';
 
 defineProps({
     items: {
         type: Array,
         default: () => [],
     },
-})
+});
 
-const editingItem = ref(null)
+const editingItem = ref(null);
 
 const form = useForm({
     name: '',
@@ -18,7 +18,7 @@ const form = useForm({
     price: '',
     image: null,
     is_active: true,
-})
+});
 
 const typeInfo = {
     profile_overlay: {
@@ -62,26 +62,26 @@ const typeInfo = {
         format: '-',
         notes: 'Text-only item',
     },
-}
+};
 
 const hasImageUpload = () => {
-    return !['username_font', 'user_title'].includes(form.type)
-}
+    return !['username_font', 'user_title'].includes(form.type);
+};
 
 const resetForm = () => {
-    editingItem.value = null
+    editingItem.value = null;
 
-    form.reset()
+    form.reset();
 
-    form.type = 'profile_overlay'
-    form.price = 0
-    form.image = null
-    form.is_active = true
-}
+    form.type = 'profile_overlay';
+    form.price = 0;
+    form.image = null;
+    form.is_active = true;
+};
 
 const submit = () => {
     if (!hasImageUpload()) {
-        form.image = null
+        form.image = null;
     }
 
     if (editingItem.value) {
@@ -89,38 +89,38 @@ const submit = () => {
             preserveScroll: true,
             forceFormData: true,
             onSuccess: resetForm,
-        })
+        });
 
-        return
+        return;
     }
 
     form.post('/admin/shop-items', {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: resetForm,
-    })
-}
+    });
+};
 
 const editItem = (item) => {
-    editingItem.value = item
+    editingItem.value = item;
 
-    form.name = item.name
-    form.description = item.description ?? ''
-    form.type = item.type
-    form.price = item.price
-    form.image = null
-    form.is_active = item.is_active
-}
+    form.name = item.name;
+    form.description = item.description ?? '';
+    form.type = item.type;
+    form.price = item.price;
+    form.image = null;
+    form.is_active = item.is_active;
+};
 
 const deleteItem = (item) => {
     if (!confirm(`Delete "${item.name}"?`)) {
-        return
+        return;
     }
 
     router.delete(`/admin/shop-items/${item.id}`, {
         preserveScroll: true,
-    })
-}
+    });
+};
 </script>
 
 <template>
@@ -135,6 +135,9 @@ const deleteItem = (item) => {
 
             <input
                 v-model="form.name"
+                required
+                minlength="2"
+                maxlength="255"
                 placeholder="Item name"
                 class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
             />
@@ -143,40 +146,28 @@ const deleteItem = (item) => {
                 v-model="form.description"
                 placeholder="Description"
                 rows="4"
+                maxlength="2000"
                 class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
             />
 
             <select
                 v-model="form.type"
+                required
                 class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
             >
-                <option value="profile_overlay">
-                    Profile overlay
-                </option>
+                <option value="profile_overlay">Profile overlay</option>
 
-                <option value="badge">
-                    Badge
-                </option>
+                <option value="badge">Badge</option>
 
-                <option value="profile_banner">
-                    Profile banner
-                </option>
+                <option value="profile_banner">Profile banner</option>
 
-                <option value="theme">
-                    Theme
-                </option>
+                <option value="theme">Theme</option>
 
-                <option value="user_title">
-                    User title
-                </option>
+                <option value="user_title">User title</option>
 
-                <option value="profile_showcase">
-                    Profile showcase
-                </option>
+                <option value="profile_showcase">Profile showcase</option>
 
-                <option value="username_font">
-                    Username font
-                </option>
+                <option value="username_font">Username font</option>
             </select>
 
             <div
@@ -188,9 +179,7 @@ const deleteItem = (item) => {
 
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between gap-4">
-                        <span class="text-zinc-400">
-                            Recommended size
-                        </span>
+                        <span class="text-zinc-400"> Recommended size </span>
 
                         <span class="text-right font-medium text-white">
                             {{ typeInfo[form.type]?.size }}
@@ -198,9 +187,7 @@ const deleteItem = (item) => {
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <span class="text-zinc-400">
-                            Format
-                        </span>
+                        <span class="text-zinc-400"> Format </span>
 
                         <span class="text-right font-medium text-white">
                             {{ typeInfo[form.type]?.format }}
@@ -208,9 +195,7 @@ const deleteItem = (item) => {
                     </div>
 
                     <div class="flex justify-between gap-4">
-                        <span class="text-zinc-400">
-                            Notes
-                        </span>
+                        <span class="text-zinc-400"> Notes </span>
 
                         <span class="text-right font-medium text-white">
                             {{ typeInfo[form.type]?.notes }}
@@ -222,7 +207,10 @@ const deleteItem = (item) => {
             <input
                 v-model="form.price"
                 type="number"
+                required
                 min="0"
+                max="2147483647"
+                step="1"
                 placeholder="Price"
                 class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
             />
@@ -247,7 +235,8 @@ const deleteItem = (item) => {
                 v-else-if="form.type === 'username_font'"
                 class="rounded-2xl border border-purple-500/20 bg-purple-500/5 p-4 text-sm text-purple-300"
             >
-                This item should store font information in metadata instead of an image.
+                This item should store font information in metadata instead of
+                an image.
             </div>
 
             <label class="flex items-center gap-3 text-sm text-zinc-300">
@@ -284,9 +273,7 @@ const deleteItem = (item) => {
             class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
         >
             <div class="border-b border-zinc-800 p-6">
-                <h2 class="text-xl font-bold text-white">
-                    Shop items
-                </h2>
+                <h2 class="text-xl font-bold text-white">Shop items</h2>
             </div>
 
             <div class="divide-y divide-zinc-800">
@@ -345,7 +332,6 @@ const deleteItem = (item) => {
                     >
                         Edit
                     </button>
-
                 </div>
 
                 <div

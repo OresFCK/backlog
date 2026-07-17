@@ -4,7 +4,7 @@ defineProps({
         type: Object,
         required: true,
     },
-})
+});
 </script>
 
 <template>
@@ -12,19 +12,15 @@ defineProps({
         <img
             v-if="game.cover_url"
             :src="game.cover_url"
-            class="w-full rounded-2xl object-cover"
+            class="mx-auto w-full max-w-xs rounded-2xl object-cover lg:max-w-none"
         />
 
-        <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-            <h3 class="font-bold text-white">
-                Information
-            </h3>
+        <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5">
+            <h3 class="font-bold text-white">Information</h3>
 
             <dl class="mt-4 space-y-4 text-sm">
                 <div>
-                    <dt class="text-zinc-500">
-                        Developer
-                    </dt>
+                    <dt class="text-zinc-500">Developer</dt>
 
                     <dd class="text-zinc-200">
                         {{ game.developers?.join(', ') || 'Unknown' }}
@@ -32,9 +28,7 @@ defineProps({
                 </div>
 
                 <div>
-                    <dt class="text-zinc-500">
-                        Publisher
-                    </dt>
+                    <dt class="text-zinc-500">Publisher</dt>
 
                     <dd class="text-zinc-200">
                         {{
@@ -46,9 +40,7 @@ defineProps({
                 </div>
 
                 <div>
-                    <dt class="text-zinc-500">
-                        Release date
-                    </dt>
+                    <dt class="text-zinc-500">Release date</dt>
 
                     <dd class="text-zinc-200">
                         {{ game.release_date || 'Unknown' }}
@@ -56,26 +48,16 @@ defineProps({
                 </div>
 
                 <div>
-                    <dt class="text-zinc-500">
-                        Platform
-                    </dt>
+                    <dt class="text-zinc-500">Platform</dt>
 
                     <dd class="text-zinc-200">
-                        <span v-if="game.platforms?.windows">
-                            Windows
-                        </span>
+                        <span v-if="game.platforms?.windows"> Windows </span>
 
-                        <span v-if="game.platforms?.mac">
-                            , Mac
-                        </span>
+                        <span v-if="game.platforms?.mac"> , Mac </span>
 
-                        <span v-if="game.platforms?.linux">
-                            , Linux
-                        </span>
+                        <span v-if="game.platforms?.linux"> , Linux </span>
 
-                        <span v-if="game.is_custom">
-                            Custom
-                        </span>
+                        <span v-if="game.is_custom"> Custom </span>
                     </dd>
                 </div>
             </dl>

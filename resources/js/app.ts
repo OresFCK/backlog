@@ -1,9 +1,10 @@
-import '../css/app.css'
+import '../css/app.css';
 
-import { createApp, h } from 'vue'
+import { createApp, h } from 'vue';
 
-import { createInertiaApp } from '@inertiajs/vue3'
-import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers'
+import { createInertiaApp } from '@inertiajs/vue3';
+import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import ValidationErrors from '@/components/ui/ValidationErrors.vue';
 
 createInertiaApp({
     resolve: (name) =>
@@ -14,13 +15,13 @@ createInertiaApp({
 
     setup({ el, App, props, plugin }) {
         createApp({
-            render: () => h(App, props),
+            render: () => h('div', [h(App, props), h(ValidationErrors)]),
         })
             .use(plugin)
-            .mount(el)
+            .mount(el);
     },
 
     progress: {
         color: '#6366f1',
     },
-})
+});

@@ -1,5 +1,5 @@
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { Link } from '@inertiajs/vue3';
 
 defineProps({
     games: {
@@ -11,30 +11,31 @@ defineProps({
         type: String,
         default: 'Related Games',
     },
-})
+});
 
 const gameUrl = (game) => {
-    return `/${game.slug}`
-}
+    return `/${game.slug}`;
+};
 </script>
 
 <template>
-    <section
-        v-if="games.length"
-        class="overflow-hidden"
-    >
-        <div class="mb-6 flex items-center justify-between border-b border-zinc-800 pb-3">
-            <h2 class="text-2xl font-black">
+    <section v-if="games.length" class="overflow-hidden">
+        <div
+            class="mb-4 flex items-center justify-between border-b border-zinc-800 pb-3 sm:mb-6"
+        >
+            <h2 class="text-xl font-black sm:text-2xl">
                 {{ title }}
             </h2>
         </div>
 
-        <div class="related-games-scroll flex max-w-full gap-4 overflow-x-auto pb-4">
+        <div
+            class="related-games-scroll flex max-w-full gap-4 overflow-x-auto pb-4"
+        >
             <Link
                 v-for="game in games"
                 :key="game.id"
                 :href="gameUrl(game)"
-                class="block w-36 shrink-0 sm:w-40"
+                class="block w-28 shrink-0 sm:w-40"
             >
                 <img
                     v-if="game.cover_url"
@@ -42,14 +43,16 @@ const gameUrl = (game) => {
                     :alt="game.title"
                     class="aspect-[3/4] w-full rounded-lg object-cover"
                     loading="lazy"
-                >
+                />
 
                 <div
                     v-else
                     class="aspect-[3/4] w-full rounded-lg bg-zinc-800"
                 />
 
-                <h3 class="mt-3 truncate text-sm font-bold text-white underline">
+                <h3
+                    class="mt-3 truncate text-sm font-bold text-white underline"
+                >
                     {{ game.title }}
                 </h3>
 

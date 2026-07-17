@@ -1,96 +1,94 @@
 <script setup>
-import { ref, watch } from 'vue'
-import { router } from '@inertiajs/vue3'
-import { Search } from 'lucide-vue-next'
+import { ref, watch } from 'vue';
+import { router } from '@inertiajs/vue3';
+import { Search } from 'lucide-vue-next';
 
-const searchQuery = ref('')
-const searchResults = ref([])
-const isSearching = ref(false)
-const showSearchResults = ref(false)
+const searchQuery = ref('');
+const searchResults = ref([]);
+const isSearching = ref(false);
+const showSearchResults = ref(false);
 
-let searchTimeout = null
-let searchController = null
+let searchTimeout = null;
+let searchController = null;
 
 const searchGames = async () => {
-    const query = searchQuery.value.trim()
+    const query = searchQuery.value.trim();
 
     if (query.length < 3) {
-        searchController?.abort()
-        searchResults.value = []
-        showSearchResults.value = false
-        isSearching.value = false
-        return
+        searchController?.abort();
+        searchResults.value = [];
+        showSearchResults.value = false;
+        isSearching.value = false;
+        return;
     }
 
-    searchController?.abort()
-    searchController = new AbortController()
+    searchController?.abort();
+    searchController = new AbortController();
 
-    isSearching.value = true
-    showSearchResults.value = true
+    isSearching.value = true;
+    showSearchResults.value = true;
 
     try {
         const response = await fetch(
             `/public-games/search?q=${encodeURIComponent(query)}`,
             {
                 signal: searchController.signal,
-            }
-        )
+            },
+        );
 
         if (!response.ok) {
-            throw new Error('Search request failed')
+            throw new Error('Search request failed');
         }
 
-        searchResults.value = await response.json()
+        searchResults.value = await response.json();
     } catch (error) {
         if (error.name !== 'AbortError') {
-            console.error(error)
+            console.error(error);
         }
     } finally {
-        isSearching.value = false
+        isSearching.value = false;
     }
-}
+};
 
 const goToGame = (game) => {
-    searchController?.abort()
+    searchController?.abort();
 
-    searchQuery.value = ''
-    searchResults.value = []
-    showSearchResults.value = false
+    searchQuery.value = '';
+    searchResults.value = [];
+    showSearchResults.value = false;
 
-    router.visit(`/${game.slug}`)
-}
+    router.visit(`/${game.slug}`);
+};
 
 watch(searchQuery, () => {
-    clearTimeout(searchTimeout)
+    clearTimeout(searchTimeout);
 
     searchTimeout = setTimeout(() => {
-        searchGames()
-    }, 400)
-})
+        searchGames();
+    }, 400);
+});
 </script>
 
 <template>
     <div class="relative w-full max-w-xl">
         <Search
-            class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500"
+            class="pointer-events-none absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-zinc-500"
         />
 
         <input
+            maxlength="100"
             v-model="searchQuery"
             type="text"
             placeholder="Search games..."
-            class="h-12 w-full rounded-2xl border border-zinc-800 bg-zinc-900 pl-12 pr-4 text-sm font-medium text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
+            class="h-12 w-full rounded-2xl border border-zinc-800 bg-zinc-900 pr-4 pl-12 text-sm font-medium text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
             @focus="showSearchResults = searchResults.length > 0"
-        >
+        />
 
         <div
             v-if="showSearchResults"
-            class="absolute left-0 top-14 z-50 w-full overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl"
+            class="absolute top-14 left-0 z-50 w-full overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl"
         >
-            <div
-                v-if="isSearching"
-                class="p-4 text-sm text-zinc-500"
-            >
+            <div v-if="isSearching" class="p-4 text-sm text-zinc-500">
                 Searching...
             </div>
 
@@ -102,15 +100,20 @@ watch(searchQuery, () => {
                 @click="goToGame(game)"
             >
                 <img
-                    v-if="game.cover_url || game.igdb_cover_url || game.header_image_url"
-                    :src="game.cover_url || game.igdb_cover_url || game.header_image_url"
+                    v-if="
+                        game.cover_url ||
+                        game.igdb_cover_url ||
+                        game.header_image_url
+                    "
+                    :src="
+                        game.cover_url ||
+                        game.igdb_cover_url ||
+                        game.header_image_url
+                    "
                     class="h-12 w-9 rounded object-cover"
-                >
-
-                <div
-                    v-else
-                    class="h-12 w-9 rounded bg-zinc-800"
                 />
+
+                <div v-else class="h-12 w-9 rounded bg-zinc-800" />
 
                 <div class="min-w-0">
                     <p class="truncate text-sm font-bold text-white">

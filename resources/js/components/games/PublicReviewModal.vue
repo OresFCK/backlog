@@ -1,7 +1,7 @@
 <script setup>
-import { ref } from 'vue'
-import { router } from '@inertiajs/vue3'
-import { ThumbsUp, X } from 'lucide-vue-next'
+import { computed, ref } from 'vue';
+import { router } from '@inertiajs/vue3';
+import { ThumbsUp, X } from 'lucide-vue-next';
 
 const props = defineProps({
     game: {
@@ -28,9 +28,9 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-})
+});
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close']);
 
 const platforms = [
     { value: 'pc', label: 'PC' },
@@ -44,32 +44,41 @@ const platforms = [
     { value: 'ios', label: 'iOS' },
     { value: 'android', label: 'Android' },
     { value: 'other', label: 'Other' },
-]
+];
 
-const publicReviewTitle = ref(props.game.title)
-const publicReviewBody = ref(props.note ?? '')
-const publicReviewRating = ref(props.rating)
-const publicReviewRecommended = ref(props.recommended)
-const publicReviewNotRecommended = ref(props.notRecommended)
-const publicReviewPlatform = ref('')
-const publicReviewScreenshot = ref(null)
-const publicReviewTimeToBeatHours = ref('')
+const publicReviewTitle = ref(props.game.title);
+const publicReviewBody = ref(props.note ?? '');
+const publicReviewRating = ref(props.rating);
+const publicReviewRecommended = ref(props.recommended);
+const publicReviewNotRecommended = ref(props.notRecommended);
+const publicReviewPlatform = ref('');
+const publicReviewScreenshot = ref(null);
+const publicReviewTimeToBeatHours = ref('');
+
+const canSubmit = computed(() => {
+    return Boolean(
+        publicReviewTitle.value.trim().length &&
+        publicReviewBody.value.trim().length &&
+        Number(publicReviewRating.value) >= 1 &&
+        Number(publicReviewRating.value) <= 10,
+    );
+});
 
 const togglePublicRecommended = () => {
-    publicReviewRecommended.value = !publicReviewRecommended.value
+    publicReviewRecommended.value = !publicReviewRecommended.value;
 
     if (publicReviewRecommended.value) {
-        publicReviewNotRecommended.value = false
+        publicReviewNotRecommended.value = false;
     }
-}
+};
 
 const togglePublicNotRecommended = () => {
-    publicReviewNotRecommended.value = !publicReviewNotRecommended.value
+    publicReviewNotRecommended.value = !publicReviewNotRecommended.value;
 
     if (publicReviewNotRecommended.value) {
-        publicReviewRecommended.value = false
+        publicReviewRecommended.value = false;
     }
-}
+};
 
 const blockInvalidKeys = (event) => {
     const allowedKeys = [
@@ -78,16 +87,16 @@ const blockInvalidKeys = (event) => {
         'ArrowLeft',
         'ArrowRight',
         'Tab',
-    ]
+    ];
 
     if (allowedKeys.includes(event.key)) {
-        return
+        return;
     }
 
     if (!/^\d$/.test(event.key)) {
-        event.preventDefault()
+        event.preventDefault();
     }
-}
+};
 
 const blockInvalidTimeKeys = (event) => {
     const allowedKeys = [
@@ -98,60 +107,60 @@ const blockInvalidTimeKeys = (event) => {
         'Tab',
         '.',
         ',',
-    ]
+    ];
 
     if (allowedKeys.includes(event.key)) {
-        return
+        return;
     }
 
     if (!/^\d$/.test(event.key)) {
-        event.preventDefault()
+        event.preventDefault();
     }
-}
+};
 
 const normalizeRating = (value) => {
-    let normalizedValue = value.replace(/\D/g, '').slice(0, 2)
+    let normalizedValue = value.replace(/\D/g, '').slice(0, 2);
 
     if (normalizedValue === '') {
-        return ''
+        return '';
     }
 
     if (Number(normalizedValue) > 10) {
-        return '10'
+        return '10';
     }
 
     if (Number(normalizedValue) < 1) {
-        return '1'
+        return '1';
     }
 
-    return normalizedValue
-}
+    return normalizedValue;
+};
 
 const normalizeTimeToBeat = (value) => {
     return String(value ?? '')
         .replace(',', '.')
         .replace(/[^\d.]/g, '')
         .replace(/(\..*)\./g, '$1')
-        .slice(0, 7)
-}
+        .slice(0, 7);
+};
 
 const handlePublicRatingInput = (event) => {
-    publicReviewRating.value = normalizeRating(event.target.value)
-}
+    publicReviewRating.value = normalizeRating(event.target.value);
+};
 
 const handleTimeToBeatInput = (event) => {
-    publicReviewTimeToBeatHours.value = normalizeTimeToBeat(event.target.value)
-}
+    publicReviewTimeToBeatHours.value = normalizeTimeToBeat(event.target.value);
+};
 
 const handleScreenshotInput = (event) => {
-    publicReviewScreenshot.value = event.target.files[0] ?? null
-}
+    publicReviewScreenshot.value = event.target.files[0] ?? null;
+};
 
 const submitPublicReview = () => {
     router.post(
         '/reviews/public',
         {
-            game_id: props.game.database_id || props.game.id,
+            game_id: props.game.database_id ?? props.game.id,
             source: props.game.source || null,
             source_game_id:
                 props.game.appid ||
@@ -176,26 +185,25 @@ const submitPublicReview = () => {
             forceFormData: true,
 
             onSuccess: () => {
-                emit('close')
+                emit('close');
             },
-        }
-    )
-}
+        },
+    );
+};
 </script>
 
 <template>
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
+    <div
+        class="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center sm:p-6"
+    >
         <div
-            class="review-modal-scroll h-[720px] w-[960px] max-w-[95vw] resize overflow-auto rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl"
-            style="
-                min-width: 420px;
-                min-height: 360px;
-                max-height: 95vh;
-            "
+            class="flex h-[min(94dvh,760px)] w-full max-w-[960px] flex-col overflow-hidden rounded-t-3xl border border-zinc-800 bg-zinc-950 shadow-2xl sm:h-[min(90vh,720px)] sm:rounded-3xl lg:resize"
         >
-            <div class="flex items-start justify-between gap-4">
+            <div
+                class="flex shrink-0 items-start justify-between gap-4 border-b border-zinc-800 px-4 py-4 sm:px-8 sm:py-6"
+            >
                 <div>
-                    <h2 class="text-2xl font-black text-white">
+                    <h2 class="text-xl font-black text-white sm:text-2xl">
                         Create public review
                     </h2>
 
@@ -213,7 +221,9 @@ const submitPublicReview = () => {
                 </button>
             </div>
 
-            <div class="mt-6 space-y-5">
+            <div
+                class="review-modal-scroll min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:space-y-5 sm:px-8 sm:py-6"
+            >
                 <div>
                     <label class="text-sm font-semibold text-zinc-300">
                         Review title
@@ -223,7 +233,8 @@ const submitPublicReview = () => {
                         v-model="publicReviewTitle"
                         type="text"
                         maxlength="120"
-                        class="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600"
+                        required
+                        class="mt-1.5 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-600 sm:mt-2 sm:px-4 sm:py-3"
                         placeholder="Short title"
                     />
                 </div>
@@ -235,23 +246,30 @@ const submitPublicReview = () => {
 
                     <textarea
                         v-model="publicReviewBody"
-                        class="mt-2 min-h-48 w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-sm text-zinc-200 outline-none placeholder:text-zinc-500 focus:border-zinc-600"
+                        required
+                        maxlength="5000"
+                        class="mt-1.5 min-h-28 w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-200 outline-none placeholder:text-zinc-500 focus:border-zinc-600 sm:mt-2 sm:min-h-48 sm:p-4"
                         placeholder="Write your public review..."
                     />
                 </div>
 
-                <div class="grid gap-4 md:grid-cols-[160px_1fr]">
+                <div
+                    class="grid grid-cols-[100px_minmax(0,1fr)] gap-3 sm:grid-cols-[160px_minmax(0,1fr)] sm:gap-4"
+                >
                     <div>
                         <label class="text-sm font-semibold text-zinc-300">
                             Rating
                         </label>
 
-                        <div class="mt-2 flex items-center rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+                        <div
+                            class="mt-1.5 flex items-center rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2.5 sm:mt-2 sm:px-4 sm:py-3"
+                        >
                             <input
                                 :value="publicReviewRating"
                                 type="text"
                                 inputmode="numeric"
                                 maxlength="2"
+                                required
                                 placeholder="—"
                                 class="w-10 bg-transparent text-sm font-bold text-white outline-none"
                                 @keydown="blockInvalidKeys"
@@ -271,11 +289,9 @@ const submitPublicReview = () => {
 
                         <select
                             v-model="publicReviewPlatform"
-                            class="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-white outline-none focus:border-zinc-600"
+                            class="mt-1.5 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none focus:border-zinc-600 sm:mt-2 sm:px-4 sm:py-3"
                         >
-                            <option value="">
-                                Select platform
-                            </option>
+                            <option value="">Select platform</option>
 
                             <option
                                 v-for="platform in platforms"
@@ -293,7 +309,9 @@ const submitPublicReview = () => {
                         Time till beaten
                     </label>
 
-                    <div class="mt-2 flex items-center rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+                    <div
+                        class="mt-1.5 flex items-center rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2.5 sm:mt-2 sm:px-4 sm:py-3"
+                    >
                         <input
                             :value="publicReviewTimeToBeatHours"
                             type="text"
@@ -322,19 +340,20 @@ const submitPublicReview = () => {
                     <input
                         type="file"
                         accept="image/*"
-                        class="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-bold file:text-zinc-950"
+                        class="mt-1.5 w-full min-w-0 rounded-xl border border-zinc-800 bg-zinc-900 px-2 py-2 text-xs text-zinc-300 file:mr-2 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-xs file:font-bold file:text-zinc-950 sm:mt-2 sm:px-4 sm:py-3 sm:text-sm sm:file:mr-4 sm:file:px-4 sm:file:text-sm"
                         @input="handleScreenshotInput"
                     />
 
                     <p class="mt-2 text-xs text-zinc-500">
-                        Upload exactly one screenshot. Supported: JPG, PNG, WEBP.
+                        Upload exactly one screenshot. Supported: JPG, PNG,
+                        WEBP.
                     </p>
                 </div>
 
-                <div class="flex items-end gap-3">
+                <div class="grid gap-2 sm:grid-cols-2 sm:gap-3">
                     <button
                         type="button"
-                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 px-4 py-3 text-sm font-semibold transition"
+                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 px-3 py-2.5 text-xs font-semibold transition sm:px-4 sm:py-3 sm:text-sm"
                         :class="
                             publicReviewRecommended
                                 ? 'bg-emerald-500/10 text-emerald-300'
@@ -353,7 +372,7 @@ const submitPublicReview = () => {
 
                     <button
                         type="button"
-                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 px-4 py-3 text-sm font-semibold transition"
+                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-800 px-3 py-2.5 text-xs font-semibold transition sm:px-4 sm:py-3 sm:text-sm"
                         :class="
                             publicReviewNotRecommended
                                 ? 'bg-red-500/10 text-red-300'
@@ -372,10 +391,12 @@ const submitPublicReview = () => {
                 </div>
             </div>
 
-            <div class="mt-6 flex justify-end gap-3">
+            <div
+                class="grid shrink-0 grid-cols-2 gap-2 border-t border-zinc-800 bg-zinc-950 px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:flex sm:justify-end sm:gap-3 sm:px-8 sm:py-5"
+            >
                 <button
                     type="button"
-                    class="rounded-xl border border-zinc-800 px-5 py-3 text-sm font-bold text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
+                    class="rounded-xl border border-zinc-800 px-3 py-3 text-sm font-bold text-zinc-300 transition hover:bg-zinc-900 hover:text-white sm:px-5"
                     @click="$emit('close')"
                 >
                     Cancel
@@ -383,7 +404,8 @@ const submitPublicReview = () => {
 
                 <button
                     type="button"
-                    class="rounded-xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
+                    class="rounded-xl bg-white px-3 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 sm:px-5"
+                    :disabled="!canSubmit"
                     @click="submitPublicReview"
                 >
                     Publish review

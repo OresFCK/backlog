@@ -1,8 +1,8 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
-import { useForm, router } from '@inertiajs/vue3'
+import { computed, ref, watch } from 'vue';
+import { useForm, router } from '@inertiajs/vue3';
 
-import GameSearchResults from '@/components/game/GameSearchResults.vue'
+import GameSearchResults from '@/components/game/GameSearchResults.vue';
 
 defineProps({
     shopItems: {
@@ -19,7 +19,7 @@ defineProps({
         type: Array,
         default: () => [],
     },
-})
+});
 
 const challengeForm = useForm({
     title: '',
@@ -31,138 +31,143 @@ const challengeForm = useForm({
     reward_coins: '',
     shop_item_id: '',
     is_active: true,
-})
+});
 
 const rejectForm = useForm({
     admin_note: '',
-})
+});
 
-const gameSearch = ref('')
-const selectedGame = ref(null)
+const gameSearch = ref('');
+const selectedGame = ref(null);
 
-const steamResults = ref([])
-const igdbResults = ref([])
+const steamResults = ref([]);
+const igdbResults = ref([]);
 
-const loadingSteam = ref(false)
-const loadingIgdb = ref(false)
+const loadingSteam = ref(false);
+const loadingIgdb = ref(false);
 
-const loadingGames = computed(() => loadingSteam.value || loadingIgdb.value)
+const loadingGames = computed(() => loadingSteam.value || loadingIgdb.value);
 
-let gameSearchTimeout = null
+let gameSearchTimeout = null;
 
 watch(gameSearch, (value) => {
-    clearTimeout(gameSearchTimeout)
+    clearTimeout(gameSearchTimeout);
 
     if (selectedGame.value && value === selectedGame.value.title) {
-        return
+        return;
     }
 
-    selectedGame.value = null
-    challengeForm.game_id = ''
-    challengeForm.game_title = ''
-    challengeForm.game_cover_url = ''
+    selectedGame.value = null;
+    challengeForm.game_id = '';
+    challengeForm.game_title = '';
+    challengeForm.game_cover_url = '';
 
     if (!value || value.length < 2) {
-        steamResults.value = []
-        igdbResults.value = []
-        return
+        steamResults.value = [];
+        igdbResults.value = [];
+        return;
     }
 
     gameSearchTimeout = setTimeout(async () => {
-        loadingSteam.value = true
-        loadingIgdb.value = true
+        loadingSteam.value = true;
+        loadingIgdb.value = true;
 
         try {
             const [steamResponse, igdbResponse] = await Promise.all([
                 fetch(`/steam/search?q=${encodeURIComponent(value)}`),
                 fetch(`/igdb/search?q=${encodeURIComponent(value)}`),
-            ])
+            ]);
 
             steamResults.value = steamResponse.ok
                 ? await steamResponse.json()
-                : []
+                : [];
 
             igdbResults.value = igdbResponse.ok
                 ? await igdbResponse.json()
-                : []
+                : [];
         } finally {
-            loadingSteam.value = false
-            loadingIgdb.value = false
+            loadingSteam.value = false;
+            loadingIgdb.value = false;
         }
-    }, 350)
-})
+    }, 350);
+});
 
 const selectGame = (game) => {
-    selectedGame.value = game
-    gameSearch.value = game.title
+    selectedGame.value = game;
+    gameSearch.value = game.title;
 
-    challengeForm.game_id = game.id ?? game.appid ?? game.steam_app_id ?? game.igdb_id ?? ''
-    challengeForm.game_title = game.title
-    challengeForm.game_cover_url = game.cover_url ?? game.igdb_cover_url ?? ''
+    challengeForm.game_id =
+        game.id ?? game.appid ?? game.steam_app_id ?? game.igdb_id ?? '';
+    challengeForm.game_title = game.title;
+    challengeForm.game_cover_url = game.cover_url ?? game.igdb_cover_url ?? '';
 
-    steamResults.value = []
-    igdbResults.value = []
-}
+    steamResults.value = [];
+    igdbResults.value = [];
+};
 
 const createChallenge = () => {
     if (!challengeForm.game_id) {
-        alert('Select a game from Steam or IGDB first.')
-        return
+        alert('Select a game from Steam or IGDB first.');
+        return;
     }
 
     challengeForm.post('/admin/challenges', {
         preserveScroll: true,
 
         onSuccess: () => {
-            challengeForm.reset()
-            challengeForm.reward_xp = ''
-            challengeForm.reward_coins = ''
-            challengeForm.shop_item_id = ''
-            challengeForm.game_id = ''
-            challengeForm.game_title = ''
-            challengeForm.game_cover_url = ''
-            challengeForm.is_active = true
+            challengeForm.reset();
+            challengeForm.reward_xp = '';
+            challengeForm.reward_coins = '';
+            challengeForm.shop_item_id = '';
+            challengeForm.game_id = '';
+            challengeForm.game_title = '';
+            challengeForm.game_cover_url = '';
+            challengeForm.is_active = true;
 
-            gameSearch.value = ''
-            selectedGame.value = null
-            steamResults.value = []
-            igdbResults.value = []
+            gameSearch.value = '';
+            selectedGame.value = null;
+            steamResults.value = [];
+            igdbResults.value = [];
         },
-    })
-}
+    });
+};
 
 const deleteChallenge = (challenge) => {
     if (!confirm(`Delete "${challenge.title}"?`)) {
-        return
+        return;
     }
 
     router.delete(`/admin/challenges/${challenge.id}`, {
         preserveScroll: true,
-    })
-}
+    });
+};
 
 const approveSubmission = (submission) => {
-    const note = prompt('Comment for accepted submission?') ?? ''
+    const note = prompt('Comment for accepted submission?') ?? '';
 
-    router.post(`/admin/challenge-submissions/${submission.id}/approve`, {
-        admin_note: note,
-    }, {
-        preserveScroll: true,
-    })
-}
+    router.post(
+        `/admin/challenge-submissions/${submission.id}/approve`,
+        {
+            admin_note: note,
+        },
+        {
+            preserveScroll: true,
+        },
+    );
+};
 
 const rejectSubmission = (submission) => {
-    const note = prompt('Reason for rejection?') ?? ''
+    const note = prompt('Reason for rejection?') ?? '';
 
-    rejectForm.admin_note = note
+    rejectForm.admin_note = note;
 
     rejectForm.post(`/admin/challenge-submissions/${submission.id}/reject`, {
         preserveScroll: true,
         onSuccess: () => {
-            rejectForm.reset()
+            rejectForm.reset();
         },
-    })
-}
+    });
+};
 </script>
 
 <template>
@@ -171,12 +176,13 @@ const rejectSubmission = (submission) => {
             class="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
             @submit.prevent="createChallenge"
         >
-            <h2 class="text-xl font-bold text-white">
-                Challenge creator
-            </h2>
+            <h2 class="text-xl font-bold text-white">Challenge creator</h2>
 
             <input
                 v-model="challengeForm.title"
+                required
+                minlength="3"
+                maxlength="255"
                 placeholder="Challenge title"
                 class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
             />
@@ -184,6 +190,7 @@ const rejectSubmission = (submission) => {
             <div class="space-y-3">
                 <input
                     v-model="gameSearch"
+                    maxlength="100"
                     placeholder="Search game, e.g. Elden Ring"
                     class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
                 />
@@ -193,8 +200,14 @@ const rejectSubmission = (submission) => {
                     class="flex items-center gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4"
                 >
                     <img
-                        v-if="selectedGame.cover_url || selectedGame.igdb_cover_url"
-                        :src="selectedGame.cover_url || selectedGame.igdb_cover_url"
+                        v-if="
+                            selectedGame.cover_url ||
+                            selectedGame.igdb_cover_url
+                        "
+                        :src="
+                            selectedGame.cover_url ||
+                            selectedGame.igdb_cover_url
+                        "
                         :alt="selectedGame.title"
                         class="h-16 w-28 shrink-0 rounded-xl object-cover"
                     />
@@ -211,14 +224,18 @@ const rejectSubmission = (submission) => {
                             {{ selectedGame.title }}
                         </p>
 
-                        <p class="text-sm text-emerald-400">
-                            Selected game
-                        </p>
+                        <p class="text-sm text-emerald-400">Selected game</p>
                     </div>
                 </div>
 
                 <p
-                    v-if="!selectedGame && gameSearch.length >= 2 && !loadingGames && !steamResults.length && !igdbResults.length"
+                    v-if="
+                        !selectedGame &&
+                        gameSearch.length >= 2 &&
+                        !loadingGames &&
+                        !steamResults.length &&
+                        !igdbResults.length
+                    "
                     class="rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300"
                 >
                     No game found. You must select a game from Steam or IGDB.
@@ -240,13 +257,16 @@ const rejectSubmission = (submission) => {
                 v-model="challengeForm.description"
                 placeholder="Challenge description"
                 rows="4"
+                maxlength="5000"
                 class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
             />
 
             <input
                 v-model="challengeForm.reward_xp"
                 type="number"
+                required
                 min="0"
+                step="1"
                 placeholder="Reward XP"
                 class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
             />
@@ -254,7 +274,9 @@ const rejectSubmission = (submission) => {
             <input
                 v-model="challengeForm.reward_coins"
                 type="number"
+                required
                 min="0"
+                step="1"
                 placeholder="Reward coins"
                 class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
             />
@@ -263,9 +285,7 @@ const rejectSubmission = (submission) => {
                 v-model="challengeForm.shop_item_id"
                 class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-zinc-500"
             >
-                <option value="">
-                    No item reward
-                </option>
+                <option value="">No item reward</option>
 
                 <option
                     v-for="item in shopItems"
@@ -296,7 +316,9 @@ const rejectSubmission = (submission) => {
         </form>
 
         <div class="space-y-8">
-            <div class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
+            <div
+                class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
+            >
                 <div class="border-b border-zinc-800 p-6">
                     <h2 class="text-xl font-bold text-white">
                         Challenge submissions
@@ -357,9 +379,12 @@ const rejectSubmission = (submission) => {
                                 <span
                                     class="rounded-full px-3 py-1 text-xs font-bold"
                                     :class="{
-                                        'bg-amber-500/10 text-amber-400': submission.status === 'pending',
-                                        'bg-emerald-500/10 text-emerald-400': submission.status === 'approved',
-                                        'bg-red-500/10 text-red-400': submission.status === 'rejected',
+                                        'bg-amber-500/10 text-amber-400':
+                                            submission.status === 'pending',
+                                        'bg-emerald-500/10 text-emerald-400':
+                                            submission.status === 'approved',
+                                        'bg-red-500/10 text-red-400':
+                                            submission.status === 'rejected',
                                     }"
                                 >
                                     {{ submission.status }}
@@ -383,7 +408,9 @@ const rejectSubmission = (submission) => {
                                 v-if="submission.description"
                                 class="mt-3 rounded-xl border border-zinc-700 bg-zinc-950 p-3 text-sm text-zinc-300"
                             >
-                                <p class="mb-1 text-xs font-bold uppercase tracking-wide text-zinc-500">
+                                <p
+                                    class="mb-1 text-xs font-bold tracking-wide text-zinc-500 uppercase"
+                                >
                                     User description
                                 </p>
 
@@ -393,11 +420,15 @@ const rejectSubmission = (submission) => {
                             <div
                                 v-if="submission.admin_note"
                                 class="mt-3 rounded-xl border p-3 text-sm"
-                                :class="submission.status === 'approved'
-                                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
-                                    : 'border-red-500/20 bg-red-500/10 text-red-300'"
+                                :class="
+                                    submission.status === 'approved'
+                                        ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+                                        : 'border-red-500/20 bg-red-500/10 text-red-300'
+                                "
                             >
-                                <p class="mb-1 text-xs font-bold uppercase tracking-wide opacity-70">
+                                <p
+                                    class="mb-1 text-xs font-bold tracking-wide uppercase opacity-70"
+                                >
                                     Admin comment
                                 </p>
 
@@ -436,11 +467,11 @@ const rejectSubmission = (submission) => {
                 </div>
             </div>
 
-            <div class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
+            <div
+                class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
+            >
                 <div class="border-b border-zinc-800 p-6">
-                    <h2 class="text-xl font-bold text-white">
-                        Challenges
-                    </h2>
+                    <h2 class="text-xl font-bold text-white">Challenges</h2>
                 </div>
 
                 <div class="divide-y divide-zinc-800">
@@ -455,7 +486,9 @@ const rejectSubmission = (submission) => {
                             </h3>
 
                             <p class="mt-1 text-sm text-emerald-400">
-                                {{ challenge.game?.title ?? challenge.game_name }}
+                                {{
+                                    challenge.game?.title ?? challenge.game_name
+                                }}
                             </p>
 
                             <p class="mt-1 text-sm text-zinc-400">

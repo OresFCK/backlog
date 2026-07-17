@@ -1,6 +1,6 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { computed, ref } from 'vue';
+import { router } from '@inertiajs/vue3';
 
 const props = defineProps({
     listId: {
@@ -17,21 +17,21 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-})
+});
 
-const searchQuery = ref('')
-const selectedGame = ref(null)
-const note = ref('')
+const searchQuery = ref('');
+const selectedGame = ref(null);
+const note = ref('');
 
 const usedGameIds = computed(() =>
-    props.items.map((item) => String(item.game_id))
-)
+    props.items.map((item) => String(item.game_id)),
+);
 
 const filteredGames = computed(() => {
-    const query = searchQuery.value.trim().toLowerCase()
+    const query = searchQuery.value.trim().toLowerCase();
 
     if (!query || selectedGame.value) {
-        return []
+        return [];
     }
 
     return props.games
@@ -39,36 +39,36 @@ const filteredGames = computed(() => {
         .filter((game) =>
             String(game.title ?? game.name ?? '')
                 .toLowerCase()
-                .includes(query)
+                .includes(query),
         )
-        .slice(0, 12)
-})
+        .slice(0, 12);
+});
 
 const coverUrl = (game) => {
     if (!game) {
-        return null
+        return null;
     }
 
     if (game.steam_app_id) {
-        return `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.steam_app_id}/library_600x900.jpg`
+        return `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.steam_app_id}/library_600x900.jpg`;
     }
 
-    return game.cover_url ?? game.header_image_url
-}
+    return game.cover_url ?? game.header_image_url;
+};
 
 const selectGame = (game) => {
-    selectedGame.value = game
-    searchQuery.value = game.title ?? game.name
-}
+    selectedGame.value = game;
+    searchQuery.value = game.title ?? game.name;
+};
 
 const clearSelectedGame = () => {
-    selectedGame.value = null
-    searchQuery.value = ''
-}
+    selectedGame.value = null;
+    searchQuery.value = '';
+};
 
 const addItem = () => {
     if (!selectedGame.value) {
-        return
+        return;
     }
 
     router.post(
@@ -86,13 +86,13 @@ const addItem = () => {
         {
             preserveScroll: true,
             onSuccess: () => {
-                selectedGame.value = null
-                searchQuery.value = ''
-                note.value = ''
+                selectedGame.value = null;
+                searchQuery.value = '';
+                note.value = '';
             },
-        }
-    )
-}
+        },
+    );
+};
 </script>
 
 <template>
@@ -100,9 +100,7 @@ const addItem = () => {
         class="rounded-3xl border border-zinc-800 bg-zinc-900 p-6"
         @submit.prevent="addItem"
     >
-        <h2 class="text-xl font-bold">
-            Add game
-        </h2>
+        <h2 class="text-xl font-bold">Add game</h2>
 
         <p class="mt-1 text-sm text-zinc-500">
             {{ games.length }} games available
@@ -113,6 +111,7 @@ const addItem = () => {
                 <input
                     v-model="searchQuery"
                     type="text"
+                    maxlength="100"
                     placeholder="Search games..."
                     class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-500"
                     @input="selectedGame = null"
@@ -120,7 +119,7 @@ const addItem = () => {
 
                 <div
                     v-if="filteredGames.length"
-                    class="absolute left-0 right-0 top-full z-30 mt-2 max-h-96 overflow-y-auto rounded-2xl border border-zinc-700 bg-zinc-950 shadow-2xl"
+                    class="absolute top-full right-0 left-0 z-30 mt-2 max-h-96 overflow-y-auto rounded-2xl border border-zinc-700 bg-zinc-950 shadow-2xl"
                 >
                     <button
                         v-for="game in filteredGames"
@@ -153,9 +152,7 @@ const addItem = () => {
                     v-if="selectedGame"
                     class="mt-3 flex items-center justify-between gap-3 rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2"
                 >
-                    <span
-                        class="truncate text-sm font-bold text-white"
-                    >
+                    <span class="truncate text-sm font-bold text-white">
                         Selected:
                         {{ selectedGame.title ?? selectedGame.name }}
                     </span>
@@ -173,6 +170,7 @@ const addItem = () => {
             <textarea
                 v-model="note"
                 rows="4"
+                maxlength="1000"
                 placeholder="Optional note for this entry..."
                 class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-500"
             />

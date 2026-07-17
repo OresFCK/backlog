@@ -4,12 +4,12 @@ defineProps({
         type: Array,
         default: () => [],
     },
-})
+});
 </script>
 
 <template>
     <div v-if="screenshots.length">
-        <h2 class="mb-4 text-2xl font-bold text-white">
+        <h2 class="mb-3 text-xl font-bold text-white sm:mb-4 sm:text-2xl">
             Gallery
         </h2>
 
@@ -18,7 +18,7 @@ defineProps({
                 v-for="screenshot in screenshots"
                 :key="screenshot"
                 :src="screenshot"
-                class="h-52 w-full rounded-2xl object-cover"
+                class="aspect-video h-auto w-full rounded-xl object-cover sm:rounded-2xl"
             />
         </div>
     </div>

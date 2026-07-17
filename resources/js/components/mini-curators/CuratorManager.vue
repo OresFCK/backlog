@@ -1,39 +1,48 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { Link, router } from '@inertiajs/vue3'
+import { computed, ref } from 'vue';
+import { Link, router } from '@inertiajs/vue3';
 
 const props = defineProps({
     curators: {
         type: Array,
         default: () => [],
     },
-})
+});
 
-const searchQuery = ref('')
+const searchQuery = ref('');
 
 const filteredCurators = computed(() => {
-    const query = searchQuery.value.trim().toLowerCase()
+    const query = searchQuery.value.trim().toLowerCase();
 
     if (!query) {
-        return props.curators
+        return props.curators;
     }
 
-    return props.curators.filter((curator) =>
-        String(curator.name ?? '').toLowerCase().includes(query)
-        || String(curator.steam_id ?? '').toLowerCase().includes(query)
-    )
-})
+    return props.curators.filter(
+        (curator) =>
+            String(curator.name ?? '')
+                .toLowerCase()
+                .includes(query) ||
+            String(curator.steam_id ?? '')
+                .toLowerCase()
+                .includes(query),
+    );
+});
 
 function follow(curator) {
-    router.post(`/mini-curators/${curator.id}/follow`, {}, {
-        preserveScroll: true,
-    })
+    router.post(
+        `/mini-curators/${curator.id}/follow`,
+        {},
+        {
+            preserveScroll: true,
+        },
+    );
 }
 
 function unfollow(curator) {
     router.delete(`/mini-curators/${curator.id}/follow`, {
         preserveScroll: true,
-    })
+    });
 }
 </script>
 
@@ -41,9 +50,7 @@ function unfollow(curator) {
     <section class="rounded-3xl border border-zinc-800 bg-zinc-900 p-5">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-                <h2 class="text-lg font-bold">
-                    Follow Mini Curators
-                </h2>
+                <h2 class="text-lg font-bold">Follow Mini Curators</h2>
 
                 <p class="mt-1 text-sm text-zinc-500">
                     {{ filteredCurators.length }} available
@@ -51,6 +58,7 @@ function unfollow(curator) {
             </div>
 
             <input
+                maxlength="100"
                 v-model="searchQuery"
                 type="text"
                 placeholder="Search Mini Curators..."
@@ -78,10 +86,7 @@ function unfollow(curator) {
                         class="h-11 w-11 rounded-xl object-cover transition hover:opacity-80"
                     />
 
-                    <div
-                        v-else
-                        class="h-11 w-11 rounded-xl bg-zinc-800"
-                    />
+                    <div v-else class="h-11 w-11 rounded-xl bg-zinc-800" />
 
                     <div class="min-w-0 flex-1">
                         <p class="truncate font-bold hover:text-indigo-300">

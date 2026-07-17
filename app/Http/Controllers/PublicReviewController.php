@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\PayloadHelper as Payload;
+use App\Helpers\GameTitleNormalizer;
 use App\Http\Requests\StorePublicReviewRequest;
 use App\Models\ActivityLog;
 use App\Models\Game;
+use App\Models\CustomGame;
 use App\Models\PublicReview;
 use App\Models\UserConnection;
 use App\Models\UserGameMeta;
@@ -88,7 +90,10 @@ class PublicReviewController extends Controller
     ): RedirectResponse {
         $data = $request->validated();
 
-        $game = Game::query()->findOrFail($data['game_id']);
+        [$game, $sourceGameId] = $this->resolveReviewedGame(
+            (string) $data['game_id'],
+            $request->user()->id
+        );
 
         $existingReview = PublicReview::query()
             ->where('user_id', $request->user()->id)
@@ -115,11 +120,8 @@ class PublicReviewController extends Controller
                 'game_id' => $game->id,
             ],
             [
-                'source' => $data['source'] ?? $game->source,
-                'source_game_id' => $data['source_game_id']
-                    ?? $game->steam_app_id
-                    ?? $game->igdb_id
-                    ?? null,
+                'source' => $game->source,
+                'source_game_id' => $sourceGameId,
 
                 'game_title' => $game->title,
                 'title' => $data['title'],
@@ -147,11 +149,7 @@ class PublicReviewController extends Controller
         UserGameMeta::query()->updateOrCreate(
             [
                 'user_id' => $request->user()->id,
-                'game_id' => (string) (
-                    $game->steam_app_id
-                    ?? $game->igdb_id
-                    ?? $game->id
-                ),
+                'game_id' => $sourceGameId,
             ],
             [
                 'status' => 'Finished',
@@ -224,5 +222,57 @@ class PublicReviewController extends Controller
                     });
             })
             ->exists();
+    }
+
+    private function resolveReviewedGame(
+        string $gameIdentifier,
+        int $userId
+    ): array {
+        if (ctype_digit($gameIdentifier)) {
+            $game = Game::query()->findOrFail((int) $gameIdentifier);
+
+            return [
+                $game,
+                (string) (
+                    $game->steam_app_id
+                    ?? $game->igdb_id
+                    ?? $game->id
+                ),
+            ];
+        }
+
+        abort_unless(
+            preg_match('/^custom:([1-9][0-9]*)$/', $gameIdentifier, $matches),
+            422
+        );
+
+        $customGame = CustomGame::query()
+            ->where('user_id', $userId)
+            ->findOrFail((int) $matches[1]);
+
+        $normalizedTitle = GameTitleNormalizer::normalize($customGame->title);
+
+        $game = Game::query()
+            ->when(
+                $customGame->igdb_id,
+                fn ($query, $igdbId) => $query->where('igdb_id', $igdbId),
+                fn ($query) => $query->where('normalized_title', $normalizedTitle)
+            )
+            ->first();
+
+        if (! $game) {
+            $game = Game::query()->create([
+                'igdb_id' => $customGame->igdb_id,
+                'title' => $customGame->title,
+                'normalized_title' => $normalizedTitle,
+                'summary' => $customGame->description,
+                'source' => $customGame->source ?? 'manual',
+                'cover_url' => $customGame->cover_url,
+                'header_image_url' => $customGame->header_image_url,
+                'release_date' => $customGame->release_date,
+            ]);
+        }
+
+        return [$game, 'custom:' . $customGame->id];
     }
 }

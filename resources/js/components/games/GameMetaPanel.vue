@@ -1,5 +1,5 @@
 <script setup>
-import { ThumbsUp, X } from 'lucide-vue-next'
+import { ThumbsUp, X } from 'lucide-vue-next';
 
 defineProps({
     rating: {
@@ -26,7 +26,7 @@ defineProps({
         type: Boolean,
         default: false,
     },
-})
+});
 
 const emit = defineEmits([
     'update:rating',
@@ -34,26 +34,28 @@ const emit = defineEmits([
     'save',
     'toggle-recommended',
     'toggle-not-recommended',
-])
+]);
 
 const setRating = (value) => {
-    emit('update:rating', String(value))
-    emit('save')
-}
+    emit('update:rating', String(value));
+    emit('save');
+};
 </script>
 
 <template>
-    <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-        <p class="text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">
+    <div class="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+        <p
+            class="text-center text-xs font-semibold tracking-wider text-zinc-500 uppercase"
+        >
             Your Rating
         </p>
 
-        <div class="mt-6 grid grid-cols-5 gap-2">
+        <div class="mt-4 grid grid-cols-5 gap-2 sm:mt-6">
             <button
                 v-for="value in 10"
                 :key="value"
                 type="button"
-                class="rounded-xl border py-3 text-sm font-bold transition"
+                class="rounded-xl border py-2.5 text-sm font-bold transition sm:py-3"
                 :class="
                     Number(rating) === value
                         ? 'border-white bg-white text-zinc-950'
@@ -98,14 +100,10 @@ const setRating = (value) => {
             class="mt-6 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-semibold text-white outline-none focus:border-zinc-600"
             @change="
                 $emit('update:status', $event.target.value);
-                $emit('save')
+                $emit('save');
             "
         >
-            <option
-                v-for="item in statuses"
-                :key="item.id"
-                :value="item.name"
-            >
+            <option v-for="item in statuses" :key="item.id" :value="item.name">
                 {{ item.name }}
             </option>
         </select>
