@@ -55,6 +55,10 @@ Route::inertia('/login', 'auth/login')->name('login');
 
 Route::inertia('/terms', 'terms')->name('terms');
 Route::inertia('/privacy', 'privacy')->name('privacy');
+Route::inertia('/about', 'about')->name('about');
+Route::inertia('/contact', 'contact')->name('contact');
+Route::inertia('/community-guidelines', 'community-guidelines')
+    ->name('community-guidelines');
 
 Route::get('/u/{user:steam_id}', fn (
     User $user,

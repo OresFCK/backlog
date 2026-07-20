@@ -9,101 +9,163 @@
                 Privacy Policy
             </h1>
 
-            <p class="mt-2 text-zinc-400">
-                Last Updated: June 8, 2026
-            </p>
+            <p class="mt-2 text-zinc-400">Last Updated: July 20, 2026</p>
 
             <section class="mt-10 space-y-8 text-left text-zinc-300">
                 <div>
-                    <h2 class="text-xl font-semibold text-white">1. General Information</h2>
+                    <h2 class="text-xl font-semibold text-white">
+                        1. General Information
+                    </h2>
                     <p class="mt-3">
-                        This Privacy Policy explains how Curator.gg ("we", "our", or "the Platform") collects,
-                        processes, and protects your data. The Platform is a private, non-profit development project
-                        operated by an individual developer in Poland.
+                        This Privacy Policy explains how Curator.gg ("we",
+                        "our", or "the Platform") collects, processes, and
+                        protects your data. The Platform is operated by an
+                        individual developer in Poland.
                     </p>
                     <p class="mt-3">
-                        We process data in accordance with applicable data protection regulations, including the
-                        General Data Protection Regulation (GDPR).
+                        We process data in accordance with applicable data
+                        protection regulations, including the General Data
+                        Protection Regulation (GDPR).
                     </p>
                 </div>
 
                 <div>
-                    <h2 class="text-xl font-semibold text-white">2. Data We Collect via Steam API</h2>
+                    <h2 class="text-xl font-semibold text-white">
+                        2. Data We Collect via Steam API
+                    </h2>
                     <p class="mt-3">
-                        Registration is done solely via Steam Sign-In. When you authorize our Platform through Steam,
-                        we retrieve and store the following public data from your Steam profile:
+                        Registration is done solely via Steam Sign-In. When you
+                        authorize our Platform through Steam, we retrieve and
+                        store the following public data from your Steam profile:
                     </p>
                     <ul class="mt-3 list-disc space-y-2 pl-6">
                         <li>SteamID64</li>
                         <li>Public Persona Name</li>
                         <li>Avatar URL</li>
-                        <li>Public game library data, including owned games and total playtime hours</li>
+                        <li>
+                            Public game library data, including owned games and
+                            total playtime hours
+                        </li>
                     </ul>
                     <p class="mt-3">
-                        We do not collect, store, or access your Steam password, email address, or payment details.
+                        We do not collect, store, or access your Steam password,
+                        email address, or payment details.
                     </p>
                 </div>
 
                 <div>
-                    <h2 class="text-xl font-semibold text-white">3. How We Use Your Data</h2>
+                    <h2 class="text-xl font-semibold text-white">
+                        3. How We Use Your Data
+                    </h2>
                     <ul class="mt-3 list-disc space-y-2 pl-6">
-                        <li>Creating and maintaining your Curator.gg user profile and level.</li>
-                        <li>Synchronizing and displaying your game library and backlog.</li>
-                        <li>Displaying your username and avatar alongside reviews, forum posts, or challenges.</li>
+                        <li>
+                            Creating and maintaining your Curator.gg user
+                            profile and level.
+                        </li>
+                        <li>
+                            Synchronizing and displaying your game library and
+                            backlog.
+                        </li>
+                        <li>
+                            Displaying your username and avatar alongside
+                            reviews, forum posts, or challenges.
+                        </li>
                     </ul>
                 </div>
 
                 <div>
-                    <h2 class="text-xl font-semibold text-white">4. Third-Party Scripts, Cookies & Trackers</h2>
+                    <h2 class="text-xl font-semibold text-white">
+                        4. Cookies, Advertising & Third-Party Technologies
+                    </h2>
                     <p class="mt-3">
-                        Curator.gg does not use third-party tracking scripts, session recorders, or advertising
-                        networks such as Google Analytics or Hotjar.
+                        Curator.gg uses essential first-party cookies to keep
+                        you signed in, protect forms, and secure authentication
+                        sessions. These cookies are necessary for the Platform
+                        to function.
                     </p>
                     <p class="mt-3">
-                        The Platform uses only essential first-party technical session cookies required to keep you
-                        logged in and secure your authentication tokens. No marketing or tracking cookies are used.
-                    </p>
-                </div>
-
-                <div>
-                    <h2 class="text-xl font-semibold text-white">5. Third-Party Integrations</h2>
-                    <p class="mt-3">
-                        The Platform integrates game metadata and imagery from the Internet Game Database (IGDB).
-                        No personal data or Steam information belonging to our users is shared with or transmitted
-                        to IGDB.
-                    </p>
-                </div>
-
-                <div>
-                    <h2 class="text-xl font-semibold text-white">6. Data Retention & User Content Persistence</h2>
-                    <p class="mt-3">
-                        Your profile data is stored as long as your account remains active on the Platform.
+                        We may use Google AdSense to display advertising. Google
+                        and its advertising partners may use cookies, web
+                        beacons, IP addresses, and similar technologies to
+                        deliver, measure, and personalize ads where permitted by
+                        law. You can learn how Google uses information from
+                        sites and apps that use its services in
+                        <a
+                            href="https://policies.google.com/technologies/partner-sites"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-indigo-300 underline hover:text-indigo-200"
+                            >Google's partner-sites policy</a
+                        >.
                     </p>
                     <p class="mt-3">
-                        If you request account deletion, your personal identifiers such as SteamID and avatar link
-                        will be scrubbed. However, your user-generated content, including reviews, comments, and tips,
-                        may be retained and anonymized to preserve community continuity.
-                    </p>
-                </div>
-
-                <div>
-                    <h2 class="text-xl font-semibold text-white">7. Your Data Rights</h2>
-                    <p class="mt-3">
-                        Since the project falls under European jurisdiction, you have the right to access the data
-                        we hold about you, request rectification, or request complete deletion of your account.
-                    </p>
-                    <p class="mt-3">
-                        To exercise these rights, contact us using the email below.
+                        Where consent is required, non-essential advertising
+                        technologies will be used only after you make a choice
+                        through the privacy controls shown on the Platform. You
+                        may later change or withdraw that choice through the
+                        available privacy settings. Ads may also be shown in a
+                        non-personalized form depending on your region and
+                        preferences.
                     </p>
                 </div>
 
                 <div>
-                    <h2 class="text-xl font-semibold text-white">8. Contact the Administrator</h2>
+                    <h2 class="text-xl font-semibold text-white">
+                        5. Third-Party Integrations
+                    </h2>
+                    <p class="mt-3">
+                        The Platform integrates game metadata and imagery from
+                        the Internet Game Database (IGDB). No personal data or
+                        Steam information belonging to our users is shared with
+                        or transmitted to IGDB.
+                    </p>
+                </div>
+
+                <div>
+                    <h2 class="text-xl font-semibold text-white">
+                        6. Data Retention & User Content Persistence
+                    </h2>
+                    <p class="mt-3">
+                        Your profile data is stored as long as your account
+                        remains active on the Platform.
+                    </p>
+                    <p class="mt-3">
+                        If you request account deletion, your personal
+                        identifiers such as SteamID and avatar link will be
+                        scrubbed. However, your user-generated content,
+                        including reviews, comments, and tips, may be retained
+                        and anonymized to preserve community continuity.
+                    </p>
+                </div>
+
+                <div>
+                    <h2 class="text-xl font-semibold text-white">
+                        7. Your Data Rights
+                    </h2>
+                    <p class="mt-3">
+                        Since the project falls under European jurisdiction, you
+                        have the right to access the data we hold about you,
+                        request rectification, or request complete deletion of
+                        your account.
+                    </p>
+                    <p class="mt-3">
+                        To exercise these rights, contact us using the email
+                        below.
+                    </p>
+                </div>
+
+                <div>
+                    <h2 class="text-xl font-semibold text-white">
+                        8. Contact the Administrator
+                    </h2>
                     <p class="mt-3">
                         For privacy or data protection inquiries, contact:
-                        <a href="mailto:faurorakontakt@gmail.com" class="underline hover:text-white">
-                            faurorakontakt@gmail.com
-                        </a>.
+                        <a
+                            href="mailto:faurorakontakt@gmail.com"
+                            class="underline hover:text-white"
+                        >
+                            faurorakontakt@gmail.com </a
+                        >.
                     </p>
                 </div>
             </section>
