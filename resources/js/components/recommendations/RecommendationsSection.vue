@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
+import { Link } from '@inertiajs/vue3';
 
 const props = defineProps({
     friendsRanking: {
@@ -61,11 +62,16 @@ const visibleGlobalRanking = computed(() =>
                 </button>
             </div>
 
-            <div class="space-y-4">
-                <article
+            <TransitionGroup
+                name="recommendation-list"
+                tag="div"
+                class="space-y-4"
+            >
+                <Link
                     v-for="(item, index) in visibleFriendsRanking"
                     :key="item.game.id"
-                    class="relative grid overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 sm:grid-cols-[48px_160px_minmax(0,1fr)] sm:gap-4 sm:p-4"
+                    :href="item.game.public_url"
+                    class="relative grid overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 transition duration-200 hover:-translate-y-0.5 hover:border-zinc-600 hover:bg-zinc-900 focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none sm:grid-cols-[48px_160px_minmax(0,1fr)] sm:gap-4 sm:p-4"
                 >
                     <div
                         class="absolute top-3 left-3 z-10 rounded-lg bg-black/80 px-2 py-1 text-sm font-black text-white backdrop-blur sm:static sm:flex sm:w-12 sm:items-center sm:justify-center sm:bg-transparent sm:p-0 sm:text-2xl sm:text-zinc-500"
@@ -97,15 +103,16 @@ const visibleGlobalRanking = computed(() =>
                             </span>
                         </div>
                     </div>
-                </article>
+                </Link>
 
                 <div
                     v-if="!friendsRanking.length"
+                    key="empty-friends"
                     class="rounded-2xl border border-dashed border-zinc-800 p-8 text-center text-zinc-500"
                 >
                     No friend recommendations yet.
                 </div>
-            </div>
+            </TransitionGroup>
         </section>
 
         <section
@@ -140,11 +147,16 @@ const visibleGlobalRanking = computed(() =>
                 </button>
             </div>
 
-            <div class="space-y-4">
-                <article
+            <TransitionGroup
+                name="recommendation-list"
+                tag="div"
+                class="space-y-4"
+            >
+                <Link
                     v-for="(item, index) in visibleGlobalRanking"
                     :key="item.game.id"
-                    class="relative grid overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 sm:grid-cols-[48px_160px_minmax(0,1fr)] sm:gap-4 sm:p-4"
+                    :href="item.game.public_url"
+                    class="relative grid overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 transition duration-200 hover:-translate-y-0.5 hover:border-zinc-600 hover:bg-zinc-900 focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none sm:grid-cols-[48px_160px_minmax(0,1fr)] sm:gap-4 sm:p-4"
                 >
                     <div
                         class="absolute top-3 left-3 z-10 rounded-lg bg-black/80 px-2 py-1 text-sm font-black text-white backdrop-blur sm:static sm:flex sm:w-12 sm:items-center sm:justify-center sm:bg-transparent sm:p-0 sm:text-2xl sm:text-zinc-500"
@@ -176,15 +188,40 @@ const visibleGlobalRanking = computed(() =>
                             </span>
                         </div>
                     </div>
-                </article>
+                </Link>
 
                 <div
                     v-if="!globalRanking.length"
+                    key="empty-global"
                     class="rounded-2xl border border-dashed border-zinc-800 p-8 text-center text-zinc-500"
                 >
                     No global recommendations yet.
                 </div>
-            </div>
+            </TransitionGroup>
         </section>
     </div>
 </template>
+
+<style scoped>
+.recommendation-list-enter-active,
+.recommendation-list-leave-active,
+.recommendation-list-move {
+    transition:
+        opacity 220ms ease,
+        transform 220ms ease;
+}
+
+.recommendation-list-enter-from,
+.recommendation-list-leave-to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .recommendation-list-enter-active,
+    .recommendation-list-leave-active,
+    .recommendation-list-move {
+        transition: none;
+    }
+}
+</style>

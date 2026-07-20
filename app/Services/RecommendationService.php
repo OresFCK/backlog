@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Game;
 use App\Models\PublicReview;
 use App\Models\UserConnection;
 use App\Models\UserGameMeta;
@@ -38,6 +39,7 @@ class RecommendationService
     {
         return $this->buildRecommendations()
             ->where('friend_recommendations', '>', 0)
+            ->filter(fn ($item) => filled($item['game']['public_url'] ?? null))
             ->sortByDesc('score')
             ->take(10)
             ->values()
@@ -47,6 +49,7 @@ class RecommendationService
     public function globalRanking(): array
     {
         return $this->buildRecommendations()
+            ->filter(fn ($item) => filled($item['game']['public_url'] ?? null))
             ->sortByDesc('score')
             ->take(10)
             ->values()
@@ -62,7 +65,7 @@ class RecommendationService
         $userId = Auth::id();
         $friendIds = $this->friendIds();
 
-        return $this->recommendationsCache = PublicReview::query()
+        $reviews = PublicReview::query()
             ->with('votes:id,public_review_id,value')
             ->where('user_id', '!=', $userId)
             ->where(function ($query) {
@@ -79,9 +82,30 @@ class RecommendationService
                 'recommended',
                 'not_recommended',
             ])
+            ->values();
+
+        $gameIds = $reviews
+            ->pluck('game_id')
+            ->filter(fn ($gameId) => ctype_digit((string) $gameId))
+            ->map(fn ($gameId) => (int) $gameId)
+            ->filter(fn ($gameId) => $gameId > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        $games = Game::query()
+            ->whereIntegerInRaw('id', $gameIds)
+            ->get(['id', 'slug'])
+            ->keyBy(fn (Game $game) => (string) $game->id);
+
+        return $this->recommendationsCache = $reviews
             ->groupBy('game_id')
-            ->map(function (Collection $reviews, string $gameId) use ($friendIds) {
+            ->map(function (
+                Collection $reviews,
+                string $gameId
+            ) use ($friendIds, $games) {
                 $review = $reviews->first();
+                $game = $games->get($gameId);
 
                 $friendRecommendations = $reviews
                     ->whereIn('user_id', $friendIds)
@@ -123,6 +147,10 @@ class RecommendationService
                         'id' => $gameId,
                         'title' => $review->game_title ?? "Game {$gameId}",
                         'header_image_url' => $this->steamHeaderUrl($gameId),
+                        'slug' => $game?->slug,
+                        'public_url' => $game?->slug
+                            ? route('games.public.show', $game)
+                            : null,
                     ],
 
                     'reason' => $this->reasonText(
