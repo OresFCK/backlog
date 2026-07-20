@@ -12,6 +12,7 @@ use App\Models\PublicReview;
 use App\Models\UserConnection;
 use App\Models\UserGameMeta;
 use App\Services\SteamService;
+use App\Services\ReviewGameResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -20,6 +21,10 @@ use Inertia\Response;
 
 class PublicReviewController extends Controller
 {
+    public function __construct(
+        private ReviewGameResolver $reviewGameResolver
+    ) {}
+
     public function index(SteamService $steam): Response
     {
         return $this->renderReviewsPage($steam);
@@ -43,11 +48,10 @@ class PublicReviewController extends Controller
         string $pageDescription = 'Public reviews from your community.',
         bool $isMyReviews = false
     ): Response {
-        $reviews = PublicReview::query()
+        $reviewModels = PublicReview::query()
             ->with([
                 'user',
                 'votes',
-                'game',
             ])
             ->where('is_public', true)
             ->when(
@@ -55,8 +59,15 @@ class PublicReviewController extends Controller
                 fn ($query) => $query->where('user_id', $userId)
             )
             ->latest()
-            ->get()
-            ->map(fn ($review) => $this->reviewData($review))
+            ->get();
+
+        $gamesByReview = $this->reviewGameResolver->resolveMany($reviewModels);
+
+        $reviews = $reviewModels
+            ->map(fn ($review) => $this->reviewData(
+                $review,
+                $gamesByReview->get($review->id)
+            ))
             ->values()
             ->toArray();
 
@@ -76,9 +87,13 @@ class PublicReviewController extends Controller
     {
         abort_unless($review->is_public, 404);
 
-        $review->loadMissing(['user', 'votes', 'game']);
+        $review->loadMissing(['user', 'votes']);
 
-        $reviewData = $this->reviewData($review);
+        $resolvedGame = $this->reviewGameResolver
+            ->resolveMany(collect([$review]))
+            ->get($review->id);
+
+        $reviewData = $this->reviewData($review, $resolvedGame);
         $plainBody = trim(preg_replace('/\s+/', ' ', $review->body ?? ''));
         $description = mb_strlen($plainBody) > 155
             ? mb_substr($plainBody, 0, 152).'...'
@@ -91,7 +106,9 @@ class PublicReviewController extends Controller
                     .' — '.$reviewData['game_title'].' | Curator.gg',
                 'description' => $description,
                 'url' => $reviewData['share_url'],
-                'image' => $review->game?->header_image_url
+                'image' => $resolvedGame?->header_image_url
+                    ?: $resolvedGame?->cover_url
+                    ?: $resolvedGame?->igdb_cover_url
                     ?: $reviewData['screenshot_url']
                     ?: asset('og-image.jpg'),
                 'image_alt' => $reviewData['game_title'].' review by '
@@ -100,7 +117,10 @@ class PublicReviewController extends Controller
         ]);
     }
 
-    private function reviewData(PublicReview $review): array
+    private function reviewData(
+        PublicReview $review,
+        ?Game $resolvedGame = null
+    ): array
     {
         return [
             'id' => $review->id,
@@ -117,9 +137,9 @@ class PublicReviewController extends Controller
             'time_to_beat_hours' => $review->time_to_beat_minutes
                 ? round($review->time_to_beat_minutes / 60, 2)
                 : null,
-            'game_id' => $review->game_id,
-            'game_title' => $review->game_title ?: $review->game?->title,
-            'game_slug' => $review->game?->slug,
+            'game_id' => $resolvedGame?->id ?: $review->game_id,
+            'game_title' => $resolvedGame?->title ?: $review->game_title,
+            'game_slug' => $resolvedGame?->slug,
             'created_at' => $review->created_at?->diffForHumans(),
             'share_url' => route('reviews.public.show', $review),
             'can_vote' => auth()->check()

@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Game;
 use App\Models\PublicReview;
 use App\Models\UserConnection;
 use App\Models\UserGameMeta;
@@ -15,10 +14,14 @@ class RecommendationService
     private ?Collection $ownedGameIdsCache = null;
     private ?Collection $friendIdsCache = null;
 
+    public function __construct(
+        private ReviewGameResolver $reviewGameResolver
+    ) {}
+
     public function backlogRecommendations(): array
     {
         return $this->buildRecommendations()
-            ->whereIn('game_id', $this->ownedGameIds())
+            ->whereIn('library_game_id', $this->ownedGameIds())
             ->sortByDesc('score')
             ->take(10)
             ->values()
@@ -28,7 +31,7 @@ class RecommendationService
     public function steamRecommendations(): array
     {
         return $this->buildRecommendations()
-            ->whereNotIn('game_id', $this->ownedGameIds())
+            ->whereNotIn('library_game_id', $this->ownedGameIds())
             ->sortByDesc('score')
             ->take(10)
             ->values()
@@ -77,6 +80,8 @@ class RecommendationService
                 'id',
                 'user_id',
                 'game_id',
+                'source',
+                'source_game_id',
                 'game_title',
                 'rating',
                 'recommended',
@@ -84,28 +89,23 @@ class RecommendationService
             ])
             ->values();
 
-        $gameIds = $reviews
-            ->pluck('game_id')
-            ->filter(fn ($gameId) => ctype_digit((string) $gameId))
-            ->map(fn ($gameId) => (int) $gameId)
-            ->filter(fn ($gameId) => $gameId > 0)
-            ->unique()
-            ->values()
-            ->all();
+        $gamesByReview = $this->reviewGameResolver->resolveMany($reviews);
 
-        $games = Game::query()
-            ->whereIntegerInRaw('id', $gameIds)
-            ->get(['id', 'slug'])
-            ->keyBy(fn (Game $game) => (string) $game->id);
+        $reviews = $reviews
+            ->filter(fn ($review) => $gamesByReview->has($review->id))
+            ->each(fn ($review) => $review->setRelation(
+                'resolvedGame',
+                $gamesByReview->get($review->id)
+            ));
 
         return $this->recommendationsCache = $reviews
-            ->groupBy('game_id')
+            ->groupBy(fn ($review) => (string) $review->resolvedGame->id)
             ->map(function (
                 Collection $reviews,
                 string $gameId
-            ) use ($friendIds, $games) {
+            ) use ($friendIds) {
                 $review = $reviews->first();
-                $game = $games->get($gameId);
+                $game = $review->resolvedGame;
 
                 $friendRecommendations = $reviews
                     ->whereIn('user_id', $friendIds)
@@ -136,6 +136,11 @@ class RecommendationService
 
                 return [
                     'game_id' => $gameId,
+                    'library_game_id' => (string) (
+                        $game->steam_app_id
+                        ?? $game->igdb_id
+                        ?? $game->id
+                    ),
                     'score' => round($score, 2),
                     'friend_recommendations' => $friendRecommendations,
                     'global_recommendations' => $globalRecommendations,
@@ -145,8 +150,10 @@ class RecommendationService
 
                     'game' => [
                         'id' => $gameId,
-                        'title' => $review->game_title ?? "Game {$gameId}",
-                        'header_image_url' => $this->steamHeaderUrl($gameId),
+                        'title' => $game->title,
+                        'header_image_url' => $game->header_image_url
+                            ?: $game->cover_url
+                            ?: $game->igdb_cover_url,
                         'slug' => $game?->slug,
                         'public_url' => $game?->slug
                             ? route('games.public.show', $game)
@@ -264,10 +271,5 @@ class RecommendationService
         }
 
         return 'Trending in the community.';
-    }
-
-    private function steamHeaderUrl(string $gameId): string
-    {
-        return "https://cdn.cloudflare.steamstatic.com/steam/apps/{$gameId}/header.jpg";
     }
 }

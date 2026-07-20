@@ -15,8 +15,38 @@ class PublicGameController extends Controller
     {
         $reviews = PublicReview::query()
             ->with(['user', 'votes'])
-            ->where('game_id', $game->id)
             ->where('is_public', true)
+            ->where(function ($query) use ($game) {
+                $query->where('game_title', $game->title);
+
+                if (filled($game->steam_app_id)) {
+                    $query->orWhere(function ($query) use ($game) {
+                        $query
+                            ->where('source', 'steam')
+                            ->where(
+                                'source_game_id',
+                                (string) $game->steam_app_id
+                            );
+                    });
+                }
+
+                if (filled($game->igdb_id)) {
+                    $query->orWhere(function ($query) use ($game) {
+                        $query
+                            ->where('source', 'igdb')
+                            ->where(
+                                'source_game_id',
+                                (string) $game->igdb_id
+                            );
+                    });
+                }
+
+                $query->orWhere(function ($query) use ($game) {
+                    $query
+                        ->whereNull('game_title')
+                        ->where('game_id', (string) $game->id);
+                });
+            })
             ->latest()
             ->get();
 
@@ -56,6 +86,9 @@ class PublicGameController extends Controller
             'reviews' => $reviews
                 ->map(fn (PublicReview $review) => [
                     'id' => $review->id,
+                    'game_id' => $game->id,
+                    'game_title' => $game->title,
+                    'game_slug' => $game->slug,
                     'title' => $review->title,
                     'body' => $review->body,
                     'rating' => $review->rating,
