@@ -371,6 +371,11 @@ Route::post(
                 'index',
             ])->name('index');
 
+            Route::get('/mine', [
+                PublicReviewController::class,
+                'mine',
+            ])->name('mine');
+
             Route::post('/public', [
                 PublicReviewController::class,
                 'store',
@@ -682,6 +687,11 @@ Route::get('/sitemaps/games-{page}.xml', [
 ])
     ->whereNumber('page')
     ->name('sitemap.games');
+
+Route::get('/shared/reviews/{review}', [
+    PublicReviewController::class,
+    'show',
+])->name('reviews.public.show');
 
 Route::get('/{game:slug}', [
     PublicGameController::class,

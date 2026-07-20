@@ -1,14 +1,44 @@
 <script setup>
-import { Flag, Star } from 'lucide-vue-next';
+import { Flag, Pencil, Share2, Star } from 'lucide-vue-next';
 
 defineProps({
     review: {
         type: Object,
         required: true,
     },
+    allowEdit: {
+        type: Boolean,
+        default: false,
+    },
 });
 
-defineEmits(['read-more', 'toggle-vote', 'toggle-featured', 'report-review']);
+defineEmits([
+    'read-more',
+    'toggle-vote',
+    'toggle-featured',
+    'report-review',
+    'edit-review',
+]);
+
+const shareReview = async (review) => {
+    const shareData = {
+        title: `${review.title || 'Game review'} — ${review.game_title}`,
+        text: `${review.user?.name || 'A Curator.gg user'} reviewed ${review.game_title}${review.rating ? ` ${review.rating}/10` : ''}.`,
+        url: review.share_url,
+    };
+
+    if (navigator.share) {
+        try {
+            await navigator.share(shareData);
+            return;
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+        }
+    }
+
+    await navigator.clipboard.writeText(review.share_url);
+    window.alert('Review link copied to clipboard.');
+};
 
 const platformLabel = (platform) => {
     const labels = {
@@ -160,6 +190,26 @@ const truncatedBody = (body) => {
                     <span class="text-sm font-bold text-zinc-400">
                         Score: {{ review.votes_score ?? 0 }}
                     </span>
+
+                    <button
+                        v-if="review.share_url"
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-1 text-sm font-bold text-zinc-300 transition hover:border-indigo-500/60 hover:text-white"
+                        @click="shareReview(review)"
+                    >
+                        <Share2 class="h-4 w-4" />
+                        Share
+                    </button>
+
+                    <button
+                        v-if="allowEdit && review.is_owner"
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-1 text-sm font-bold text-zinc-300 transition hover:border-indigo-500/60 hover:text-white"
+                        @click="$emit('edit-review', review)"
+                    >
+                        <Pencil class="h-4 w-4" />
+                        Edit review
+                    </button>
 
                     <button
                         v-if="review.is_owner"

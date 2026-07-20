@@ -22,6 +22,27 @@ class PublicReviewController extends Controller
 {
     public function index(SteamService $steam): Response
     {
+        return $this->renderReviewsPage($steam);
+    }
+
+    public function mine(SteamService $steam): Response
+    {
+        return $this->renderReviewsPage(
+            $steam,
+            auth()->id(),
+            'My Reviews',
+            'All public reviews written by you.',
+            true
+        );
+    }
+
+    private function renderReviewsPage(
+        SteamService $steam,
+        ?int $userId = null,
+        string $pageTitle = 'Reviews',
+        string $pageDescription = 'Public reviews from your community.',
+        bool $isMyReviews = false
+    ): Response {
         $reviews = PublicReview::query()
             ->with([
                 'user',
@@ -29,50 +50,13 @@ class PublicReviewController extends Controller
                 'game',
             ])
             ->where('is_public', true)
+            ->when(
+                $userId,
+                fn ($query) => $query->where('user_id', $userId)
+            )
             ->latest()
             ->get()
-            ->map(fn ($review) => [
-                'id' => $review->id,
-                'title' => $review->title,
-                'body' => $review->body,
-                'rating' => $review->rating,
-                'platform' => $review->platform,
-                'screenshot_url' => $review->screenshot_path
-                    ? Storage::url($review->screenshot_path)
-                    : null,
-                'recommended' => $review->recommended,
-                'not_recommended' => $review->not_recommended,
-                'is_featured_on_profile' => $review->is_featured_on_profile,
-
-                'game_id' => $review->game_id,
-                'game_title' => $review->game_title ?: $review->game?->title,
-                'game_slug' => $review->game?->slug,
-
-                'created_at' => $review->created_at?->diffForHumans(),
-
-                'can_vote' =>
-                    auth()->check()
-                    && $review->user_id !== auth()->id()
-                    && $this->canVoteForReview(
-                        auth()->id(),
-                        $review->user_id
-                    ),
-
-                'votes_score' => $review->votes->sum('value'),
-
-                'user_vote' => auth()->check()
-                    ? $review->votes
-                        ->firstWhere('user_id', auth()->id())
-                        ?->value
-                    : null,
-
-                'is_owner' => auth()->id() === $review->user_id,
-
-                'user' => [
-                    'name' => $review->user?->visible_name,
-                    'avatar' => $review->user?->steam_avatar_url,
-                ],
-            ])
+            ->map(fn ($review) => $this->reviewData($review))
             ->values()
             ->toArray();
 
@@ -81,8 +65,76 @@ class PublicReviewController extends Controller
             [
                 ...Payload::pageData($steam),
                 'reviews' => $reviews,
+                'pageTitle' => $pageTitle,
+                'pageDescription' => $pageDescription,
+                'isMyReviews' => $isMyReviews,
             ]
         );
+    }
+
+    public function show(PublicReview $review): Response
+    {
+        abort_unless($review->is_public, 404);
+
+        $review->loadMissing(['user', 'votes', 'game']);
+
+        $reviewData = $this->reviewData($review);
+        $plainBody = trim(preg_replace('/\s+/', ' ', $review->body ?? ''));
+        $description = mb_strlen($plainBody) > 155
+            ? mb_substr($plainBody, 0, 152).'...'
+            : $plainBody;
+
+        return Inertia::render('reviews/show', [
+            'review' => $reviewData,
+            'seo' => [
+                'title' => ($review->title ?: 'Game review')
+                    .' — '.$reviewData['game_title'].' | Curator.gg',
+                'description' => $description,
+                'url' => $reviewData['share_url'],
+                'image' => $review->game?->header_image_url
+                    ?: $reviewData['screenshot_url']
+                    ?: asset('og-image.jpg'),
+                'image_alt' => $reviewData['game_title'].' review by '
+                    .($reviewData['user']['name'] ?: 'a Curator.gg user'),
+            ],
+        ]);
+    }
+
+    private function reviewData(PublicReview $review): array
+    {
+        return [
+            'id' => $review->id,
+            'title' => $review->title,
+            'body' => $review->body,
+            'rating' => $review->rating,
+            'platform' => $review->platform,
+            'screenshot_url' => $review->screenshot_path
+                ? url(Storage::url($review->screenshot_path))
+                : null,
+            'recommended' => $review->recommended,
+            'not_recommended' => $review->not_recommended,
+            'is_featured_on_profile' => $review->is_featured_on_profile,
+            'time_to_beat_hours' => $review->time_to_beat_minutes
+                ? round($review->time_to_beat_minutes / 60, 2)
+                : null,
+            'game_id' => $review->game_id,
+            'game_title' => $review->game_title ?: $review->game?->title,
+            'game_slug' => $review->game?->slug,
+            'created_at' => $review->created_at?->diffForHumans(),
+            'share_url' => route('reviews.public.show', $review),
+            'can_vote' => auth()->check()
+                && $review->user_id !== auth()->id()
+                && $this->canVoteForReview(auth()->id(), $review->user_id),
+            'votes_score' => $review->votes->sum('value'),
+            'user_vote' => auth()->check()
+                ? $review->votes->firstWhere('user_id', auth()->id())?->value
+                : null,
+            'is_owner' => auth()->id() === $review->user_id,
+            'user' => [
+                'name' => $review->user?->visible_name,
+                'avatar' => $review->user?->steam_avatar_url,
+            ],
+        ];
     }
 
     public function store(

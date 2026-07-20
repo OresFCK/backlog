@@ -28,6 +28,31 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+
+    reviewTitle: {
+        type: String,
+        default: '',
+    },
+
+    platform: {
+        type: String,
+        default: '',
+    },
+
+    timeToBeatHours: {
+        type: [String, Number],
+        default: '',
+    },
+
+    editing: {
+        type: Boolean,
+        default: false,
+    },
+
+    featuredOnProfile: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(['close']);
@@ -46,14 +71,14 @@ const platforms = [
     { value: 'other', label: 'Other' },
 ];
 
-const publicReviewTitle = ref(props.game.title);
+const publicReviewTitle = ref(props.reviewTitle || props.game.title);
 const publicReviewBody = ref(props.note ?? '');
 const publicReviewRating = ref(props.rating);
 const publicReviewRecommended = ref(props.recommended);
 const publicReviewNotRecommended = ref(props.notRecommended);
-const publicReviewPlatform = ref('');
+const publicReviewPlatform = ref(props.platform);
 const publicReviewScreenshot = ref(null);
-const publicReviewTimeToBeatHours = ref('');
+const publicReviewTimeToBeatHours = ref(String(props.timeToBeatHours ?? ''));
 
 const canSubmit = computed(() => {
     return Boolean(
@@ -179,6 +204,7 @@ const submitPublicReview = () => {
             time_to_beat_hours: publicReviewTimeToBeatHours.value || null,
             recommended: publicReviewRecommended.value,
             not_recommended: publicReviewNotRecommended.value,
+            is_featured_on_profile: props.featuredOnProfile,
         },
         {
             preserveScroll: true,
@@ -204,11 +230,19 @@ const submitPublicReview = () => {
             >
                 <div>
                     <h2 class="text-xl font-black text-white sm:text-2xl">
-                        Create public review
+                        {{
+                            editing
+                                ? 'Edit public review'
+                                : 'Create public review'
+                        }}
                     </h2>
 
                     <p class="mt-1 text-sm text-zinc-400">
-                        This review will be visible publicly.
+                        {{
+                            editing
+                                ? 'Update the review visible on your profile and public link.'
+                                : 'This review will be visible publicly.'
+                        }}
                     </p>
                 </div>
 
@@ -408,7 +442,7 @@ const submitPublicReview = () => {
                     :disabled="!canSubmit"
                     @click="submitPublicReview"
                 >
-                    Publish review
+                    {{ editing ? 'Save changes' : 'Publish review' }}
                 </button>
             </div>
         </div>

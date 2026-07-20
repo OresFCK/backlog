@@ -4,31 +4,42 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Curator.gg – Organize Your Steam Library</title>
+    @php
+        $shareSeo = data_get($page ?? [], 'props.seo');
+        $metaTitle = data_get($shareSeo, 'title', 'Curator.gg – Organize Your Steam Library');
+        $metaDescription = data_get($shareSeo, 'description', 'Connect your Steam account, organize your game library, discover what to play next, track your backlog and build your gaming profile.');
+        $metaImage = data_get($shareSeo, 'image', asset('og-image.jpg'));
+        $metaImageAlt = data_get($shareSeo, 'image_alt', 'Curator.gg');
+        $metaType = $shareSeo ? 'article' : 'website';
+    @endphp
 
-    <meta name="description" content="Connect your Steam account, organize your game library, discover what to play next, track your backlog and build your gaming profile.">
+    <title>{{ $metaTitle }}</title>
+
+    <meta name="description" content="{{ $metaDescription }}">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#09090b">
 
     <link rel="canonical" href="{{ url()->current() }}">
 
-    <meta property="og:type" content="website">
+    <meta property="og:type" content="{{ $metaType }}">
     <meta property="og:site_name" content="Curator.gg">
     <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:title" content="Curator.gg – Organize Your Steam Library">
-    <meta property="og:description" content="Connect your Steam account, organize your game library, discover what to play next, track your backlog and build your gaming profile.">
-    <meta property="og:image" content="{{ asset('og-image.jpg') }}">
-    <meta property="og:image:secure_url" content="{{ asset('og-image.jpg') }}">
-    <meta property="og:image:type" content="image/jpeg">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="Curator.gg logo">
+    <meta property="og:title" content="{{ $metaTitle }}">
+    <meta property="og:description" content="{{ $metaDescription }}">
+    <meta property="og:image" content="{{ $metaImage }}">
+    <meta property="og:image:secure_url" content="{{ $metaImage }}">
+    @unless ($shareSeo)
+        <meta property="og:image:type" content="image/jpeg">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+    @endunless
+    <meta property="og:image:alt" content="{{ $metaImageAlt }}">
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Curator.gg – Organize Your Steam Library">
-    <meta name="twitter:description" content="Connect your Steam account, organize your game library, discover what to play next, track your backlog and build your gaming profile.">
-    <meta name="twitter:image" content="{{ asset('og-image.jpg') }}">
-    <meta name="twitter:image:alt" content="Curator.gg logo">
+    <meta name="twitter:title" content="{{ $metaTitle }}">
+    <meta name="twitter:description" content="{{ $metaDescription }}">
+    <meta name="twitter:image" content="{{ $metaImage }}">
+    <meta name="twitter:image:alt" content="{{ $metaImageAlt }}">
 
     <link rel="icon" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">

@@ -22,6 +22,7 @@ import {
     Users,
     Trophy,
     MessageSquareText,
+    NotebookPen,
     ShoppingBag,
     Shirt,
     BarChart3,
@@ -157,10 +158,16 @@ const toggleSection = (section) => {
 
 const isSectionOpen = (section) => openSections.value.includes(section);
 
-const navItemClass = (href) =>
-    page.url.startsWith(href)
+const navItemClass = (href) => {
+    const currentPath = page.url.split('?')[0];
+    const isActive =
+        currentPath === href ||
+        (href !== '/reviews' && currentPath.startsWith(`${href}/`));
+
+    return isActive
         ? 'border border-zinc-700 bg-zinc-800 text-white shadow-sm'
         : 'border border-transparent text-zinc-300 hover:border-zinc-800 hover:bg-zinc-900 hover:text-white';
+};
 
 const sectionButtonClass =
     'mb-3 flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900 hover:text-white';
@@ -229,6 +236,11 @@ const communityItems = [
         label: 'Reviews',
         href: '/reviews',
         icon: MessageSquareText,
+    },
+    {
+        label: 'My Reviews',
+        href: '/reviews/mine',
+        icon: NotebookPen,
     },
     {
         label: 'Challenges',

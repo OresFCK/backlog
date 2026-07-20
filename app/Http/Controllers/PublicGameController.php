@@ -70,6 +70,7 @@ class PublicGameController extends Controller
 
                     'votes_score' => $review->votes->sum('value'),
                     'created_at' => $review->created_at?->diffForHumans(),
+                    'share_url' => route('reviews.public.show', $review),
 
                     'user' => [
                         'name' => $review->user?->visible_name,
