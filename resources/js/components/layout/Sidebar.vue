@@ -79,9 +79,13 @@ const initialSection = computed(() => {
     }
 
     if (
-        ['/games/create', '/shop', '/wardrobe'].some((route) =>
-            page.url.startsWith(route),
-        )
+        [
+            '/games/create',
+            '/shop',
+            '/wardrobe',
+            '/tier-list-maker',
+            '/my-tier-lists',
+        ].some((route) => page.url.startsWith(route))
     ) {
         return 'tools';
     }
@@ -255,6 +259,16 @@ const communityItems = [
 ];
 
 const toolItems = [
+    {
+        label: 'Tier List Maker',
+        href: '/tier-list-maker',
+        icon: ListOrdered,
+    },
+    {
+        label: 'My Tier Lists',
+        href: '/my-tier-lists',
+        icon: Star,
+    },
     {
         label: 'Shop',
         href: '/shop',

@@ -37,6 +37,7 @@ use App\Http\Controllers\CustomListController;
 use App\Http\Controllers\PublicGameSearchController;
 use App\Http\Controllers\PremiereController;
 use App\Http\Controllers\MiniCuratorController;
+use App\Http\Controllers\TierListController;
 use App\Models\Game;
 use Illuminate\Support\Facades\Cache;
 use App\Helpers\CacheKeys;
@@ -55,6 +56,16 @@ Route::inertia('/login', 'auth/login')->name('login');
 
 Route::inertia('/terms', 'terms')->name('terms');
 Route::inertia('/privacy', 'privacy')->name('privacy');
+
+Route::get('/tier-list-maker', [TierListController::class, 'create'])
+    ->name('tier-lists.create');
+Route::post('/tier-lists', [TierListController::class, 'store'])
+    ->middleware('throttle:10,1')
+    ->name('tier-lists.store');
+Route::get('/tier-lists/{tierList:slug}', [TierListController::class, 'show'])
+    ->name('tier-lists.show');
+Route::get('/tier-lists/{tierList:slug}/make', [TierListController::class, 'make'])
+    ->name('tier-lists.make');
 
 Route::get('/u/{user:steam_id}', fn (
     User $user,
@@ -88,6 +99,8 @@ Route::get('/invite/{steamId}', function (
 })->name('invite.show');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/my-tier-lists', [TierListController::class, 'mine'])
+        ->name('tier-lists.mine');
     Route::get('/dashboard', function (
         SteamService $steam,
         \App\Services\RecommendationService $recommendations
