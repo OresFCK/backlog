@@ -697,7 +697,7 @@ Route::get('/{game:slug}', [
     PublicGameController::class,
     'show',
 ])
-    ->where('game', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->where('game', '[a-z0-9][a-z0-9-]*')
     ->name('games.public.show');
 
 Route::get('/public-games/search', [PublicGameSearchController::class, 'index'])
