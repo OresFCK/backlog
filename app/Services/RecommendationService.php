@@ -22,6 +22,7 @@ class RecommendationService
     {
         return $this->buildRecommendations()
             ->whereIn('library_game_id', $this->ownedGameIds())
+            ->filter(fn ($item) => filled($item['game']['public_url'] ?? null))
             ->sortByDesc('score')
             ->take(10)
             ->values()
@@ -32,6 +33,7 @@ class RecommendationService
     {
         return $this->buildRecommendations()
             ->whereNotIn('library_game_id', $this->ownedGameIds())
+            ->filter(fn ($item) => filled($item['game']['public_url'] ?? null))
             ->sortByDesc('score')
             ->take(10)
             ->values()
@@ -152,6 +154,9 @@ class RecommendationService
                         'id' => $gameId,
                         'title' => $game->title,
                         'header_image_url' => $game->header_image_url
+                            ?: (filled($game->steam_app_id)
+                                ? "https://cdn.cloudflare.steamstatic.com/steam/apps/{$game->steam_app_id}/header.jpg"
+                                : null)
                             ?: $game->cover_url
                             ?: $game->igdb_cover_url,
                         'slug' => $game?->slug,

@@ -1,11 +1,12 @@
 <script setup>
-import { computed } from 'vue'
+import { computed } from 'vue';
+import { Link } from '@inertiajs/vue3';
 
-import Sidebar from '@/components/layout/Sidebar.vue'
-import Topbar from '@/components/layout/Topbar.vue'
+import Sidebar from '@/components/layout/Sidebar.vue';
+import Topbar from '@/components/layout/Topbar.vue';
 
-import RecommendationsSection from '@/components/recommendations/RecommendationsSection.vue'
-import RecommendationCarousel from '@/components/recommendations/RecommendationCarousel.vue'
+import RecommendationsSection from '@/components/recommendations/RecommendationsSection.vue';
+import RecommendationCarousel from '@/components/recommendations/RecommendationCarousel.vue';
 
 const props = defineProps({
     user: {
@@ -32,7 +33,7 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-})
+});
 
 const topRecommendation = computed(() => {
     return [
@@ -40,9 +41,8 @@ const topRecommendation = computed(() => {
         ...props.steamRecommendations,
         ...props.friendsRanking,
         ...props.globalRanking,
-    ]
-        .sort((a, b) => Number(b.score ?? 0) - Number(a.score ?? 0))[0]
-})
+    ].sort((a, b) => Number(b.score ?? 0) - Number(a.score ?? 0))[0];
+});
 </script>
 
 <template>
@@ -60,21 +60,25 @@ const topRecommendation = computed(() => {
                         </h1>
 
                         <p class="mt-2 text-zinc-400">
-                            Personalized recommendations powered by your community.
+                            Personalized recommendations powered by your
+                            community.
                         </p>
                     </div>
                 </section>
 
-                <section
+                <Link
                     v-if="topRecommendation"
-                    class="relative overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 p-8"
+                    :href="topRecommendation.game.public_url"
+                    class="relative block overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 p-8 transition hover:border-zinc-600 focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none"
                 >
                     <img
                         :src="topRecommendation.game.header_image_url"
                         class="absolute inset-0 h-full w-full object-cover opacity-25"
                     />
 
-                    <div class="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-black/50" />
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-black/50"
+                    />
 
                     <div class="relative z-10 max-w-3xl">
                         <p class="text-sm font-bold text-indigo-300">
@@ -90,16 +94,20 @@ const topRecommendation = computed(() => {
                         </p>
 
                         <div class="mt-6 flex flex-wrap gap-3">
-                            <span class="rounded-full bg-indigo-500/10 px-4 py-2 text-sm font-bold text-indigo-300">
+                            <span
+                                class="rounded-full bg-indigo-500/10 px-4 py-2 text-sm font-bold text-indigo-300"
+                            >
                                 Score {{ topRecommendation.score }}
                             </span>
 
-                            <span class="rounded-full bg-yellow-500/10 px-4 py-2 text-sm font-bold text-yellow-300">
+                            <span
+                                class="rounded-full bg-yellow-500/10 px-4 py-2 text-sm font-bold text-yellow-300"
+                            >
                                 ★ {{ topRecommendation.average_rating }}/10
                             </span>
                         </div>
                     </div>
-                </section>
+                </Link>
 
                 <RecommendationsSection
                     :friends-ranking="friendsRanking"
