@@ -45,12 +45,12 @@ const closeMenu = () => {
                     >About</Link
                 >
                 <a href="#faq" class="transition hover:text-white">FAQ</a>
-                <Link
+                <a
                     href="/auth/steam"
                     class="rounded-xl bg-white px-4 py-2 font-black text-black hover:bg-zinc-200"
                 >
                     Join with Steam
-                </Link>
+                </a>
             </nav>
 
             <button
@@ -99,10 +99,10 @@ const closeMenu = () => {
                     @click="closeMenu"
                     >FAQ</a
                 >
-                <Link
+                <a
                     href="/auth/steam"
                     class="mt-2 rounded-xl bg-white px-4 py-3 text-center text-black"
-                    >Join with Steam</Link
+                    >Join with Steam</a
                 >
             </nav>
         </div>

@@ -20,12 +20,12 @@ import { ArrowRight } from 'lucide-vue-next';
                 start building a gaming profile shaped by your own taste.
             </p>
             <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-                <Link
+                <a
                     href="/auth/steam"
                     class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-4 text-sm font-black text-black"
                 >
                     Get started with Steam <ArrowRight class="h-4 w-4" />
-                </Link>
+                </a>
                 <Link
                     href="/about"
                     class="rounded-xl border border-zinc-700 px-6 py-4 text-sm font-black hover:bg-zinc-900"

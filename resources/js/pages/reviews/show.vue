@@ -79,12 +79,12 @@ const shareReview = async () => {
                         <span class="hidden sm:inline">Share review</span>
                     </button>
 
-                    <Link
+                    <a
                         :href="auth.user ? '/dashboard' : '/auth/steam'"
                         class="rounded-xl bg-white px-4 py-2 text-sm font-black text-zinc-950 transition hover:bg-zinc-200"
                     >
                         {{ auth.user ? 'Open dashboard' : 'Join with Steam' }}
-                    </Link>
+                    </a>
                 </div>
             </div>
         </header>
@@ -263,7 +263,7 @@ const shareReview = async () => {
                                 gaming identity.
                             </p>
                         </div>
-                        <Link
+                        <a
                             :href="auth.user ? '/dashboard' : '/auth/steam'"
                             class="shrink-0 rounded-xl bg-white px-5 py-3 text-center text-sm font-black text-zinc-950 transition hover:bg-zinc-200"
                         >
@@ -272,7 +272,7 @@ const shareReview = async () => {
                                     ? 'Go to dashboard'
                                     : 'Get started with Steam'
                             }}
-                        </Link>
+                        </a>
                     </div>
                 </div>
             </section>

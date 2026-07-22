@@ -1,14 +1,12 @@
 <script setup>
-import {
-    Link,
-} from '@inertiajs/vue3'
+import { Link } from '@inertiajs/vue3';
 
 defineProps({
     profile: {
         type: Object,
         required: true,
     },
-})
+});
 </script>
 
 <template>
@@ -22,8 +20,11 @@ defineProps({
         <div
             class="absolute inset-0 opacity-30"
             style="
-                background-image:
-                    radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 40%);
+                background-image: radial-gradient(
+                    circle at top,
+                    rgba(255, 255, 255, 0.08),
+                    transparent 40%
+                );
             "
         />
 
@@ -44,38 +45,30 @@ defineProps({
                 />
 
                 <p
-                    class="mt-8 text-sm font-semibold uppercase tracking-[0.3em] text-zinc-500"
+                    class="mt-8 text-sm font-semibold tracking-[0.3em] text-zinc-500 uppercase"
                 >
                     Curator.gg Invite
                 </p>
 
-                <h1
-                    class="mt-3 text-5xl font-black tracking-tight text-white"
-                >
+                <h1 class="mt-3 text-5xl font-black tracking-tight text-white">
                     {{ profile.name }}
                 </h1>
 
-                <p
-                    class="mt-5 max-w-md text-lg leading-relaxed text-zinc-400"
-                >
+                <p class="mt-5 max-w-md text-lg leading-relaxed text-zinc-400">
                     invited you to join
-                    <span class="font-bold text-white">
-                        Curator.gg
-                    </span>
+                    <span class="font-bold text-white"> Curator.gg </span>
 
-                    and connect through reviews,
-                    backlog tracking and game recommendations.
+                    and connect through reviews, backlog tracking and game
+                    recommendations.
                 </p>
 
-                <div
-                    class="mt-10 flex w-full flex-col gap-4 sm:flex-row"
-                >
-                    <Link
+                <div class="mt-10 flex w-full flex-col gap-4 sm:flex-row">
+                    <a
                         href="/auth/steam"
                         class="flex-1 rounded-2xl bg-white px-6 py-4 text-center text-base font-black text-zinc-950 transition hover:bg-zinc-200"
                     >
                         Join with Steam
-                    </Link>
+                    </a>
 
                     <a
                         v-if="profile.profile_url"
@@ -91,15 +84,9 @@ defineProps({
                 <div
                     class="mt-10 rounded-2xl border border-zinc-800 bg-zinc-900/80 px-5 py-4"
                 >
-                    <p
-                        class="text-sm text-zinc-500"
-                    >
-                        Steam ID
-                    </p>
+                    <p class="text-sm text-zinc-500">Steam ID</p>
 
-                    <p
-                        class="mt-1 font-mono text-sm text-zinc-300"
-                    >
+                    <p class="mt-1 font-mono text-sm text-zinc-300">
                         {{ profile.steam_id }}
                     </p>
                 </div>

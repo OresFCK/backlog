@@ -28,8 +28,8 @@ import { Link } from '@inertiajs/vue3';
                         <a href="/home#features" class="hover:text-white"
                             >Features</a
                         >
-                        <Link href="/auth/steam" class="hover:text-white"
-                            >Sign in with Steam</Link
+                        <a href="/auth/steam" class="hover:text-white"
+                            >Sign in with Steam</a
                         >
                     </nav>
                 </div>

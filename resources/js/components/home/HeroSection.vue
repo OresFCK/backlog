@@ -1,5 +1,4 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
 import { ArrowRight } from 'lucide-vue-next';
 </script>
 
@@ -27,13 +26,13 @@ import { ArrowRight } from 'lucide-vue-next';
                 <div
                     class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
                 >
-                    <Link
+                    <a
                         href="/auth/steam"
                         class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200"
                     >
                         Continue with Steam
                         <ArrowRight class="h-4 w-4" />
-                    </Link>
+                    </a>
                     <a
                         href="#how-it-works"
                         class="px-5 py-3 text-center text-sm font-semibold text-zinc-300 transition hover:text-white"
