@@ -1,7 +1,8 @@
 <script setup>
+import { ref } from 'vue';
 import { Flag, Pencil, Share2, Star } from 'lucide-vue-next';
 
-defineProps({
+const props = defineProps({
     review: {
         type: Object,
         required: true,
@@ -10,15 +11,30 @@ defineProps({
         type: Boolean,
         default: false,
     },
+    expandInline: {
+        type: Boolean,
+        default: false,
+    },
 });
 
-defineEmits([
+const emit = defineEmits([
     'read-more',
     'toggle-vote',
     'toggle-featured',
     'report-review',
     'edit-review',
 ]);
+
+const isExpanded = ref(false);
+
+const handleReadMore = () => {
+    if (props.expandInline) {
+        isExpanded.value = !isExpanded.value;
+        return;
+    }
+
+    emit('read-more', props.review);
+};
 
 const shareReview = async (review) => {
     const shareData = {
@@ -143,19 +159,23 @@ const truncatedBody = (body) => {
                     :href="review.screenshot_url"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="mt-4 block overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950"
+                    class="mt-4 flex max-h-[420px] items-center justify-center overflow-hidden rounded-2xl border border-zinc-800 bg-black/40 p-2 sm:p-3"
                 >
                     <img
                         :src="review.screenshot_url"
                         :alt="review.title || review.game_title"
-                        class="max-h-72 w-full object-cover sm:max-h-96"
+                        class="block h-auto max-h-[396px] w-auto max-w-full object-contain"
                     />
                 </a>
 
                 <p
                     class="mt-3 text-sm leading-6 break-words whitespace-pre-line text-zinc-300 sm:mt-4 sm:text-base"
                 >
-                    {{ truncatedBody(review.body) }}
+                    {{
+                        expandInline && isExpanded
+                            ? review.body
+                            : truncatedBody(review.body)
+                    }}
                 </p>
 
                 <div class="mt-5 flex flex-wrap items-center gap-3">
@@ -246,9 +266,9 @@ const truncatedBody = (body) => {
                     v-if="shouldTruncate(review.body)"
                     type="button"
                     class="mt-4 text-sm font-bold text-white underline underline-offset-4 transition hover:text-zinc-300"
-                    @click="$emit('read-more', review)"
+                    @click="handleReadMore"
                 >
-                    Read more
+                    {{ expandInline && isExpanded ? 'Show less' : 'Read more' }}
                 </button>
             </div>
         </div>

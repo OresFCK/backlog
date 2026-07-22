@@ -39,7 +39,7 @@ const props = defineProps({
     },
 });
 
-defineEmits(['update:platform', 'write-review']);
+defineEmits(['update:platform', 'write-review', 'read-more']);
 
 const platforms = computed(() => {
     return Object.entries(props.stats.platforms || {}).map(
@@ -94,6 +94,7 @@ const platforms = computed(() => {
                 :key="review.id"
                 :review="review"
                 :game="game"
+                expand-inline
             />
         </div>
 
