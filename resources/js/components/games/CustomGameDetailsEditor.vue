@@ -47,7 +47,8 @@ const form = ref({
     developer: props.game.developer ?? '',
     platform: props.game.platform ?? '',
     description: props.game.description ?? '',
-    release_date: props.game.release_date ?? '',
+    release_date:
+        props.game.release_date_input ?? props.game.release_date ?? '',
     cover_url: props.game.cover_url ?? '',
     header_image_url:
         props.game.header_image_url ?? props.game.header_image ?? '',

@@ -94,6 +94,28 @@ class PublicReviewController extends Controller
             ->get($review->id);
 
         $reviewData = $this->reviewData($review, $resolvedGame);
+        $authorReviews = PublicReview::query()
+            ->where('user_id', $review->user_id)
+            ->where('is_public', true);
+        $authorReviewCount = (clone $authorReviews)->count();
+        $authorAverageRating = (clone $authorReviews)->avg('rating');
+        $authorRecommendedCount = (clone $authorReviews)
+            ->where('recommended', true)
+            ->count();
+
+        $reviewData['user']['profile_url'] = filled($review->user?->steam_id)
+            ? route('profile.public', ['user' => $review->user->steam_id])
+            : null;
+        $reviewData['user']['stats'] = [
+            'reviews_count' => $authorReviewCount,
+            'average_rating' => $authorAverageRating !== null
+                ? round((float) $authorAverageRating, 1)
+                : null,
+            'recommendation_rate' => $authorReviewCount > 0
+                ? (int) round(($authorRecommendedCount / $authorReviewCount) * 100)
+                : 0,
+        ];
+
         $plainBody = trim(preg_replace('/\s+/', ' ', $review->body ?? ''));
         $description = mb_strlen($plainBody) > 155
             ? mb_substr($plainBody, 0, 152).'...'
@@ -140,6 +162,8 @@ class PublicReviewController extends Controller
             'game_id' => $resolvedGame?->id ?: $review->game_id,
             'game_title' => $resolvedGame?->title ?: $review->game_title,
             'game_slug' => $resolvedGame?->slug,
+            'source' => $review->source,
+            'source_game_id' => $review->source_game_id,
             'created_at' => $review->created_at?->diffForHumans(),
             'share_url' => route('reviews.public.show', $review),
             'can_vote' => auth()->check()
@@ -164,12 +188,32 @@ class PublicReviewController extends Controller
 
         [$game, $sourceGameId] = $this->resolveReviewedGame(
             (string) $data['game_id'],
-            $request->user()->id
+            $request->user()->id,
+            $data['source'] ?? null,
+            $data['source_game_id'] ?? null
         );
+
+        $reviewSource = in_array($data['source'] ?? null, ['steam', 'igdb'], true)
+            ? $data['source']
+            : $game->source;
 
         $existingReview = PublicReview::query()
             ->where('user_id', $request->user()->id)
-            ->where('game_id', $game->id)
+            ->whereIn(
+                'game_id',
+                Game::query()
+                    ->whereKey($game->id)
+                    ->when(
+                        filled($game->normalized_title),
+                        fn ($query) => $query->orWhere(
+                            'normalized_title',
+                            $game->normalized_title
+                        )
+                    )
+                    ->pluck('id')
+                    ->push($game->id)
+                    ->unique()
+            )
             ->first();
 
         if ($request->hasFile('screenshot')) {
@@ -186,37 +230,37 @@ class PublicReviewController extends Controller
 
         unset($data['screenshot']);
 
-        $review = PublicReview::updateOrCreate(
-            [
-                'user_id' => $request->user()->id,
-                'game_id' => $game->id,
-            ],
-            [
-                'source' => $game->source,
-                'source_game_id' => $sourceGameId,
+        $review = $existingReview ?? new PublicReview();
 
-                'game_title' => $game->title,
-                'title' => $data['title'],
-                'body' => $data['body'],
-                'rating' => $data['rating'],
-                'platform' => $data['platform'] ?? null,
+        $review->fill([
+            'user_id' => $request->user()->id,
+            'game_id' => $game->id,
+            'source' => $reviewSource,
+            'source_game_id' => $sourceGameId,
 
-                'screenshot_path' => $data['screenshot_path']
-                    ?? $existingReview?->screenshot_path,
+            'game_title' => $game->title,
+            'title' => $data['title'],
+            'body' => $data['body'],
+            'rating' => $data['rating'],
+            'platform' => $data['platform'] ?? null,
 
-                'recommended' => $request->boolean('recommended'),
-                'not_recommended' => $request->boolean('not_recommended'),
+            'screenshot_path' => $data['screenshot_path']
+                ?? $existingReview?->screenshot_path,
 
-                'is_featured_on_profile' =>
-                    $request->boolean('is_featured_on_profile'),
+            'recommended' => $request->boolean('recommended'),
+            'not_recommended' => $request->boolean('not_recommended'),
 
-                'is_public' => true,
+            'is_featured_on_profile' =>
+                $request->boolean('is_featured_on_profile'),
 
-                'time_to_beat_minutes' => filled($data['time_to_beat_hours'] ?? null)
-                    ? (int) round(((float) $data['time_to_beat_hours']) * 60)
-                    : null,
-            ]
-        );
+            'is_public' => true,
+
+            'time_to_beat_minutes' => filled($data['time_to_beat_hours'] ?? null)
+                ? (int) round(((float) $data['time_to_beat_hours']) * 60)
+                : null,
+        ]);
+
+        $review->save();
 
         UserGameMeta::query()->updateOrCreate(
             [
@@ -298,8 +342,30 @@ class PublicReviewController extends Controller
 
     private function resolveReviewedGame(
         string $gameIdentifier,
-        int $userId
+        int $userId,
+        ?string $source = null,
+        ?string $sourceGameId = null
     ): array {
+        if ($source === 'steam' && ctype_digit((string) $sourceGameId)) {
+            $steamGame = Game::query()
+                ->where('steam_app_id', (string) $sourceGameId)
+                ->first();
+
+            if ($steamGame) {
+                return [$steamGame, (string) $sourceGameId];
+            }
+        }
+
+        if ($source === 'igdb' && ctype_digit((string) $sourceGameId)) {
+            $igdbGame = Game::query()
+                ->where('igdb_id', (int) $sourceGameId)
+                ->first();
+
+            if ($igdbGame) {
+                return [$igdbGame, (string) $sourceGameId];
+            }
+        }
+
         if (ctype_digit($gameIdentifier)) {
             $game = Game::query()->findOrFail((int) $gameIdentifier);
 
@@ -314,7 +380,7 @@ class PublicReviewController extends Controller
         }
 
         abort_unless(
-            preg_match('/^custom:([1-9][0-9]*)$/', $gameIdentifier, $matches),
+            preg_match('/^custom[:-]([1-9][0-9]*)$/', $gameIdentifier, $matches),
             422
         );
 
@@ -324,11 +390,17 @@ class PublicReviewController extends Controller
 
         $normalizedTitle = GameTitleNormalizer::normalize($customGame->title);
 
-        $game = Game::query()
-            ->when(
-                $customGame->igdb_id,
-                fn ($query, $igdbId) => $query->where('igdb_id', $igdbId),
-                fn ($query) => $query->where('normalized_title', $normalizedTitle)
+        $game = $customGame->igdb_id
+            ? Game::query()->where('igdb_id', $customGame->igdb_id)->first()
+            : null;
+
+        $game ??= Game::query()
+            ->where('normalized_title', $normalizedTitle)
+            ->get()
+            ->sortByDesc(fn (Game $candidate) =>
+                (filled($candidate->steam_app_id) ? 4 : 0)
+                + (filled($candidate->igdb_id) ? 2 : 0)
+                + (filled($candidate->slug) ? 1 : 0)
             )
             ->first();
 

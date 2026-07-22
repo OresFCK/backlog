@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import {
+    ArrowUpRight,
     Gamepad2,
     Library,
     Share2,
@@ -108,22 +109,94 @@ const shareReview = async () => {
                     />
 
                     <div class="p-5 sm:p-9">
-                        <div class="flex items-center gap-3">
-                            <img
-                                v-if="review.user?.avatar"
-                                :src="review.user.avatar"
-                                :alt="review.user.name"
-                                class="h-12 w-12 rounded-xl object-cover sm:h-14 sm:w-14"
-                            />
-                            <div>
-                                <p class="font-bold">{{ review.user?.name }}</p>
-                                <p class="text-sm text-zinc-500">
-                                    Reviewed {{ review.created_at }}
-                                </p>
+                        <div
+                            class="flex flex-col gap-5 border-b border-zinc-800 pb-6 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                            <Link
+                                v-if="review.user?.profile_url"
+                                :href="review.user.profile_url"
+                                class="group flex items-center gap-3"
+                            >
+                                <img
+                                    v-if="review.user.avatar"
+                                    :src="review.user.avatar"
+                                    :alt="review.user.name"
+                                    class="h-12 w-12 rounded-xl object-cover sm:h-14 sm:w-14"
+                                />
+                                <div>
+                                    <p
+                                        class="flex items-center gap-1 font-bold group-hover:underline"
+                                    >
+                                        {{ review.user.name }}
+                                        <ArrowUpRight class="h-4 w-4" />
+                                    </p>
+                                    <p class="text-sm text-zinc-500">
+                                        Reviewed {{ review.created_at }}
+                                    </p>
+                                </div>
+                            </Link>
+
+                            <div v-else class="flex items-center gap-3">
+                                <img
+                                    v-if="review.user?.avatar"
+                                    :src="review.user.avatar"
+                                    :alt="review.user.name"
+                                    class="h-12 w-12 rounded-xl object-cover sm:h-14 sm:w-14"
+                                />
+                                <div>
+                                    <p class="font-bold">
+                                        {{ review.user?.name }}
+                                    </p>
+                                    <p class="text-sm text-zinc-500">
+                                        Reviewed {{ review.created_at }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div
+                                v-if="review.user?.stats"
+                                class="grid grid-cols-3 gap-2 sm:min-w-80"
+                            >
+                                <div
+                                    class="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2"
+                                >
+                                    <p class="text-base font-black">
+                                        {{ review.user.stats.reviews_count }}
+                                    </p>
+                                    <p class="text-[11px] text-zinc-500">
+                                        Reviews
+                                    </p>
+                                </div>
+                                <div
+                                    class="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2"
+                                >
+                                    <p class="text-base font-black">
+                                        {{
+                                            review.user.stats.average_rating ??
+                                            '—'
+                                        }}
+                                    </p>
+                                    <p class="text-[11px] text-zinc-500">
+                                        Avg. rating
+                                    </p>
+                                </div>
+                                <div
+                                    class="rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2"
+                                >
+                                    <p class="text-base font-black">
+                                        {{
+                                            review.user.stats
+                                                .recommendation_rate
+                                        }}%
+                                    </p>
+                                    <p class="text-[11px] text-zinc-500">
+                                        Recommend
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
-                        <p class="mt-7 font-bold text-indigo-300">
+                        <p class="mt-6 font-bold text-indigo-300">
                             {{ review.game_title }}
                         </p>
                         <h1

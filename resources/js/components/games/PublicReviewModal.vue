@@ -80,6 +80,14 @@ const publicReviewPlatform = ref(props.platform);
 const publicReviewScreenshot = ref(null);
 const publicReviewTimeToBeatHours = ref(String(props.timeToBeatHours ?? ''));
 
+const reviewedGameId = computed(() => {
+    if (props.game.is_custom && props.game.custom_game_id) {
+        return `custom:${props.game.custom_game_id}`;
+    }
+
+    return props.game.database_id ?? props.game.id;
+});
+
 const canSubmit = computed(() => {
     return Boolean(
         publicReviewTitle.value.trim().length &&
@@ -185,7 +193,7 @@ const submitPublicReview = () => {
     router.post(
         '/reviews/public',
         {
-            game_id: props.game.database_id ?? props.game.id,
+            game_id: reviewedGameId.value,
             source: props.game.source || null,
             source_game_id:
                 props.game.appid ||

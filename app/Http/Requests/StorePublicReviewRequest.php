@@ -30,7 +30,7 @@ class StorePublicReviewRequest extends FormRequest
         return [
             'game_id' => [
                 'required',
-                'regex:/^(?:[1-9][0-9]*|custom:[1-9][0-9]*)$/',
+                'regex:/^(?:[1-9][0-9]*|custom[:-][1-9][0-9]*)$/',
             ],
             'source' => ['nullable', 'string', 'max:50'],
             'source_game_id' => ['nullable', 'string', 'max:255'],

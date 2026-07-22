@@ -78,6 +78,9 @@ class GameDetailsService
                     'release_date' => $customGame->release_date
                         ? $customGame->release_date->translatedFormat('M j, Y')
                         : null,
+                    'release_date_input' => $customGame->release_date
+                        ? $customGame->release_date->format('Y-m-d')
+                        : null,
 
                     'steam_url' => null,
                     'igdb_id' => $customGame->igdb_id,

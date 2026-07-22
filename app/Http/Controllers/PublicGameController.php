@@ -13,16 +13,32 @@ class PublicGameController extends Controller
 {
     public function show(Game $game): Response
     {
+        $equivalentGameIds = Game::query()
+            ->whereKey($game->id)
+            ->when(
+                filled($game->normalized_title),
+                fn ($query) => $query->orWhere(
+                    'normalized_title',
+                    $game->normalized_title
+                )
+            )
+            ->pluck('id')
+            ->push($game->id)
+            ->unique()
+            ->values();
+
         $reviews = PublicReview::query()
             ->with(['user', 'votes'])
             ->where('is_public', true)
-            ->where(function ($query) use ($game) {
-                $query->where('game_title', $game->title);
+            ->where(function ($query) use ($game, $equivalentGameIds) {
+                $query
+                    ->whereIn('game_id', $equivalentGameIds)
+                    ->orWhere('game_title', $game->title);
 
                 if (filled($game->steam_app_id)) {
                     $query->orWhere(function ($query) use ($game) {
                         $query
-                            ->where('source', 'steam')
+                            ->whereIn('source', ['steam', 'merged'])
                             ->where(
                                 'source_game_id',
                                 (string) $game->steam_app_id
@@ -37,15 +53,9 @@ class PublicGameController extends Controller
                             ->where(
                                 'source_game_id',
                                 (string) $game->igdb_id
-                            );
+                        );
                     });
                 }
-
-                $query->orWhere(function ($query) use ($game) {
-                    $query
-                        ->whereNull('game_title')
-                        ->where('game_id', (string) $game->id);
-                });
             })
             ->latest()
             ->get();

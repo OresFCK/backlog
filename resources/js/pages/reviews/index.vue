@@ -229,6 +229,15 @@ const reportReview = (review) => {
                 id: reviewToEdit.game_id,
                 database_id: reviewToEdit.game_id,
                 title: reviewToEdit.game_title,
+                source: reviewToEdit.source,
+                steam_app_id:
+                    reviewToEdit.source === 'steam'
+                        ? reviewToEdit.source_game_id
+                        : null,
+                igdb_id:
+                    reviewToEdit.source === 'igdb'
+                        ? reviewToEdit.source_game_id
+                        : null,
             }"
             :review-title="reviewToEdit.title"
             :note="reviewToEdit.body"

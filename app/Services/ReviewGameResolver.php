@@ -15,7 +15,11 @@ class ReviewGameResolver
         }
 
         $steamIds = $reviews
-            ->where('source', 'steam')
+            ->filter(fn ($review) => in_array(
+                $review->source,
+                ['steam', 'merged'],
+                true
+            ))
             ->pluck('source_game_id')
             ->filter()
             ->unique()
@@ -91,7 +95,10 @@ class ReviewGameResolver
         ) {
             $game = null;
 
-            if ($review->source === 'steam' && filled($review->source_game_id)) {
+            if (
+                in_array($review->source, ['steam', 'merged'], true)
+                && filled($review->source_game_id)
+            ) {
                 $game = $bySteamId->get((string) $review->source_game_id);
             }
 
