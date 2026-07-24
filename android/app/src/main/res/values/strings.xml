@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Curator.gg</string>
+    <string name="title_activity_main">Curator.gg</string>
+    <string name="package_name">gg.curator.app</string>
+    <string name="custom_url_scheme">gg.curator.app</string>
+</resources>
