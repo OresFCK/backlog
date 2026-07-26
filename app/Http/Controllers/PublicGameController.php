@@ -6,6 +6,7 @@ use App\Models\Game;
 use App\Models\PublicReview;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -53,7 +54,7 @@ class PublicGameController extends Controller
                             ->where(
                                 'source_game_id',
                                 (string) $game->igdb_id
-                        );
+                            );
                     });
                 }
             })
@@ -61,6 +62,12 @@ class PublicGameController extends Controller
             ->get();
 
         $relatedGames = $this->relatedGames($game);
+        $seoDescription = $this->seoDescription($game, $reviews->count());
+        $seoImage = $game->header_image_url
+            ?: $game->cover_url
+            ?: $game->igdb_cover_url
+            ?: asset('og-image.jpg');
+        $publicUrl = route('games.public.show', $game);
 
         return Inertia::render('games/public-show', [
             'game' => [
@@ -136,6 +143,22 @@ class PublicGameController extends Controller
 
             'relatedGames' => $relatedGames,
 
+            'seo' => [
+                'title' => $game->title
+                    .' Reviews, Ratings & Recommendations | Curator.gg',
+                'description' => $seoDescription,
+                'url' => $publicUrl,
+                'image' => $seoImage,
+                'image_alt' => $game->title.' reviews and ratings',
+                'schema' => $this->gameSchema(
+                    $game,
+                    $reviews,
+                    $seoDescription,
+                    $seoImage,
+                    $publicUrl
+                ),
+            ],
+
             'auth' => [
                 'user' => auth()->user()
                     ? [
@@ -145,6 +168,101 @@ class PublicGameController extends Controller
                     : null,
             ],
         ]);
+    }
+
+    private function seoDescription(Game $game, int $reviewCount): string
+    {
+        $summary = Str::squish(
+            html_entity_decode(
+                strip_tags((string) $game->summary),
+                ENT_QUOTES | ENT_HTML5,
+                'UTF-8'
+            )
+        );
+
+        if ($summary !== '') {
+            return Str::limit($summary, 155, '...');
+        }
+
+        $reviewLabel = $reviewCount === 1
+            ? '1 player review'
+            : "{$reviewCount} player reviews";
+
+        return Str::limit(
+            "Read {$reviewLabel}, ratings and recommendations for "
+                ."{$game->title}. See what the Curator.gg community thinks.",
+            155,
+            '...'
+        );
+    }
+
+    private function gameSchema(
+        Game $game,
+        Collection $reviews,
+        string $description,
+        string $image,
+        string $publicUrl
+    ): array {
+        $schema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'VideoGame',
+            '@id' => $publicUrl.'#videogame',
+            'name' => $game->title,
+            'url' => $publicUrl,
+            'description' => $description,
+            'image' => $image,
+        ];
+
+        $genres = $this->genreNames($game->genres ?? []);
+
+        if ($genres !== []) {
+            $schema['genre'] = $genres;
+        }
+
+        if ($game->release_date) {
+            $schema['datePublished'] = $game->release_date->toDateString();
+        }
+
+        $ratedReviews = $reviews
+            ->filter(fn (PublicReview $review) => $review->rating !== null);
+
+        if ($ratedReviews->isNotEmpty()) {
+            $schema['aggregateRating'] = [
+                '@type' => 'AggregateRating',
+                'ratingValue' => round((float) $ratedReviews->avg('rating'), 1),
+                'ratingCount' => $ratedReviews->count(),
+                'bestRating' => 10,
+                'worstRating' => 1,
+            ];
+
+            $schema['review'] = $ratedReviews
+                ->take(10)
+                ->map(fn (PublicReview $review) => [
+                    '@type' => 'Review',
+                    'name' => $review->title ?: $game->title.' player review',
+                    'url' => route('reviews.public.show', $review),
+                    'datePublished' => $review->created_at?->toDateString(),
+                    'reviewBody' => Str::limit(
+                        Str::squish(strip_tags((string) $review->body)),
+                        500,
+                        '...'
+                    ),
+                    'author' => [
+                        '@type' => 'Person',
+                        'name' => $review->user?->visible_name ?: 'Curator.gg user',
+                    ],
+                    'reviewRating' => [
+                        '@type' => 'Rating',
+                        'ratingValue' => (float) $review->rating,
+                        'bestRating' => 10,
+                        'worstRating' => 1,
+                    ],
+                ])
+                ->values()
+                ->all();
+        }
+
+        return $schema;
     }
 
     private function relatedGames(Game $game): Collection

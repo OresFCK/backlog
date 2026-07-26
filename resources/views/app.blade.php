@@ -11,6 +11,7 @@
         $metaImage = data_get($shareSeo, 'image', asset('og-image.jpg'));
         $metaImageAlt = data_get($shareSeo, 'image_alt', 'Curator.gg');
         $metaType = $shareSeo ? 'article' : 'website';
+        $structuredData = data_get($shareSeo, 'schema');
     @endphp
 
     <title>{{ $metaTitle }}</title>
@@ -53,6 +54,18 @@
             "description": "Connect your Steam account, organize your game library, discover what to play next, track your backlog and build your gaming profile."
         }
     </script>
+
+    @if ($structuredData)
+        <script type="application/ld+json">{!! json_encode(
+            $structuredData,
+            JSON_UNESCAPED_SLASHES
+                | JSON_UNESCAPED_UNICODE
+                | JSON_HEX_TAG
+                | JSON_HEX_AMP
+                | JSON_HEX_APOS
+                | JSON_HEX_QUOT
+        ) !!}</script>
+    @endif
 
     <script>
         (function () {
