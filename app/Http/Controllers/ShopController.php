@@ -26,8 +26,9 @@ class ShopController extends Controller
             ->where('is_active', true)
             ->orderBy('type')
             ->orderBy('price')
-            ->get()
-            ->map(function (ShopItem $item) use ($user, $ownedItemIds) {
+            ->paginate(24)
+            ->withQueryString()
+            ->through(function (ShopItem $item) use ($user, $ownedItemIds) {
                 $userItem = UserShopItem::where('user_id', $user->id)
                     ->where('shop_item_id', $item->id)
                     ->first();

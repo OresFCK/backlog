@@ -1,15 +1,16 @@
-<script setup>
+<script setup lang="ts">
+import { router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
-import { router } from '@inertiajs/vue3';
 
+import PublicReviewModal from '@/components/games/PublicReviewModal.vue';
 import Sidebar from '@/components/layout/Sidebar.vue';
 import Topbar from '@/components/layout/Topbar.vue';
 
-import ReviewsFilters from '@/components/reviews/ReviewsFilters.vue';
+import PaginationLinks from '@/components/PaginationLinks.vue';
 import ReviewCard from '@/components/reviews/ReviewCard.vue';
 import ReviewModal from '@/components/reviews/ReviewModal.vue';
-import PublicReviewModal from '@/components/games/PublicReviewModal.vue';
+import ReviewsFilters from '@/components/reviews/ReviewsFilters.vue';
 
 const props = defineProps({
     user: {
@@ -18,8 +19,8 @@ const props = defineProps({
     },
 
     reviews: {
-        type: Array,
-        default: () => [],
+        type: Object,
+        default: () => ({ data: [], total: 0 }),
     },
 
     pageTitle: {
@@ -49,7 +50,7 @@ const filters = ref({
 });
 
 const filteredReviews = computed(() => {
-    return props.reviews.filter((review) => {
+    return props.reviews.data.filter((review) => {
         const userName = String(review.user?.name ?? '').toLowerCase();
 
         const gameTitle = String(
@@ -184,7 +185,7 @@ const reportReview = (review) => {
                 <ReviewsFilters
                     v-model:filters="filters"
                     :shown-count="filteredReviews.length"
-                    :total-count="reviews.length"
+                    :total-count="reviews.total"
                     @clear="clearFilters"
                 />
 
@@ -213,6 +214,10 @@ const reportReview = (review) => {
                             Try changing your filters.
                         </p>
                     </div>
+                    <PaginationLinks
+                        v-if="reviews.data.length"
+                        :pagination="reviews"
+                    />
                 </div>
             </main>
         </div>

@@ -1,16 +1,17 @@
-<script setup>
-import { ref } from 'vue';
+<script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 import Sidebar from '@/components/layout/Sidebar.vue';
 import Topbar from '@/components/layout/Topbar.vue';
+import PaginationLinks from '@/components/PaginationLinks.vue';
 
 defineProps({
     user: Object,
 
     lists: {
-        type: Array,
-        default: () => [],
+        type: Object,
+        default: () => ({ data: [], total: 0 }),
     },
 });
 
@@ -155,16 +156,16 @@ const deleteList = (list) => {
                             <h2 class="text-xl font-bold">Your lists</h2>
 
                             <p class="text-sm text-zinc-500">
-                                {{ lists.length }} lists
+                                {{ lists.total }} lists
                             </p>
                         </div>
 
                         <div
-                            v-if="lists.length"
+                            v-if="lists.data.length"
                             class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
                         >
                             <div
-                                v-for="list in lists"
+                                v-for="list in lists.data"
                                 :key="list.id"
                                 class="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-600 hover:bg-zinc-900"
                             >
@@ -274,6 +275,10 @@ const deleteList = (list) => {
                                 </template>
                             </div>
                         </div>
+                        <PaginationLinks
+                            v-if="lists.data.length"
+                            :pagination="lists"
+                        />
 
                         <div
                             v-else

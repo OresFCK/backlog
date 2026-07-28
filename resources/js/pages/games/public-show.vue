@@ -1,12 +1,13 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref } from 'vue';
 
-import ReviewPageHeader from '@/components/reviews/ReviewPageHeader.vue';
-import ReviewHero from '@/components/reviews/ReviewHero.vue';
-import ReviewList from '@/components/reviews/ReviewList.vue';
-import ReviewSidebar from '@/components/reviews/ReviewSidebar.vue';
 import RelatedGames from '@/components/game/RelatedGames.vue';
 import PublicReviewModal from '@/components/games/PublicReviewModal.vue';
+import PaginationLinks from '@/components/PaginationLinks.vue';
+import ReviewHero from '@/components/reviews/ReviewHero.vue';
+import ReviewList from '@/components/reviews/ReviewList.vue';
+import ReviewPageHeader from '@/components/reviews/ReviewPageHeader.vue';
+import ReviewSidebar from '@/components/reviews/ReviewSidebar.vue';
 
 const props = defineProps({
     game: {
@@ -15,8 +16,8 @@ const props = defineProps({
     },
 
     reviews: {
-        type: Array,
-        default: () => [],
+        type: Object,
+        default: () => ({ data: [] }),
     },
 
     stats: {
@@ -42,10 +43,10 @@ const isReviewModalOpen = ref(false);
 
 const filteredReviews = computed(() => {
     if (selectedPlatform.value === 'all') {
-        return props.reviews;
+        return props.reviews.data;
     }
 
-    return props.reviews.filter((review) => {
+    return props.reviews.data.filter((review) => {
         return review.platform === selectedPlatform.value;
     });
 });
@@ -75,6 +76,8 @@ const filteredReviews = computed(() => {
 
                 <ReviewSidebar :game="game" :stats="stats" />
             </div>
+
+            <PaginationLinks v-if="reviews.data.length" :pagination="reviews" />
 
             <RelatedGames class="mt-8 sm:mt-10" :games="relatedGames" />
         </main>

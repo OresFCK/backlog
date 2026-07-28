@@ -1,5 +1,13 @@
 <script setup>
 import { ArrowRight } from 'lucide-vue-next';
+import { Link } from '@inertiajs/vue3';
+
+defineProps({
+    auth: {
+        type: Object,
+        default: () => ({ user: null }),
+    },
+});
 </script>
 
 <template>
@@ -27,10 +35,14 @@ import { ArrowRight } from 'lucide-vue-next';
                     class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
                 >
                     <a
-                        href="/auth/steam"
+                        :href="auth.user ? '/dashboard' : '/auth/steam'"
                         class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200"
                     >
-                        Continue with Steam
+                        {{
+                            auth.user
+                                ? 'Go back to dashboard'
+                                : 'Continue with Steam'
+                        }}
                         <ArrowRight class="h-4 w-4" />
                     </a>
                     <a
@@ -41,7 +53,7 @@ import { ArrowRight } from 'lucide-vue-next';
                     </a>
                 </div>
 
-                <p class="mt-4 text-xs text-zinc-600">
+                <p v-if="!auth.user" class="mt-4 text-xs text-zinc-600">
                     Sign in securely through Steam. We never receive your Steam
                     password.
                 </p>

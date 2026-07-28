@@ -4,6 +4,13 @@ import { Link } from '@inertiajs/vue3';
 import { Gamepad2, Menu, X } from 'lucide-vue-next';
 import GameSearch from '@/components/home/GameSearch.vue';
 
+defineProps({
+    auth: {
+        type: Object,
+        default: () => ({ user: null }),
+    },
+});
+
 const menuOpen = ref(false);
 
 const closeMenu = () => {
@@ -44,12 +51,24 @@ const closeMenu = () => {
                 <Link href="/about" class="transition hover:text-white"
                     >About</Link
                 >
+                <Link href="/blog" class="transition hover:text-white">
+                    Blog
+                </Link>
+                <Link href="/tier-lists" class="transition hover:text-white">
+                    Tier Lists
+                </Link>
+                <Link
+                    href="/tier-list-maker"
+                    class="transition hover:text-white"
+                >
+                    Create
+                </Link>
                 <a href="#faq" class="transition hover:text-white">FAQ</a>
                 <a
-                    href="/auth/steam"
+                    :href="auth.user ? '/dashboard' : '/auth/steam'"
                     class="rounded-xl bg-white px-4 py-2 font-black text-black hover:bg-zinc-200"
                 >
-                    Join with Steam
+                    {{ auth.user ? 'Open dashboard' : 'Join with Steam' }}
                 </a>
             </nav>
 
@@ -93,6 +112,27 @@ const closeMenu = () => {
                     class="rounded-xl px-3 py-3 hover:bg-zinc-900"
                     >Contact</Link
                 >
+                <Link
+                    href="/blog"
+                    class="rounded-xl px-3 py-3 hover:bg-zinc-900"
+                    @click="closeMenu"
+                >
+                    Blog
+                </Link>
+                <Link
+                    href="/tier-lists"
+                    class="rounded-xl px-3 py-3 hover:bg-zinc-900"
+                    @click="closeMenu"
+                >
+                    Tier Lists
+                </Link>
+                <Link
+                    href="/tier-list-maker"
+                    class="rounded-xl px-3 py-3 hover:bg-zinc-900"
+                    @click="closeMenu"
+                >
+                    Create Tier List
+                </Link>
                 <a
                     href="#faq"
                     class="rounded-xl px-3 py-3 hover:bg-zinc-900"
@@ -100,10 +140,12 @@ const closeMenu = () => {
                     >FAQ</a
                 >
                 <a
-                    href="/auth/steam"
+                    :href="auth.user ? '/dashboard' : '/auth/steam'"
                     class="mt-2 rounded-xl bg-white px-4 py-3 text-center text-black"
-                    >Join with Steam</a
+                    @click="closeMenu"
                 >
+                    {{ auth.user ? 'Open dashboard' : 'Join with Steam' }}
+                </a>
             </nav>
         </div>
     </header>

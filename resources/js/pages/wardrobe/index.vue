@@ -1,36 +1,45 @@
-<script setup>
-import { router } from '@inertiajs/vue3'
-import { Star } from 'lucide-vue-next'
+<script setup lang="ts">
+import { router } from '@inertiajs/vue3';
+import { Star } from 'lucide-vue-next';
 
-import Sidebar from '@/components/layout/Sidebar.vue'
-import Topbar from '@/components/layout/Topbar.vue'
+import Sidebar from '@/components/layout/Sidebar.vue';
+import Topbar from '@/components/layout/Topbar.vue';
+import PaginationLinks from '@/components/PaginationLinks.vue';
 
 defineProps({
     user: Object,
 
     items: {
-        type: Array,
-        default: () => [],
+        type: Object,
+        default: () => ({ data: [] }),
     },
-})
+});
 
 const equipItem = (item) => {
-    router.post(`/wardrobe/${item.id}/equip`, {}, {
-        preserveScroll: true,
-    })
-}
+    router.post(
+        `/wardrobe/${item.id}/equip`,
+        {},
+        {
+            preserveScroll: true,
+        },
+    );
+};
 
 const unequipItem = (item) => {
     router.delete(`/wardrobe/${item.id}/equip`, {
         preserveScroll: true,
-    })
-}
+    });
+};
 
 const toggleFeatured = (item) => {
-    router.post(`/wardrobe/${item.id}/feature`, {}, {
-        preserveScroll: true,
-    })
-}
+    router.post(
+        `/wardrobe/${item.id}/feature`,
+        {},
+        {
+            preserveScroll: true,
+        },
+    );
+};
 </script>
 
 <template>
@@ -41,10 +50,10 @@ const toggleFeatured = (item) => {
             <Topbar :user="user" />
 
             <main class="flex-1 space-y-8 p-8">
-                <section class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8">
-                    <h1 class="text-3xl font-bold text-white">
-                        Wardrobe
-                    </h1>
+                <section
+                    class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8"
+                >
+                    <h1 class="text-3xl font-bold text-white">Wardrobe</h1>
 
                     <p class="mt-2 text-zinc-400">
                         Manage, equip and feature your owned cosmetics.
@@ -52,16 +61,18 @@ const toggleFeatured = (item) => {
                 </section>
 
                 <section
-                    v-if="items.length"
+                    v-if="items.data.length"
                     class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4"
                 >
                     <article
-                        v-for="item in items"
+                        v-for="item in items.data"
                         :key="item.id"
                         class="flex overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900"
                     >
                         <div class="flex w-full flex-col">
-                            <div class="flex h-44 shrink-0 items-center justify-center bg-zinc-800">
+                            <div
+                                class="flex h-44 shrink-0 items-center justify-center bg-zinc-800"
+                            >
                                 <img
                                     v-if="item.image_url"
                                     :src="item.image_url"
@@ -79,15 +90,21 @@ const toggleFeatured = (item) => {
 
                             <div class="flex flex-1 flex-col p-5">
                                 <div class="flex-1">
-                                    <p class="text-xs uppercase tracking-widest text-zinc-500">
+                                    <p
+                                        class="text-xs tracking-widest text-zinc-500 uppercase"
+                                    >
                                         {{ item.type }}
                                     </p>
 
-                                    <h2 class="mt-1 line-clamp-2 text-lg font-bold text-white">
+                                    <h2
+                                        class="mt-1 line-clamp-2 text-lg font-bold text-white"
+                                    >
                                         {{ item.name }}
                                     </h2>
 
-                                    <p class="mt-2 line-clamp-3 text-sm text-zinc-400">
+                                    <p
+                                        class="mt-2 line-clamp-3 text-sm text-zinc-400"
+                                    >
                                         {{ item.description }}
                                     </p>
                                 </div>
@@ -134,6 +151,7 @@ const toggleFeatured = (item) => {
                         </div>
                     </article>
                 </section>
+                <PaginationLinks v-if="items.data.length" :pagination="items" />
 
                 <section
                     v-else

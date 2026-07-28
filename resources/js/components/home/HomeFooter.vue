@@ -1,5 +1,12 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+
+defineProps({
+    auth: {
+        type: Object,
+        default: () => ({ user: null }),
+    },
+});
 </script>
 
 <template>
@@ -28,9 +35,25 @@ import { Link } from '@inertiajs/vue3';
                         <a href="/home#features" class="hover:text-white"
                             >Features</a
                         >
-                        <a href="/auth/steam" class="hover:text-white"
-                            >Sign in with Steam</a
+                        <Link href="/tier-list-maker" class="hover:text-white">
+                            Tier List Maker
+                        </Link>
+                        <Link href="/tier-lists" class="hover:text-white">
+                            Community Tier Lists
+                        </Link>
+                        <Link href="/blog" class="hover:text-white">
+                            Community Blog
+                        </Link>
+                        <a
+                            :href="auth.user ? '/dashboard' : '/auth/steam'"
+                            class="hover:text-white"
                         >
+                            {{
+                                auth.user
+                                    ? 'Open dashboard'
+                                    : 'Sign in with Steam'
+                            }}
+                        </a>
                     </nav>
                 </div>
                 <div>

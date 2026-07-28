@@ -1,56 +1,89 @@
 <?php
 
+use App\Helpers\CacheKeys;
 use App\Helpers\PayloadHelper as Payload;
+use App\Http\Controllers\AccountSettingsController;
 use App\Http\Controllers\AdminChallengeController;
 use App\Http\Controllers\AdminReviewController;
 use App\Http\Controllers\AdminReviewReportController;
 use App\Http\Controllers\AdminUserController;
-use App\Http\Controllers\Auth\SteamAuthController;
-use App\Http\Controllers\ChallengeController;
-use App\Http\Controllers\CustomGameController;
+use App\Http\Controllers\AdminUserSubmissionController;
 use App\Http\Controllers\AnticipatedGameController;
+use App\Http\Controllers\Auth\SteamAuthController;
+use App\Http\Controllers\BlogPostController;
+use App\Http\Controllers\BlogPostReportController;
+use App\Http\Controllers\BlogPostVoteController;
+use App\Http\Controllers\ChallengeController;
+use App\Http\Controllers\CuratorController;
+use App\Http\Controllers\CustomGameController;
+use App\Http\Controllers\CustomListController;
 use App\Http\Controllers\IgdbDumpController;
 use App\Http\Controllers\IgdbGameSearchController;
+use App\Http\Controllers\MiniCuratorController;
+use App\Http\Controllers\PremiereController;
+use App\Http\Controllers\PublicGameController;
+use App\Http\Controllers\PublicGameSearchController;
 use App\Http\Controllers\PublicReviewController;
 use App\Http\Controllers\PublicReviewReportController;
 use App\Http\Controllers\PublicReviewVoteController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\ShopItemController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\StatsController;
+use App\Http\Controllers\TierListController;
 use App\Http\Controllers\UserConnectionController;
+use App\Http\Controllers\UserSubmissionController;
 use App\Http\Controllers\WardrobeController;
 use App\Http\Requests\StoreCustomGameRequest;
 use App\Http\Requests\StoreCustomLabelRequest;
-use App\Http\Requests\UpdateCustomLabelRequest;
-use App\Http\Controllers\SitemapController;
-use App\Models\CustomStatus;
 use App\Http\Requests\StoreCustomStatusRequest;
+use App\Http\Requests\UpdateCustomLabelRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Http\Requests\UpdateProfileBannerRequest;
-use App\Http\Controllers\UserSubmissionController;
-use App\Http\Controllers\AdminUserSubmissionController;
-use App\Http\Controllers\AccountSettingsController;
-use App\Http\Controllers\CuratorController;
-use App\Http\Controllers\PublicGameController;
-use App\Http\Controllers\CustomListController;
-use App\Http\Controllers\PublicGameSearchController;
-use App\Http\Controllers\PremiereController;
-use App\Http\Controllers\MiniCuratorController;
-use App\Models\Game;
-use Illuminate\Support\Facades\Cache;
-use App\Helpers\CacheKeys;
-use Illuminate\Support\Facades\Response;
-use App\Models\UserSubmission;
+use App\Models\CustomStatus;
+use App\Models\TierList;
 use App\Models\User;
+use App\Services\RecommendationService;
 use App\Services\SteamService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 Route::redirect('/', '/home');
 
-Route::inertia('/home', 'home')->name('home');
+Route::get('/home', function () {
+    $tierLists = TierList::query()
+        ->where('is_public', true)
+        ->with('user')
+        ->latest('published_at')
+        ->limit(6)
+        ->get()
+        ->map(fn (TierList $tierList) => [
+            'id' => $tierList->id,
+            'title' => $tierList->title,
+            'slug' => $tierList->slug,
+            'description' => $tierList->description,
+            'items_count' => count($tierList->data['items'] ?? []),
+            'tiers' => collect($tierList->data['tiers'] ?? [])
+                ->take(5)
+                ->values(),
+            'covers' => collect($tierList->data['items'] ?? [])
+                ->pluck('cover_url')
+                ->filter()
+                ->unique()
+                ->take(4)
+                ->values(),
+            'author' => $tierList->user?->visible_name,
+            'url' => route('tier-lists.public.show', $tierList),
+        ]);
+
+    return Inertia::render('home', [
+        'tierLists' => $tierLists,
+    ]);
+})->name('home');
 Route::inertia('/login', 'auth/login')->name('login');
 
 Route::inertia('/terms', 'terms')->name('terms');
@@ -94,7 +127,7 @@ Route::get('/invite/{steamId}', function (
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function (
         SteamService $steam,
-        \App\Services\RecommendationService $recommendations
+        RecommendationService $recommendations
     ) {
         return Inertia::render('dashboard', [
             ...Payload::pageData($steam),
@@ -119,32 +152,27 @@ Route::middleware('auth')->group(function () {
     Route::get('/premieres/month/{month}', [PremiereController::class, 'month'])
         ->name('premieres.month');
 
-Route::post(
-    '/premieres/{gameIdentifier}/anticipate',
-    [
-        AnticipatedGameController::class,
-        'toggle',
-    ]
-)->name('premieres.anticipate');
+    Route::post(
+        '/premieres/{gameIdentifier}/anticipate',
+        [
+            AnticipatedGameController::class,
+            'toggle',
+        ]
+    )->name('premieres.anticipate');
 
-    Route::get('/backlog', fn (SteamService $steam) =>
-        Inertia::render('backlog/index', Payload::backlogPageData($steam))
+    Route::get('/backlog', fn (SteamService $steam) => Inertia::render('backlog/index', Payload::backlogPageData($steam))
     )->name('backlog.index');
 
-    Route::get('/playing', fn (SteamService $steam) =>
-        Inertia::render('playing/index', Payload::playingPageData($steam))
+    Route::get('/playing', fn (SteamService $steam) => Inertia::render('playing/index', Payload::playingPageData($steam))
     )->name('playing.index');
 
-    Route::get('/finished', fn (SteamService $steam) =>
-        Inertia::render('finished/index', Payload::finishedPageData($steam))
+    Route::get('/finished', fn (SteamService $steam) => Inertia::render('finished/index', Payload::finishedPageData($steam))
     )->name('finished.index');
 
-    Route::get('/wishlist', fn (SteamService $steam) =>
-        Inertia::render('wishlist/index', Payload::wishlistPageData($steam))
+    Route::get('/wishlist', fn (SteamService $steam) => Inertia::render('wishlist/index', Payload::wishlistPageData($steam))
     )->name('wishlist.index');
 
-    Route::get('/dropped', fn (SteamService $steam) =>
-        Inertia::render('dropped/index', Payload::droppedPageData($steam))
+    Route::get('/dropped', fn (SteamService $steam) => Inertia::render('dropped/index', Payload::droppedPageData($steam))
     )->name('dropped.index');
 
     Route::get('/recommendations', [
@@ -164,8 +192,7 @@ Route::post(
     Route::prefix('games')
         ->name('games.')
         ->group(function () {
-            Route::get('/create', fn (SteamService $steam) =>
-                Inertia::render('games/create', Payload::pageData($steam))
+            Route::get('/create', fn (SteamService $steam) => Inertia::render('games/create', Payload::pageData($steam))
             )->name('create');
 
             Route::post('/', fn (
@@ -177,8 +204,7 @@ Route::post(
                 string $game
             ) => Payload::storeMeta($request, $game))->name('meta');
 
-            Route::post('/bulk-status', fn () =>
-                Payload::bulkUpdateStatuses()
+            Route::post('/bulk-status', fn () => Payload::bulkUpdateStatuses()
             )->name('bulk-status');
 
             Route::get('/{game}', function (
@@ -187,7 +213,7 @@ Route::post(
             ) {
                 try {
                     $data = Payload::gamePageData($game, $steam);
-                } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
+                } catch (NotFoundHttpException) {
                     return redirect()
                         ->route('dashboard')
                         ->with('no_product_card', true)
@@ -211,44 +237,80 @@ Route::post(
     ])->name('custom-games.update');
 
     Route::prefix('lists')
-    ->name('lists.')
-    ->group(function () {
-        Route::get('/', [
-            CustomListController::class,
-            'index',
-        ])->name('index');
+        ->name('lists.')
+        ->group(function () {
+            Route::get('/', [
+                CustomListController::class,
+                'index',
+            ])->name('index');
 
-        Route::post('/', [
-            CustomListController::class,
-            'store',
-        ])->name('store');
+            Route::post('/', [
+                CustomListController::class,
+                'store',
+            ])->name('store');
 
-        Route::get('/{list}', [
-            CustomListController::class,
-            'show',
-        ])->name('show');
+            Route::get('/{list}', [
+                CustomListController::class,
+                'show',
+            ])->name('show');
 
-        Route::post('/{list}/items', [
-            CustomListController::class,
-            'storeItem',
-        ])->name('items.store');
+            Route::post('/{list}/items', [
+                CustomListController::class,
+                'storeItem',
+            ])->name('items.store');
 
-        Route::patch('/{list}/items/reorder', [
-            CustomListController::class,
-            'reorder',
-        ])->name('items.reorder');
+            Route::patch('/{list}/items/reorder', [
+                CustomListController::class,
+                'reorder',
+            ])->name('items.reorder');
 
-        Route::delete('/{list}/items/{item}', [
-            CustomListController::class,
-            'destroyItem',
-        ])->name('items.destroy');
+            Route::delete('/{list}/items/{item}', [
+                CustomListController::class,
+                'destroyItem',
+            ])->name('items.destroy');
 
-        Route::patch('/{list}', [CustomListController::class, 'update'])
-            ->name('lists.update');
+            Route::patch('/{list}', [CustomListController::class, 'update'])
+                ->name('lists.update');
 
-        Route::delete('/{list}', [CustomListController::class, 'destroy'])
-            ->name('lists.destroy');
-    });
+            Route::delete('/{list}', [CustomListController::class, 'destroy'])
+                ->name('lists.destroy');
+        });
+
+    Route::prefix('tier-lists')
+        ->name('tier-lists.')
+        ->group(function () {
+            Route::post('/', [TierListController::class, 'store'])
+                ->name('store');
+            Route::get('/{tierList:slug}/edit', [TierListController::class, 'edit'])
+                ->name('edit');
+            Route::patch('/{tierList:slug}', [TierListController::class, 'update'])
+                ->name('update');
+            Route::delete('/{tierList:slug}', [TierListController::class, 'destroy'])
+                ->name('destroy');
+        });
+
+    Route::prefix('blog')
+        ->name('blog.')
+        ->group(function () {
+            Route::get('/mine', [BlogPostController::class, 'mine'])
+                ->name('mine');
+            Route::get('/create', [BlogPostController::class, 'create'])
+                ->name('create');
+            Route::post('/', [BlogPostController::class, 'store'])
+                ->name('store');
+            Route::get('/{post:slug}/edit', [BlogPostController::class, 'edit'])
+                ->name('edit');
+            Route::patch('/{post:slug}', [BlogPostController::class, 'update'])
+                ->name('update');
+            Route::delete('/{post:slug}', [BlogPostController::class, 'destroy'])
+                ->name('destroy');
+            Route::post('/{post:slug}/vote', [BlogPostVoteController::class, 'store'])
+                ->name('vote.store');
+            Route::delete('/{post:slug}/vote', [BlogPostVoteController::class, 'destroy'])
+                ->name('vote.destroy');
+            Route::post('/{post:slug}/report', [BlogPostReportController::class, 'store'])
+                ->name('report.store');
+        });
 
     Route::post('/statuses', fn (
         StoreCustomStatusRequest $request
@@ -257,11 +319,10 @@ Route::post(
     Route::prefix('settings')
         ->name('settings.')
         ->group(function () {
-            Route::get('/labels', fn () =>
-                Inertia::render('settings/labels', [
-                    'user' => Payload::currentUser(),
-                    'labels' => Payload::customLabels(),
-                ])
+            Route::get('/labels', fn () => Inertia::render('settings/labels', [
+                'user' => Payload::currentUser(),
+                'labels' => Payload::customLabels(),
+            ])
             )->name('labels');
 
             Route::post('/labels', fn (
@@ -363,6 +424,7 @@ Route::post(
                     'is_curator' => ! $user->is_curator,
                 ]);
                 Cache::forget(CacheKeys::profilePage($user->id));
+
                 return back();
             })->name('curator.toggle');
         });
@@ -584,15 +646,15 @@ Route::middleware(['auth', 'admin'])
             ->name('user-submissions.')
             ->group(function () {
                 Route::patch('/{submission}/resolve', [
-                AdminUserSubmissionController::class,
-                'resolve',
-            ])->name('resolve');
+                    AdminUserSubmissionController::class,
+                    'resolve',
+                ])->name('resolve');
 
-            Route::delete('/{submission}', [
-                AdminUserSubmissionController::class,
-                'destroy',
-            ])->name('destroy');
-        });
+                Route::delete('/{submission}', [
+                    AdminUserSubmissionController::class,
+                    'destroy',
+                ])->name('destroy');
+            });
 
         Route::prefix('challenges')
             ->name('challenges.')
@@ -696,6 +758,21 @@ Route::get('/shared/reviews/{review}', [
     PublicReviewController::class,
     'show',
 ])->name('reviews.public.show');
+
+Route::get('/tier-list-maker', [TierListController::class, 'maker'])
+    ->name('tier-lists.maker');
+
+Route::get('/tier-lists', [TierListController::class, 'index'])
+    ->name('tier-lists.index');
+
+Route::get('/tier-lists/{tierList:slug}', [TierListController::class, 'show'])
+    ->name('tier-lists.public.show');
+
+Route::get('/blog', [BlogPostController::class, 'index'])
+    ->name('blog.index');
+
+Route::get('/blog/{post:slug}', [BlogPostController::class, 'show'])
+    ->name('blog.show');
 
 Route::get('/{game:slug}', [
     PublicGameController::class,

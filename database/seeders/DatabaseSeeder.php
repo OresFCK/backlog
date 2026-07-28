@@ -13,11 +13,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        CustomStatusSeeder::class;
-
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+        ]);
+
+        $this->call([
+            CustomStatusSeeder::class,
+            BlogPostSeeder::class,
         ]);
     }
 }

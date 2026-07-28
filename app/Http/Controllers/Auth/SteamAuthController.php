@@ -12,8 +12,21 @@ use Illuminate\Support\Str;
 
 class SteamAuthController extends Controller
 {
-    public function redirect()
+    public function redirect(Request $request)
     {
+        if (Auth::check()) {
+            return redirect()->intended('/dashboard');
+        }
+
+        $intended = $request->string('intended')->toString();
+
+        if (
+            str_starts_with($intended, '/')
+            && ! str_starts_with($intended, '//')
+        ) {
+            $request->session()->put('url.intended', $intended);
+        }
+
         $params = [
             'openid.ns' => 'http://specs.openid.net/auth/2.0',
             'openid.mode' => 'checkid_setup',
@@ -24,7 +37,7 @@ class SteamAuthController extends Controller
         ];
 
         return redirect(
-            'https://steamcommunity.com/openid/login?' . http_build_query($params)
+            'https://steamcommunity.com/openid/login?'.http_build_query($params)
         );
     }
 
@@ -65,7 +78,7 @@ class SteamAuthController extends Controller
 
         $user = User::updateOrCreate(
             [
-                'email' => 'steam_' . $steamId . '@steam.local',
+                'email' => 'steam_'.$steamId.'@steam.local',
             ],
             [
                 'steam_id' => $steamId,
@@ -76,10 +89,10 @@ class SteamAuthController extends Controller
             ]
         );
 
-        Auth::login($user, true);
+        Auth::login($user);
 
         $request->session()->regenerate();
 
-        return redirect('/dashboard');
+        return redirect()->intended('/dashboard');
     }
 }

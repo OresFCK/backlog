@@ -59,23 +59,27 @@ class PublicReviewController extends Controller
                 fn ($query) => $query->where('user_id', $userId)
             )
             ->latest()
-            ->get();
+            ->paginate(12)
+            ->withQueryString();
 
-        $gamesByReview = $this->reviewGameResolver->resolveMany($reviewModels);
+        $gamesByReview = $this->reviewGameResolver->resolveMany(
+            $reviewModels->getCollection()
+        );
 
-        $reviews = $reviewModels
+        $reviewModels->setCollection(
+            $reviewModels->getCollection()
             ->map(fn ($review) => $this->reviewData(
                 $review,
                 $gamesByReview->get($review->id)
             ))
             ->values()
-            ->toArray();
+        );
 
         return Inertia::render(
             'reviews/index',
             [
                 ...Payload::pageData($steam),
-                'reviews' => $reviews,
+                'reviews' => $reviewModels,
                 'pageTitle' => $pageTitle,
                 'pageDescription' => $pageDescription,
                 'isMyReviews' => $isMyReviews,

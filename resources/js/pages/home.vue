@@ -1,13 +1,26 @@
-<script setup>
-import HomeHeader from '@/components/home/HomeHeader.vue';
-import HeroSection from '@/components/home/HeroSection.vue';
+<script setup lang="ts">
+import { Head } from '@inertiajs/vue3';
+
+import CommunityTierListsSection from '@/components/home/CommunityTierListsSection.vue';
+import FaqSection from '@/components/home/FaqSection.vue';
 import FeaturesSection from '@/components/home/FeaturesSection.vue';
+import HeroSection from '@/components/home/HeroSection.vue';
+import HomeFooter from '@/components/home/HomeFooter.vue';
+import HomeHeader from '@/components/home/HomeHeader.vue';
 import HowItWorksSection from '@/components/home/HowItWorksSection.vue';
 import ShowcaseSection from '@/components/home/ShowcaseSection.vue';
-import FaqSection from '@/components/home/FaqSection.vue';
 import SupportSection from '@/components/home/SupportSection.vue';
-import HomeFooter from '@/components/home/HomeFooter.vue';
-import { Head } from '@inertiajs/vue3';
+
+defineProps({
+    auth: {
+        type: Object,
+        default: () => ({ user: null }),
+    },
+    tierLists: {
+        type: Array,
+        default: () => [],
+    },
+});
 </script>
 
 <template>
@@ -15,17 +28,18 @@ import { Head } from '@inertiajs/vue3';
         <Head
             title="Curator.gg — Organize your Steam library and discover what to play"
         />
-        <HomeHeader />
+        <HomeHeader :auth="auth" />
 
         <main>
-            <HeroSection />
+            <HeroSection :auth="auth" />
             <FeaturesSection />
             <HowItWorksSection />
             <ShowcaseSection />
+            <CommunityTierListsSection :tier-lists="tierLists" />
             <FaqSection />
-            <SupportSection />
+            <SupportSection :auth="auth" />
         </main>
 
-        <HomeFooter />
+        <HomeFooter :auth="auth" />
     </div>
 </template>

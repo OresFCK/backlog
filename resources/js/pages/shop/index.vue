@@ -1,39 +1,49 @@
-<script setup>
-import Sidebar from '@/components/layout/Sidebar.vue'
-import Topbar from '@/components/layout/Topbar.vue'
-import { router, usePage } from '@inertiajs/vue3'
-import {
-    BadgeCheck,
-    ShoppingBag,
-    Sparkles,
-} from 'lucide-vue-next'
+<script setup lang="ts">
+import { router, usePage } from '@inertiajs/vue3';
+import { BadgeCheck, ShoppingBag, Sparkles } from 'lucide-vue-next';
+import Sidebar from '@/components/layout/Sidebar.vue';
+import Topbar from '@/components/layout/Topbar.vue';
+import PaginationLinks from '@/components/PaginationLinks.vue';
 
 defineProps({
     user: Object,
 
     items: {
-        type: Array,
-        default: () => [],
+        type: Object,
+        default: () => ({ data: [] }),
     },
-})
+});
 
-const page = usePage()
+const page = usePage();
 
 const buyItem = (item) => {
-    router.post(`/shop/${item.id}/buy`, {}, {
-        preserveScroll: true,
-    })
-}
+    router.post(
+        `/shop/${item.id}/buy`,
+        {},
+        {
+            preserveScroll: true,
+        },
+    );
+};
 
 const equipItem = (item) => {
-    router.post(`/shop/${item.id}/equip`, {}, {
-        preserveScroll: true,
-    })
-}
+    router.post(
+        `/shop/${item.id}/equip`,
+        {},
+        {
+            preserveScroll: true,
+        },
+    );
+};
 
 const itemImage = (item) => {
-    return item.image_url || item.image_path || item.metadata?.image_url || item.metadata?.image_path
-}
+    return (
+        item.image_url ||
+        item.image_path ||
+        item.metadata?.image_url ||
+        item.metadata?.image_path
+    );
+};
 </script>
 
 <template>
@@ -45,9 +55,13 @@ const itemImage = (item) => {
 
             <main class="flex-1 space-y-8 p-8">
                 <section>
-                    <div class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8">
+                    <div
+                        class="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-8"
+                    >
                         <div class="flex items-center gap-4">
-                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-800 text-white">
+                            <div
+                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-800 text-white"
+                            >
                                 <ShoppingBag class="h-7 w-7" />
                             </div>
 
@@ -57,7 +71,8 @@ const itemImage = (item) => {
                                 </h1>
 
                                 <p class="mt-1 text-zinc-400">
-                                    Buy profile cosmetics, badges and visual upgrades.
+                                    Buy profile cosmetics, badges and visual
+                                    upgrades.
                                 </p>
                             </div>
                         </div>
@@ -65,27 +80,33 @@ const itemImage = (item) => {
                 </section>
 
                 <section v-if="page.props.flash?.error">
-                    <div class="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm font-semibold text-red-400">
+                    <div
+                        class="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm font-semibold text-red-400"
+                    >
                         {{ page.props.flash.error }}
                     </div>
                 </section>
 
                 <section v-if="page.props.flash?.success">
-                    <div class="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm font-semibold text-emerald-400">
+                    <div
+                        class="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm font-semibold text-emerald-400"
+                    >
                         {{ page.props.flash.success }}
                     </div>
                 </section>
 
                 <section
-                    v-if="items.length"
+                    v-if="items.data.length"
                     class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3"
                 >
                     <article
-                        v-for="item in items"
+                        v-for="item in items.data"
                         :key="item.id"
                         class="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 transition hover:border-zinc-700"
                     >
-                        <div class="flex h-44 items-center justify-center overflow-hidden bg-zinc-800">
+                        <div
+                            class="flex h-44 items-center justify-center overflow-hidden bg-zinc-800"
+                        >
                             <img
                                 v-if="itemImage(item)"
                                 :src="itemImage(item)"
@@ -93,15 +114,14 @@ const itemImage = (item) => {
                                 class="h-full w-full object-cover"
                             />
 
-                            <Sparkles
-                                v-else
-                                class="h-12 w-12 text-zinc-500"
-                            />
+                            <Sparkles v-else class="h-12 w-12 text-zinc-500" />
                         </div>
 
                         <div class="space-y-5 p-6">
                             <div>
-                                <div class="mb-3 inline-flex rounded-full bg-zinc-800 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                                <div
+                                    class="mb-3 inline-flex rounded-full bg-zinc-800 px-3 py-1 text-xs font-semibold tracking-wide text-zinc-400 uppercase"
+                                >
                                     {{ item.type }}
                                 </div>
 
@@ -114,11 +134,11 @@ const itemImage = (item) => {
                                 </p>
                             </div>
 
-                            <div class="flex items-center justify-between border-t border-zinc-800 pt-5">
+                            <div
+                                class="flex items-center justify-between border-t border-zinc-800 pt-5"
+                            >
                                 <div>
-                                    <p class="text-xs text-zinc-500">
-                                        Price
-                                    </p>
+                                    <p class="text-xs text-zinc-500">Price</p>
 
                                     <p class="text-lg font-bold text-white">
                                         {{ item.price }} coins
@@ -154,6 +174,7 @@ const itemImage = (item) => {
                         </div>
                     </article>
                 </section>
+                <PaginationLinks v-if="items.data.length" :pagination="items" />
 
                 <section
                     v-else

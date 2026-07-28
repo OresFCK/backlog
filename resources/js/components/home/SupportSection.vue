@@ -1,6 +1,13 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import { ArrowRight } from 'lucide-vue-next';
+
+defineProps({
+    auth: {
+        type: Object,
+        default: () => ({ user: null }),
+    },
+});
 </script>
 
 <template>
@@ -21,10 +28,15 @@ import { ArrowRight } from 'lucide-vue-next';
             </p>
             <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
                 <a
-                    href="/auth/steam"
+                    :href="auth.user ? '/dashboard' : '/auth/steam'"
                     class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-4 text-sm font-black text-black"
                 >
-                    Get started with Steam <ArrowRight class="h-4 w-4" />
+                    {{
+                        auth.user
+                            ? 'Go back to dashboard'
+                            : 'Get started with Steam'
+                    }}
+                    <ArrowRight class="h-4 w-4" />
                 </a>
                 <Link
                     href="/about"

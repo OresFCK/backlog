@@ -25,7 +25,8 @@ class CustomListController extends Controller
                 ->where('user_id', Auth::id())
                 ->withCount('items')
                 ->latest()
-                ->get(),
+                ->paginate(12)
+                ->withQueryString(),
         ]);
     }
 

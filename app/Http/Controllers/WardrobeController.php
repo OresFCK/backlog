@@ -23,8 +23,10 @@ class WardrobeController extends Controller
         $items = UserShopItem::query()
             ->with('item')
             ->where('user_id', $user->id)
-            ->get()
-            ->map(fn (UserShopItem $ownedItem) => [
+            ->latest()
+            ->paginate(24)
+            ->withQueryString()
+            ->through(fn (UserShopItem $ownedItem) => [
                 'id' => $ownedItem->item->id,
                 'name' => $ownedItem->item->name,
                 'description' => $ownedItem->item->description,

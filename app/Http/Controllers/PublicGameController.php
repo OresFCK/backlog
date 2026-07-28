@@ -28,7 +28,7 @@ class PublicGameController extends Controller
             ->unique()
             ->values();
 
-        $reviews = PublicReview::query()
+        $reviewQuery = PublicReview::query()
             ->with(['user', 'votes'])
             ->where('is_public', true)
             ->where(function ($query) use ($game, $equivalentGameIds) {
@@ -57,12 +57,30 @@ class PublicGameController extends Controller
                             );
                     });
                 }
-            })
+            });
+
+        $reviewCount = (clone $reviewQuery)->count();
+        $averageRating = (clone $reviewQuery)->avg('rating');
+        $recommendedCount = (clone $reviewQuery)
+            ->where('recommended', true)
+            ->count();
+        $notRecommendedCount = (clone $reviewQuery)
+            ->where('not_recommended', true)
+            ->count();
+        $platforms = (clone $reviewQuery)
+            ->whereNotNull('platform')
+            ->selectRaw('platform, count(*) as aggregate')
+            ->groupBy('platform')
+            ->pluck('aggregate', 'platform');
+
+        $reviews = $reviewQuery
             ->latest()
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
+        $reviewsForSchema = $reviews->getCollection();
 
         $relatedGames = $this->relatedGames($game);
-        $seoDescription = $this->seoDescription($game, $reviews->count());
+        $seoDescription = $this->seoDescription($game, $reviewCount);
         $seoImage = $game->header_image_url
             ?: $game->cover_url
             ?: $game->igdb_cover_url
@@ -100,8 +118,8 @@ class PublicGameController extends Controller
                 ),
             ],
 
-            'reviews' => $reviews
-                ->map(fn (PublicReview $review) => [
+            'reviews' => $reviews->through(
+                fn (PublicReview $review) => [
                     'id' => $review->id,
                     'game_id' => $game->id,
                     'game_title' => $game->title,
@@ -127,18 +145,15 @@ class PublicGameController extends Controller
                         'avatar' => $review->user?->steam_avatar_url,
                         'steam_id' => $review->user?->steam_id,
                     ],
-                ])
-                ->values(),
+                ]
+            ),
 
             'stats' => [
-                'total_reviews' => $reviews->count(),
-                'average_rating' => round((float) $reviews->avg('rating'), 1),
-                'recommended_count' => $reviews->where('recommended', true)->count(),
-                'not_recommended_count' => $reviews->where('not_recommended', true)->count(),
-                'platforms' => $reviews
-                    ->whereNotNull('platform')
-                    ->groupBy('platform')
-                    ->map->count(),
+                'total_reviews' => $reviewCount,
+                'average_rating' => round((float) $averageRating, 1),
+                'recommended_count' => $recommendedCount,
+                'not_recommended_count' => $notRecommendedCount,
+                'platforms' => $platforms,
             ],
 
             'relatedGames' => $relatedGames,
@@ -152,7 +167,7 @@ class PublicGameController extends Controller
                 'image_alt' => $game->title.' reviews and ratings',
                 'schema' => $this->gameSchema(
                     $game,
-                    $reviews,
+                    $reviewsForSchema,
                     $seoDescription,
                     $seoImage,
                     $publicUrl

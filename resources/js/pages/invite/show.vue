@@ -6,6 +6,10 @@ defineProps({
         type: Object,
         required: true,
     },
+    auth: {
+        type: Object,
+        default: () => ({ user: null }),
+    },
 });
 </script>
 
@@ -64,10 +68,10 @@ defineProps({
 
                 <div class="mt-10 flex w-full flex-col gap-4 sm:flex-row">
                     <a
-                        href="/auth/steam"
+                        :href="auth.user ? '/dashboard' : '/auth/steam'"
                         class="flex-1 rounded-2xl bg-white px-6 py-4 text-center text-base font-black text-zinc-950 transition hover:bg-zinc-200"
                     >
-                        Join with Steam
+                        {{ auth.user ? 'Open dashboard' : 'Join with Steam' }}
                     </a>
 
                     <a

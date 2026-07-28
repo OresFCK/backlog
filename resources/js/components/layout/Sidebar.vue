@@ -30,6 +30,8 @@ import {
     Lightbulb,
     UserCog,
     ListOrdered,
+    TableProperties,
+    PenLine,
     X,
 } from 'lucide-vue-next';
 
@@ -71,7 +73,7 @@ const initialSection = computed(() => {
     }
 
     if (
-        ['/reviews', '/challenges', '/people'].some((route) =>
+        ['/reviews', '/blog', '/challenges', '/people'].some((route) =>
             page.url.startsWith(route),
         )
     ) {
@@ -79,9 +81,13 @@ const initialSection = computed(() => {
     }
 
     if (
-        ['/games/create', '/shop', '/wardrobe'].some((route) =>
-            page.url.startsWith(route),
-        )
+        [
+            '/games/create',
+            '/shop',
+            '/wardrobe',
+            '/tier-lists',
+            '/tier-list-maker',
+        ].some((route) => page.url.startsWith(route))
     ) {
         return 'tools';
     }
@@ -233,6 +239,16 @@ const collectionItems = [
 
 const communityItems = [
     {
+        label: 'Blog',
+        href: '/blog',
+        icon: PenLine,
+    },
+    {
+        label: 'My Posts',
+        href: '/blog/mine',
+        icon: NotebookPen,
+    },
+    {
         label: 'Reviews',
         href: '/reviews',
         icon: MessageSquareText,
@@ -269,6 +285,11 @@ const toolItems = [
         label: 'Custom Lists',
         href: '/lists',
         icon: ListOrdered,
+    },
+    {
+        label: 'Tier Lists',
+        href: '/tier-lists',
+        icon: TableProperties,
     },
 ];
 
