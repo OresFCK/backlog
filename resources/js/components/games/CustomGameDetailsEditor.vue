@@ -1,6 +1,7 @@
-<script setup>
-import { computed, ref } from 'vue';
+<script setup lang="ts">
 import { router } from '@inertiajs/vue3';
+import { Trash2 } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     game: {
@@ -10,6 +11,7 @@ const props = defineProps({
 });
 
 const isOpen = ref(false);
+const deleting = ref(false);
 
 const platforms = [
     'Steam',
@@ -75,6 +77,23 @@ const achievementPercent = computed(() => {
 const save = () => {
     router.patch(`/custom-games/${props.game.custom_game_id}`, form.value, {
         preserveScroll: true,
+    });
+};
+
+const deleteGame = () => {
+    if (
+        !window.confirm(
+            `Delete "${props.game.title}" from your library? This cannot be undone.`,
+        )
+    ) {
+        return;
+    }
+
+    deleting.value = true;
+    router.delete(`/custom-games/${props.game.custom_game_id}`, {
+        onFinish: () => {
+            deleting.value = false;
+        },
     });
 };
 </script>
@@ -297,13 +316,26 @@ const save = () => {
                 </div>
             </div>
 
-            <button
-                type="button"
-                class="mt-5 rounded-xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
-                @click="save"
+            <div
+                class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
             >
-                Save custom details
-            </button>
+                <button
+                    type="button"
+                    class="rounded-xl bg-white px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200"
+                    @click="save"
+                >
+                    Save custom details
+                </button>
+                <button
+                    type="button"
+                    :disabled="deleting"
+                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/30 px-5 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500/10 disabled:opacity-50"
+                    @click="deleteGame"
+                >
+                    <Trash2 class="h-4 w-4" />
+                    {{ deleting ? 'Deleting...' : 'Delete custom game' }}
+                </button>
+            </div>
         </div>
     </div>
 </template>

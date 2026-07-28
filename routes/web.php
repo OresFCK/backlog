@@ -235,6 +235,10 @@ Route::middleware('auth')->group(function () {
         CustomGameController::class,
         'update',
     ])->name('custom-games.update');
+    Route::delete('/custom-games/{customGame}', [
+        CustomGameController::class,
+        'destroy',
+    ])->name('custom-games.destroy');
 
     Route::prefix('lists')
         ->name('lists.')
