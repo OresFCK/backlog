@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\GameTitleNormalizer;
 use App\Models\Game;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class PublicGameSearchController extends Controller
 {
@@ -20,17 +22,23 @@ class PublicGameSearchController extends Controller
             return response()->json([]);
         }
 
-        $games = Game::query()
-            ->whereNotNull('slug')
-            ->where(function ($builder) use ($query) {
-                $builder
-                    ->where('title', 'like', "%{$query}%")
-                    ->orWhere('slug', 'like', "%{$query}%")
-                    ->orWhere('steam_app_id', 'like', "%{$query}%");
-            })
-            ->orderBy('title')
-            ->limit(8)
-            ->get()
+        $normalizedQuery = GameTitleNormalizer::normalize($query);
+
+        if ($normalizedQuery === '') {
+            return response()->json([]);
+        }
+
+        $games = $this->searchGames($normalizedQuery);
+
+        if ($games->count() < 8) {
+            $games = $games
+                ->concat($this->searchGames($normalizedQuery, true))
+                ->unique(fn (Game $game) => $game->normalized_title ?: $game->id)
+                ->take(8)
+                ->values();
+        }
+
+        $games = $games
             ->map(function (Game $game) {
                 $coverUrl = $game->cover_url
                     ?? $game->igdb_cover_url
@@ -47,9 +55,36 @@ class PublicGameSearchController extends Controller
                     'steam_app_id' => $game->steam_app_id,
                     'cover_url' => $coverUrl,
                 ];
-            })
-            ->values();
+            });
 
         return response()->json($games);
+    }
+
+    private function searchGames(
+        string $query,
+        bool $contains = false
+    ): Collection
+    {
+        return Game::query()
+            ->whereNotNull('slug')
+            ->where(
+                'normalized_title',
+                'like',
+                $contains ? "%{$query}%" : "{$query}%"
+            )
+            ->orderByRaw(
+                'CASE WHEN normalized_title = ? THEN 0 ELSE 1 END',
+                [$query]
+            )
+            ->orderByRaw(
+                'CASE WHEN COALESCE(cover_url, igdb_cover_url, '
+                .'header_image_url) IS NULL THEN 1 ELSE 0 END'
+            )
+            ->orderBy('title')
+            ->limit(24)
+            ->get()
+            ->unique(fn (Game $game) => $game->normalized_title ?: $game->id)
+            ->take(8)
+            ->values();
     }
 }

@@ -23,9 +23,22 @@ const form = ref({
 const errors = ref({});
 const saving = ref(false);
 const imagePreviews = ref([]);
+const allowedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const selectImages = (event) => {
     const files = Array.from(event.target.files ?? []).slice(0, 5);
+
+    if (files.some((file) => !allowedImageTypes.has(file.type))) {
+        errors.value.images = 'Only JPG, PNG and WEBP image files are allowed.';
+        form.value.images = [];
+        event.target.value = '';
+        imagePreviews.value.forEach((url) => URL.revokeObjectURL(url));
+        imagePreviews.value = [];
+
+        return;
+    }
+
+    delete errors.value.images;
     form.value.images = files;
     imagePreviews.value.forEach((url) => URL.revokeObjectURL(url));
     imagePreviews.value = files.map((file) => URL.createObjectURL(file));
@@ -149,7 +162,7 @@ const save = () => {
                             </div>
                             <input
                                 type="file"
-                                accept=".jpg,.jpeg,.png,.webp"
+                                accept="image/jpeg,image/png,image/webp"
                                 multiple
                                 class="mt-3 block w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm"
                                 @change="selectImages"

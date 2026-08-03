@@ -57,7 +57,7 @@ class BlogPostTest extends TestCase
                 'body' => str_repeat('This is my story. ', 3),
                 'is_published' => false,
             ])
-            ->assertRedirect();
+            ->assertRedirect(route('blog.mine'));
 
         $post = BlogPost::query()->firstOrFail();
         $this->assertFalse($post->is_published);
@@ -69,6 +69,7 @@ class BlogPostTest extends TestCase
                 'body' => str_repeat('This is the updated story. ', 3),
                 'is_published' => true,
             ])
+            ->assertRedirect(route('blog.mine'))
             ->assertSessionHasNoErrors();
 
         $this->assertTrue($post->fresh()->is_published);
@@ -136,5 +137,28 @@ class BlogPostTest extends TestCase
                     'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ'
                 )
                 ->has('post.images', 1));
+    }
+
+    public function test_user_cannot_upload_an_executable_as_a_blog_image(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('blog.store'), [
+                'title' => 'Unsafe upload attempt',
+                'body' => str_repeat('This post contains enough text. ', 2),
+                'images' => [
+                    UploadedFile::fake()->createWithContent(
+                        'malware.exe',
+                        "MZ\x90\x00executable-content"
+                    ),
+                ],
+                'is_published' => false,
+            ])
+            ->assertSessionHasErrors('images.0');
+
+        $this->assertDatabaseCount('blog_posts', 0);
+        $this->assertSame([], Storage::disk('public')->allFiles('blog'));
     }
 }

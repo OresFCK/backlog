@@ -65,7 +65,7 @@ class BlogPostController extends Controller
         ]);
 
         return redirect()
-            ->route('blog.edit', $post)
+            ->route('blog.mine')
             ->with('success', 'Post saved.');
     }
 
@@ -125,7 +125,9 @@ class BlogPostController extends Controller
                 : null,
         ]);
 
-        return back()->with('success', 'Post updated.');
+        return redirect()
+            ->route('blog.mine')
+            ->with('success', 'Post updated.');
     }
 
     public function destroy(BlogPost $post): RedirectResponse
@@ -159,6 +161,7 @@ class BlogPostController extends Controller
             'images.*' => [
                 'image',
                 'mimes:jpg,jpeg,png,webp',
+                'mimetypes:image/jpeg,image/png,image/webp',
                 'max:5120',
             ],
             'remove_images' => ['nullable', 'boolean'],

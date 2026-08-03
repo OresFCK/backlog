@@ -5,8 +5,11 @@ import {
     ArrowUp,
     Check,
     Gamepad2,
+    Globe2,
     LayoutDashboard,
+    Lock,
     LogIn,
+    Palette,
     Plus,
     Save,
     Search,
@@ -71,29 +74,52 @@ const itemsForTier = (tierId) =>
 const unrankedItems = computed(() => itemsForTier(null));
 
 let searchTimer = null;
+let searchController = null;
+const searchCache = new Map();
 
 watch(query, (value) => {
     clearTimeout(searchTimer);
+    searchController?.abort();
     results.value = [];
+    searching.value = false;
 
-    if (value.trim().length < 2) {
+    const searchQuery = value.trim();
+
+    if (searchQuery.length < 2) {
+        return;
+    }
+
+    const cacheKey = searchQuery.toLocaleLowerCase();
+
+    if (searchCache.has(cacheKey)) {
+        results.value = searchCache.get(cacheKey);
         return;
     }
 
     searchTimer = setTimeout(async () => {
+        const controller = new AbortController();
+        searchController = controller;
         searching.value = true;
 
         try {
             const response = await fetch(
-                `/public-games/search?q=${encodeURIComponent(value.trim())}`,
+                `/public-games/search?q=${encodeURIComponent(searchQuery)}`,
+                { signal: controller.signal },
             );
-            results.value = response.ok ? await response.json() : [];
-        } catch {
-            results.value = [];
+            const games = response.ok ? await response.json() : [];
+
+            searchCache.set(cacheKey, games);
+            results.value = games;
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                results.value = [];
+            }
         } finally {
-            searching.value = false;
+            if (searchController === controller) {
+                searching.value = false;
+            }
         }
-    }, 250);
+    }, 150);
 });
 
 watch(
@@ -188,6 +214,31 @@ const dropGame = (tierId) => {
     draggedItemId.value = null;
 };
 
+const tierColors = [
+    '#f87171',
+    '#fb923c',
+    '#facc15',
+    '#a3e635',
+    '#4ade80',
+    '#2dd4bf',
+    '#22d3ee',
+    '#60a5fa',
+    '#818cf8',
+    '#a78bfa',
+    '#e879f9',
+    '#f472b6',
+];
+
+const randomTierColor = () => {
+    const usedColors = new Set(tiers.value.map((tier) => tier.color));
+    const availableColors = tierColors.filter(
+        (color) => !usedColors.has(color),
+    );
+    const colors = availableColors.length ? availableColors : tierColors;
+
+    return colors[Math.floor(Math.random() * colors.length)];
+};
+
 const addTier = () => {
     if (tiers.value.length >= 12) {
         return;
@@ -196,7 +247,7 @@ const addTier = () => {
     tiers.value.push({
         id: `tier-${Date.now()}`,
         name: `Tier ${tiers.value.length + 1}`,
-        color: '#a78bfa',
+        color: randomTierColor(),
     });
 };
 
@@ -383,17 +434,49 @@ const share = async () => {
                                 </div>
 
                                 <div class="flex flex-wrap gap-2">
-                                    <label
+                                    <button
                                         v-if="isAuthenticated"
-                                        class="flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-700 px-3 py-2 text-sm font-bold text-zinc-300"
+                                        type="button"
+                                        role="switch"
+                                        :aria-checked="isPublic"
+                                        :aria-label="
+                                            isPublic
+                                                ? 'Make tier list private'
+                                                : 'Make tier list public'
+                                        "
+                                        class="group inline-flex items-center gap-2.5 rounded-xl border px-3 py-2 text-sm font-bold transition"
+                                        :class="
+                                            isPublic
+                                                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/15'
+                                                : 'border-zinc-700 bg-zinc-950/50 text-zinc-300 hover:bg-zinc-800'
+                                        "
+                                        @click="isPublic = !isPublic"
                                     >
-                                        <input
-                                            v-model="isPublic"
-                                            type="checkbox"
-                                            class="rounded border-zinc-700 bg-zinc-950"
+                                        <Globe2
+                                            v-if="isPublic"
+                                            class="h-4 w-4"
                                         />
-                                        Public
-                                    </label>
+                                        <Lock v-else class="h-4 w-4" />
+                                        {{ isPublic ? 'Public' : 'Private' }}
+                                        <span
+                                            aria-hidden="true"
+                                            class="relative h-5 w-9 rounded-full transition-colors"
+                                            :class="
+                                                isPublic
+                                                    ? 'bg-emerald-400'
+                                                    : 'bg-zinc-700'
+                                            "
+                                        >
+                                            <span
+                                                class="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
+                                                :class="
+                                                    isPublic
+                                                        ? 'translate-x-[18px]'
+                                                        : 'translate-x-0.5'
+                                                "
+                                            />
+                                        </span>
+                                    </button>
 
                                     <button
                                         v-if="isAuthenticated"
@@ -452,12 +535,21 @@ const share = async () => {
                                         class="w-full border-0 bg-transparent text-center text-sm font-black outline-none sm:text-base"
                                         aria-label="Tier name"
                                     />
-                                    <input
-                                        v-model="tier.color"
-                                        type="color"
-                                        class="h-5 w-8 cursor-pointer border-0 bg-transparent"
-                                        aria-label="Tier color"
-                                    />
+                                    <label
+                                        class="relative inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-black/15 bg-black/15 px-2 py-1 text-[11px] font-bold text-zinc-950 transition hover:bg-black/25"
+                                        title="Change tier color"
+                                    >
+                                        <Palette class="h-3.5 w-3.5" />
+                                        <span class="hidden sm:inline"
+                                            >Color</span
+                                        >
+                                        <input
+                                            v-model="tier.color"
+                                            type="color"
+                                            class="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                                            aria-label="Change tier color"
+                                        />
+                                    </label>
                                 </div>
 
                                 <div
