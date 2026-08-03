@@ -1,5 +1,4 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
 import { ArrowRight } from 'lucide-vue-next';
 
 defineProps({
@@ -38,10 +37,12 @@ defineProps({
                     }}
                     <ArrowRight class="h-4 w-4" />
                 </a>
-                <Link
-                    href="/about"
+                <a
+                    href="https://buymeacoffee.com/curatorgg"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     class="rounded-xl border border-zinc-700 px-6 py-4 text-sm font-black hover:bg-zinc-900"
-                    >Learn more about Curator.gg</Link
+                    >Support us on Buy Me a Coffee</a
                 >
             </div>
         </div>
