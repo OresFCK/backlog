@@ -42,10 +42,10 @@ const closeMenu = () => {
             <nav
                 class="ml-auto hidden shrink-0 items-center gap-5 text-sm font-medium text-zinc-400 lg:flex"
             >
-                <a href="#features" class="transition hover:text-white"
+                <a href="/home#features" class="transition hover:text-white"
                     >Features</a
                 >
-                <a href="#how-it-works" class="transition hover:text-white"
+                <a href="/home#how-it-works" class="transition hover:text-white"
                     >How it works</a
                 >
                 <Link href="/about" class="transition hover:text-white"
@@ -63,7 +63,7 @@ const closeMenu = () => {
                 >
                     Create
                 </Link>
-                <a href="#faq" class="transition hover:text-white">FAQ</a>
+                <a href="/home#faq" class="transition hover:text-white">FAQ</a>
                 <a
                     :href="auth.user ? '/dashboard' : '/auth/steam'"
                     class="rounded-xl bg-white px-4 py-2 font-black text-black hover:bg-zinc-200"
@@ -91,13 +91,13 @@ const closeMenu = () => {
             <div class="mb-4 sm:hidden"><GameSearch /></div>
             <nav class="grid gap-1 text-sm font-bold text-zinc-300">
                 <a
-                    href="#features"
+                    href="/home#features"
                     class="rounded-xl px-3 py-3 hover:bg-zinc-900"
                     @click="closeMenu"
                     >Features</a
                 >
                 <a
-                    href="#how-it-works"
+                    href="/home#how-it-works"
                     class="rounded-xl px-3 py-3 hover:bg-zinc-900"
                     @click="closeMenu"
                     >How it works</a
@@ -134,7 +134,7 @@ const closeMenu = () => {
                     Create Tier List
                 </Link>
                 <a
-                    href="#faq"
+                    href="/home#faq"
                     class="rounded-xl px-3 py-3 hover:bg-zinc-900"
                     @click="closeMenu"
                     >FAQ</a

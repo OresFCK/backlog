@@ -93,13 +93,17 @@ watch(searchQuery, () => {
                         <span class="hidden sm:inline">Home</span>
                     </Link>
 
-                    <Link
-                        href="/dashboard"
+                    <a
+                        :href="
+                            auth.user
+                                ? '/dashboard'
+                                : '/auth/steam?intended=/dashboard'
+                        "
                         class="flex items-center gap-2 rounded-xl p-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-900 hover:text-white sm:px-3"
                     >
                         <LayoutDashboard class="h-4 w-4" />
                         <span class="hidden sm:inline">Dashboard</span>
-                    </Link>
+                    </a>
                 </nav>
             </div>
 

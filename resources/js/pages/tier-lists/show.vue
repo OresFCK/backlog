@@ -104,9 +104,7 @@ const share = async () => {
         </header>
 
         <main class="px-3 py-6 sm:px-6 sm:py-10">
-            <div
-                class="mx-auto grid max-w-[1450px] gap-6 xl:grid-cols-[minmax(0,1fr)_260px]"
-            >
+            <div class="mx-auto max-w-[1450px]">
                 <div class="min-w-0">
                     <header class="mb-7">
                         <p
@@ -188,21 +186,7 @@ const share = async () => {
                             </div>
                         </div>
                     </section>
-
-                    <div
-                        class="mt-6 flex min-h-24 items-center justify-center rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/30 text-xs font-bold tracking-[0.2em] text-zinc-600 uppercase xl:hidden"
-                    >
-                        Advertisement
-                    </div>
                 </div>
-
-                <aside class="hidden xl:block">
-                    <div
-                        class="sticky top-24 flex min-h-72 items-center justify-center rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/30 text-xs font-bold tracking-[0.2em] text-zinc-600 uppercase"
-                    >
-                        Advertisement
-                    </div>
-                </aside>
             </div>
         </main>
     </div>

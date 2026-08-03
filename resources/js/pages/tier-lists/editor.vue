@@ -6,7 +6,6 @@ import {
     Check,
     Gamepad2,
     Globe2,
-    LayoutDashboard,
     Lock,
     LogIn,
     Palette,
@@ -404,9 +403,7 @@ const share = async () => {
             </header>
 
             <main class="flex-1 px-3 py-5 sm:px-6 sm:py-8">
-                <div
-                    class="mx-auto grid max-w-[1500px] gap-6 xl:grid-cols-[minmax(0,1fr)_260px]"
-                >
+                <div class="mx-auto max-w-[1500px]">
                     <div class="min-w-0 space-y-6">
                         <section
                             class="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:rounded-3xl sm:p-6"
@@ -468,11 +465,11 @@ const share = async () => {
                                             "
                                         >
                                             <span
-                                                class="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
+                                                class="absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
                                                 :class="
                                                     isPublic
-                                                        ? 'translate-x-[18px]'
-                                                        : 'translate-x-0.5'
+                                                        ? 'translate-x-4'
+                                                        : 'translate-x-0'
                                                 "
                                             />
                                         </span>
@@ -791,21 +788,6 @@ const share = async () => {
                             </div>
                         </section>
                     </div>
-
-                    <aside class="space-y-4">
-                        <div
-                            class="flex min-h-40 items-center justify-center rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/30 text-xs font-bold tracking-[0.2em] text-zinc-600 uppercase xl:min-h-72"
-                        >
-                            Advertisement
-                        </div>
-                        <Link
-                            href="/tier-lists"
-                            class="flex items-center justify-center gap-2 rounded-xl border border-zinc-700 px-4 py-3 text-sm font-bold text-zinc-300 hover:bg-zinc-900"
-                        >
-                            <LayoutDashboard class="h-4 w-4" />
-                            Community tier lists
-                        </Link>
-                    </aside>
                 </div>
             </main>
         </div>
