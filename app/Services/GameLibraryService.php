@@ -255,7 +255,9 @@ class GameLibraryService
         $existingGame = CustomGame::query()
             ->where('user_id', $userId)
             ->where(function ($query) use ($validated, $normalizedTitle) {
-                $query->where('normalized_title', $normalizedTitle);
+                $query
+                    ->where('normalized_title', $normalizedTitle)
+                    ->orWhere('title', $validated['title']);
 
                 if (! empty($validated['igdb_id'])) {
                     $query->orWhere('igdb_id', $validated['igdb_id']);
