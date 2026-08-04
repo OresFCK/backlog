@@ -6,6 +6,7 @@ import {
     X,
     Check,
     Coins,
+    Heart,
     PlusCircle,
     Search,
     Menu,
@@ -233,6 +234,18 @@ onMounted(() => {
             </div>
 
             <div class="ml-auto flex items-center gap-2 sm:gap-3 lg:gap-4">
+                <a
+                    href="https://buymeacoffee.com/curatorgg"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex h-11 items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-3 text-sm font-bold text-zinc-300 transition hover:border-zinc-700 hover:text-white sm:px-4 lg:h-14 lg:rounded-2xl"
+                    aria-label="Support CuratorGG"
+                >
+                    <Heart class="h-5 w-5" />
+
+                    <span class="hidden xl:block">Support</span>
+                </a>
+
                 <Link
                     href="/games/create"
                     class="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-3 text-sm font-bold text-zinc-950 transition hover:bg-zinc-200 sm:px-4 lg:h-14 lg:rounded-2xl lg:px-5"
