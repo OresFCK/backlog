@@ -232,9 +232,6 @@ const validate = () => {
     } else if (!isMeaningfulText(trimmedTitle)) {
         validationErrors.title =
             'Enter a valid game title containing letters or numbers.'
-    } else if (duplicate.value) {
-        validationErrors.title =
-            'This game already exists in your library.'
     }
 
     if (trimmedPublisher.length > 255) {

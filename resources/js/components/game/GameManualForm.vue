@@ -6,6 +6,7 @@ defineProps({
     steamAppId: [String, Number, null],
     igdbId: [String, Number, null],
     duplicate: Boolean,
+    submitting: Boolean,
 
     errors: {
         type: Object,
@@ -108,7 +109,7 @@ defineEmits([
                     type="text"
                     :class="[
                         'w-full rounded-xl border bg-zinc-950 px-4 py-3 text-white outline-none',
-                        errors.coverUrl
+                        errors.cover_url
                             ? 'border-red-500 focus:border-red-400'
                             : 'border-zinc-800 focus:border-zinc-600',
                     ]"
@@ -116,10 +117,10 @@ defineEmits([
                 />
 
                 <p
-                    v-if="errors.coverUrl"
+                    v-if="errors.cover_url"
                     class="mt-2 text-sm text-red-400"
                 >
-                    {{ errors.coverUrl }}
+                    {{ errors.cover_url }}
                 </p>
             </div>
 
@@ -147,16 +148,17 @@ defineEmits([
                 v-if="duplicate"
                 class="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-300"
             >
-                This game already exists in your library.
+                This game already exists in your library. Its missing details
+                will be updated.
             </p>
 
             <button
                 type="button"
-                :disabled="duplicate || !title"
+                :disabled="submitting || !title"
                 class="w-full rounded-xl bg-white px-5 py-3 text-sm font-bold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
                 @click="$emit('submit')"
             >
-                Add game
+                {{ submitting ? 'Adding...' : 'Add game' }}
             </button>
         </div>
     </aside>
