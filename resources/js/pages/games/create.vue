@@ -128,23 +128,6 @@ const isValidUrl = (value) => {
     }
 }
 
-const isValidDate = (value) => {
-    if (!value) {
-        return true
-    }
-
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        return false
-    }
-
-    const date = new Date(`${value}T00:00:00`)
-
-    return (
-        !Number.isNaN(date.getTime()) &&
-        date.toISOString().slice(0, 10) === value
-    )
-}
-
 const duplicate = computed(() => {
     const current = normalizeTitle(title.value)
 
@@ -215,10 +198,6 @@ const validate = () => {
     const trimmedTitle = title.value.trim()
     const trimmedPublisher =
         publisher.value.trim()
-    const trimmedDeveloper =
-        developer.value.trim()
-    const trimmedDescription =
-        description.value.trim()
 
     if (!trimmedTitle) {
         validationErrors.title =
@@ -245,56 +224,9 @@ const validate = () => {
             'Enter a valid publisher name.'
     }
 
-    if (trimmedDeveloper.length > 255) {
-        validationErrors.developer =
-            'Developer cannot exceed 255 characters.'
-    } else if (
-        trimmedDeveloper &&
-        !isMeaningfulText(trimmedDeveloper)
-    ) {
-        validationErrors.developer =
-            'Enter a valid developer name.'
-    }
-
-    if (trimmedDescription.length > 5000) {
-        validationErrors.description =
-            'Description cannot exceed 5,000 characters.'
-    }
-
-    if (!isValidDate(releaseDate.value)) {
-        validationErrors.release_date =
-            'Release date must be a valid date.'
-    }
-
     if (!isValidUrl(coverUrl.value)) {
         validationErrors.cover_url =
             'Cover URL must be a valid HTTP or HTTPS URL.'
-    }
-
-    if (!isValidUrl(headerImageUrl.value)) {
-        validationErrors.header_image_url =
-            'Header image URL must be a valid HTTP or HTTPS URL.'
-    }
-
-    if (
-        steamAppId.value !== null &&
-        !/^\d+$/.test(String(steamAppId.value))
-    ) {
-        validationErrors.steam_app_id =
-            'Steam App ID must be numeric.'
-    }
-
-    if (
-        igdbId.value !== null &&
-        !/^\d+$/.test(String(igdbId.value))
-    ) {
-        validationErrors.igdb_id =
-            'IGDB ID must be numeric.'
-    }
-
-    if (!isValidUrl(igdbUrl.value)) {
-        validationErrors.igdb_url =
-            'IGDB URL must be a valid HTTP or HTTPS URL.'
     }
 
     errors.value = validationErrors
@@ -566,7 +498,12 @@ function submit() {
             preserveScroll: true,
 
             onError(serverErrors) {
-                errors.value = serverErrors
+                errors.value = {
+                    ...serverErrors,
+                    general:
+                        Object.values(serverErrors)[0] ??
+                        'The game could not be added.',
+                }
             },
 
             onSuccess() {
