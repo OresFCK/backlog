@@ -15,7 +15,7 @@ import {
     Users,
     X,
 } from 'lucide-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import Sidebar from '@/components/layout/Sidebar.vue';
 import Topbar from '@/components/layout/Topbar.vue';
@@ -48,6 +48,7 @@ const shared = ref(false);
 const picking = ref(false);
 const failedImages = ref(new Set());
 const touchStart = ref(null);
+const storeArtwork = ref({});
 
 const rawPool = computed(() => {
     const seen = new Set();
@@ -132,8 +133,34 @@ const imageUrl = (item, portrait = false) => {
 
     return portrait
         ? item.game.cover_image_url || item.game.header_image_url
-        : item.game.header_image_url;
+        : storeArtwork.value[item.game.id] || item.game.header_image_url;
 };
+
+const loadStoreArtwork = async (item) => {
+    const appId = item?.game?.steam_app_id;
+
+    if (!appId || storeArtwork.value[item.game.id] !== undefined) {
+        return;
+    }
+
+    storeArtwork.value = { ...storeArtwork.value, [item.game.id]: null };
+
+    try {
+        const response = await fetch(`/recommendations/artwork/${appId}`, {
+            headers: { Accept: 'application/json' },
+        });
+        const data = response.ok ? await response.json() : {};
+
+        storeArtwork.value = {
+            ...storeArtwork.value,
+            [item.game.id]: data.url || null,
+        };
+    } catch {
+        // The existing Steam artwork remains the fallback.
+    }
+};
+
+watch(swipeGame, (item) => loadStoreArtwork(item));
 
 const imageFailed = (item) => {
     failedImages.value = new Set([...failedImages.value, item.game.id]);
@@ -324,6 +351,7 @@ onMounted(() => {
     }
 
     track('recommendations_opened', { onboarding: Boolean(onboarding) });
+    loadStoreArtwork(swipeGame.value);
 });
 </script>
 

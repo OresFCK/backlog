@@ -180,6 +180,11 @@ Route::middleware('auth')->group(function () {
         'index',
     ])->name('recommendations.index');
 
+    Route::get('/recommendations/artwork/{steamAppId}', [
+        RecommendationController::class,
+        'artwork',
+    ])->name('recommendations.artwork');
+
     Route::get('/stats', [
         StatsController::class,
         'index',

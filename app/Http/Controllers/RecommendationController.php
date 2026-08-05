@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\PayloadHelper as Payload;
 use App\Services\RecommendationService;
 use App\Services\SteamService;
+use Illuminate\Http\JsonResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,18 +22,32 @@ class RecommendationController extends Controller
             [
                 ...Payload::pageData($steam),
 
-                'backlogRecommendations' =>
-                    $this->recommendations->backlogRecommendations(),
+                'backlogRecommendations' => $this->recommendations->backlogRecommendations(),
 
-                'steamRecommendations' =>
-                    $this->recommendations->steamRecommendations(),
+                'steamRecommendations' => $this->recommendations->steamRecommendations(),
 
-                'friendsRanking' =>
-                    $this->recommendations->friendsRanking(),
+                'friendsRanking' => $this->recommendations->friendsRanking(),
 
-                'globalRanking' =>
-                    $this->recommendations->globalRanking(),
+                'globalRanking' => $this->recommendations->globalRanking(),
             ]
         );
+    }
+
+    public function artwork(
+        string $steamAppId,
+        SteamService $steam
+    ): JsonResponse {
+        abort_unless(ctype_digit($steamAppId), 404);
+
+        $details = $steam->getAppDetails($steamAppId);
+        $screenshots = collect($details['screenshots'] ?? [])
+            ->pluck('path_full')
+            ->filter()
+            ->values();
+
+        return response()->json([
+            'url' => $screenshots->first()
+                ?: ($details['background_raw'] ?? $details['background'] ?? null),
+        ]);
     }
 }
