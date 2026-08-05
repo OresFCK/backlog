@@ -165,13 +165,16 @@ class RecommendationService
 
                     'game' => [
                         'id' => $gameId,
+                        'steam_app_id' => $game->steam_app_id,
                         'title' => $game->title,
-                        'header_image_url' => $game->header_image_url
-                            ?: (filled($game->steam_app_id)
-                                ? "https://cdn.cloudflare.steamstatic.com/steam/apps/{$game->steam_app_id}/header.jpg"
-                                : null)
-                            ?: $game->cover_url
-                            ?: $game->igdb_cover_url,
+                        'header_image_url' => filled($game->steam_app_id)
+                            ? "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{$game->steam_app_id}/capsule_616x353.jpg"
+                            : ($game->header_image_url
+                                ?: $game->cover_url
+                                ?: $game->igdb_cover_url),
+                        'image_fallback_url' => filled($game->steam_app_id)
+                            ? "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{$game->steam_app_id}/header.jpg"
+                            : ($game->cover_url ?: $game->igdb_cover_url),
                         'slug' => $game?->slug,
                         'public_url' => $game?->slug
                             ? route('games.public.show', $game)

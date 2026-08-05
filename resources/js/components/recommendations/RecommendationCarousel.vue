@@ -22,9 +22,22 @@ const props = defineProps({
 
 const visibleItems = computed(() => props.items.slice(0, 10));
 const brokenImages = ref(new Set());
+const hiddenImages = ref(new Set());
 
 const markImageAsBroken = (gameId) => {
+    if (brokenImages.value.has(gameId)) {
+        hiddenImages.value = new Set([...hiddenImages.value, gameId]);
+        return;
+    }
     brokenImages.value = new Set([...brokenImages.value, gameId]);
+};
+
+const imageUrl = (item) => {
+    if (hiddenImages.value.has(item.game.id)) return null;
+
+    return brokenImages.value.has(item.game.id)
+        ? item.game.image_fallback_url
+        : item.game.header_image_url;
 };
 </script>
 
@@ -48,13 +61,10 @@ const markImageAsBroken = (gameId) => {
                 class="group overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900 transition duration-200 hover:-translate-y-1 hover:border-zinc-600 hover:shadow-xl hover:shadow-black/30 focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:outline-none"
             >
                 <img
-                    v-if="
-                        item.game.header_image_url &&
-                        !brokenImages.has(item.game.id)
-                    "
-                    :src="item.game.header_image_url"
+                    v-if="imageUrl(item)"
+                    :src="imageUrl(item)"
                     :alt="item.game.title"
-                    class="h-44 w-full object-cover"
+                    class="aspect-[616/353] w-full bg-zinc-950 object-cover object-center"
                     loading="lazy"
                     @error="markImageAsBroken(item.game.id)"
                 />

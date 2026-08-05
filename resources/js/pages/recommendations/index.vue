@@ -66,6 +66,26 @@ const nextThree = computed(() => {
 });
 
 const shared = ref(false);
+const failedImages = ref(new Set());
+const hiddenImages = ref(new Set());
+
+const recommendationImage = (item) => {
+    const gameId = item.game.id;
+
+    if (hiddenImages.value.has(gameId)) return null;
+
+    return failedImages.value.has(gameId)
+        ? item.game.image_fallback_url
+        : item.game.header_image_url;
+};
+
+const useFallbackImage = (item) => {
+    if (failedImages.value.has(item.game.id) || !item.game.image_fallback_url) {
+        hiddenImages.value = new Set([...hiddenImages.value, item.game.id]);
+        return;
+    }
+    failedImages.value = new Set([...failedImages.value, item.game.id]);
+};
 
 onMounted(() => {
     const connected =
@@ -170,9 +190,16 @@ const shareResults = async () => {
                         >
                             <div class="relative">
                                 <img
-                                    :src="item.game.header_image_url"
+                                    v-if="recommendationImage(item)"
+                                    :src="recommendationImage(item)"
                                     :alt="item.game.title"
-                                    class="aspect-video w-full object-cover"
+                                    class="aspect-[616/353] w-full bg-zinc-950 object-cover object-center"
+                                    loading="eager"
+                                    @error="useFallbackImage(item)"
+                                />
+                                <div
+                                    v-else
+                                    class="aspect-[616/353] w-full bg-gradient-to-br from-zinc-800 via-zinc-900 to-indigo-950/60"
                                 />
                                 <span
                                     class="absolute top-3 left-3 rounded-lg bg-black/80 px-3 py-1 text-sm font-black text-white"
