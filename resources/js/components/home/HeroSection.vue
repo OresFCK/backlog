@@ -23,31 +23,35 @@ const startSteamConnection = () => {
             <div class="grid items-center gap-12 lg:grid-cols-[1fr_0.9fr]">
                 <div class="max-w-3xl">
                     <p class="text-sm font-semibold text-indigo-400">
-                        One decision, made for you
+                        Your Steam backlog, solved
                     </p>
                     <h1
                         class="mt-4 text-4xl leading-tight font-bold tracking-tight sm:text-5xl lg:text-6xl"
                     >
-                        Your next three games.
+                        Stop browsing. Start playing.
                     </h1>
                     <p
                         class="mt-5 max-w-2xl text-base leading-7 text-zinc-400 sm:text-lg"
                     >
-                        Connect Steam and get three personal picks from the
-                        games you already own — ranked and ready to play.
+                        Curator finds three games worth playing from your own
+                        Steam library.
                     </p>
                     <div
                         class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
                     >
                         <a
-                            :href="auth.user ? '/recommendations' : steamUrl"
+                            :href="
+                                auth.user
+                                    ? '/recommendations?onboarding=start'
+                                    : steamUrl
+                            "
                             class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200"
                             @click="!auth.user && startSteamConnection()"
                         >
                             {{
                                 auth.user
-                                    ? 'Show my three games'
-                                    : 'Find my next three games'
+                                    ? 'Pick my next game'
+                                    : 'Pick my next game'
                             }}
                             <ArrowRight class="h-4 w-4" />
                         </a>

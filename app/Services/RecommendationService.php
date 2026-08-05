@@ -22,6 +22,8 @@ class RecommendationService
 
     private ?Collection $excludedGameIdsCache = null;
 
+    private ?Collection $ownedSteamGamesCache = null;
+
     public function __construct(
         private ReviewGameResolver $reviewGameResolver
     ) {}
@@ -139,6 +141,7 @@ class RecommendationService
                 );
 
                 $behaviorScore = $this->behaviorScore($game);
+                $explanation = $this->explanation($game, $steamAppId);
 
                 $score = $this->score(
                     $behaviorScore,
@@ -163,11 +166,14 @@ class RecommendationService
                     'average_rating' => $averageRating,
                     'votes_score' => $rawVotesScore,
                     'behavior_score' => round($behaviorScore, 2),
+                    'signals' => $explanation['signals'],
 
                     'game' => [
                         'id' => $gameId,
                         'steam_app_id' => $steamAppId,
                         'title' => $game->title,
+                        'average_playtime_minutes' => $game->average_playtime_minutes,
+                        'genres' => $game->genres ?? [],
                         'header_image_url' => filled($steamAppId)
                             ? "https://cdn.cloudflare.steamstatic.com/steam/apps/{$steamAppId}/library_hero.jpg"
                             : ($game->header_image_url
@@ -185,7 +191,7 @@ class RecommendationService
                             : null,
                     ],
 
-                    'reason' => $this->reasonText(
+                    'reason' => $explanation['reason'] ?: $this->reasonText(
                         $behaviorScore,
                         $friendRecommendations,
                         $globalRecommendations,
@@ -212,6 +218,52 @@ class RecommendationService
             ?->source_game_id;
 
         return filled($sourceId) ? (string) $sourceId : null;
+    }
+
+    private function explanation(Game $game, ?string $steamAppId): array
+    {
+        $profile = $this->tasteProfile();
+        $gameGenres = collect($game->genres ?? [])->map(fn ($id) => (string) $id);
+        $similarLovedCount = collect($profile['loved_games'] ?? [])
+            ->filter(fn (array $lovedGame) => $gameGenres
+                ->intersect($lovedGame['genres'])
+                ->isNotEmpty())
+            ->count();
+        $ownedGame = $steamAppId
+            ? $this->ownedSteamGames()->get($steamAppId)
+            : null;
+        $hours = $game->average_playtime_minutes
+            ? max(1, (int) round($game->average_playtime_minutes / 60))
+            : null;
+
+        $signals = collect([
+            $similarLovedCount > 0
+                ? "Similar to {$similarLovedCount} ".($similarLovedCount === 1 ? 'game' : 'games').' you loved'
+                : null,
+            $hours ? "Around {$hours} hours" : null,
+            $ownedGame ? 'In your Steam library' : 'New Steam discovery',
+        ])->filter()->take(3)->values()->all();
+
+        if ($similarLovedCount > 0) {
+            $reason = "You rated {$similarLovedCount} similar ".($similarLovedCount === 1 ? 'game' : 'games').' highly.';
+        } elseif ($ownedGame && (int) $ownedGame->playtime_forever === 0) {
+            $reason = 'A strong match that is still untouched in your Steam library.';
+        } elseif ($hours) {
+            $reason = "A strong match for your play history. Around {$hours} hours to finish.";
+        } else {
+            $reason = null;
+        }
+
+        return compact('reason', 'signals');
+    }
+
+    private function ownedSteamGames(): Collection
+    {
+        return $this->ownedSteamGamesCache
+            ??= UserSteamGame::query()
+                ->where('user_id', Auth::id())
+                ->get(['steam_app_id', 'playtime_forever', 'last_played_at'])
+                ->keyBy(fn ($game) => (string) $game->steam_app_id);
     }
 
     private function averageRating(Collection $reviews): ?float
@@ -308,6 +360,7 @@ class RecommendationService
             ->keyBy(fn ($game) => (string) $game->steam_app_id);
 
         $weights = [];
+        $lovedGames = [];
 
         foreach ($steamGames as $steamGame) {
             $game = $games->get((string) $steamGame->steam_app_id);
@@ -350,6 +403,15 @@ class RecommendationService
 
             $weight *= $sentiment;
 
+            if (($meta?->rating ?? 0) >= 8 || $meta?->recommended) {
+                $lovedGames[] = [
+                    'game_id' => (string) $steamGame->steam_app_id,
+                    'genres' => collect($game->genres ?? [])
+                        ->map(fn ($genreId) => (string) $genreId)
+                        ->all(),
+                ];
+            }
+
             foreach ($game->genres ?? [] as $genreId) {
                 $key = (string) $genreId;
                 $weights[$key] = ($weights[$key] ?? 0) + $weight;
@@ -362,6 +424,7 @@ class RecommendationService
             'genres' => $weights,
             'max_positive_weight' => $maxPositiveWeight,
             'observed_games' => $steamGames->count(),
+            'loved_games' => $lovedGames,
         ];
     }
 
