@@ -117,6 +117,7 @@ class RecommendationService
             ) use ($friendIds) {
                 $review = $reviews->first();
                 $game = $review->resolvedGame;
+                $steamAppId = $this->steamAppId($game, $reviews);
 
                 $friendRecommendations = $reviews
                     ->whereIn('user_id', $friendIds)
@@ -151,7 +152,7 @@ class RecommendationService
                 return [
                     'game_id' => $gameId,
                     'library_game_id' => (string) (
-                        $game->steam_app_id
+                        $steamAppId
                         ?? $game->igdb_id
                         ?? $game->id
                     ),
@@ -165,15 +166,18 @@ class RecommendationService
 
                     'game' => [
                         'id' => $gameId,
-                        'steam_app_id' => $game->steam_app_id,
+                        'steam_app_id' => $steamAppId,
                         'title' => $game->title,
-                        'header_image_url' => filled($game->steam_app_id)
-                            ? "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{$game->steam_app_id}/capsule_616x353.jpg"
+                        'header_image_url' => filled($steamAppId)
+                            ? "https://cdn.cloudflare.steamstatic.com/steam/apps/{$steamAppId}/library_hero.jpg"
                             : ($game->header_image_url
                                 ?: $game->cover_url
                                 ?: $game->igdb_cover_url),
-                        'image_fallback_url' => filled($game->steam_app_id)
-                            ? "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/{$game->steam_app_id}/header.jpg"
+                        'cover_image_url' => filled($steamAppId)
+                            ? "https://cdn.cloudflare.steamstatic.com/steam/apps/{$steamAppId}/library_600x900.jpg"
+                            : ($game->cover_url ?: $game->igdb_cover_url),
+                        'image_fallback_url' => filled($steamAppId)
+                            ? "https://cdn.cloudflare.steamstatic.com/steam/apps/{$steamAppId}/header.jpg"
                             : ($game->cover_url ?: $game->igdb_cover_url),
                         'slug' => $game?->slug,
                         'public_url' => $game?->slug
@@ -191,6 +195,23 @@ class RecommendationService
             })
             ->sortByDesc('score')
             ->values();
+    }
+
+    private function steamAppId(Game $game, Collection $reviews): ?string
+    {
+        if (filled($game->steam_app_id)) {
+            return (string) $game->steam_app_id;
+        }
+
+        $sourceId = $reviews
+            ->first(fn ($review) => in_array(
+                $review->source,
+                ['steam', 'merged'],
+                true
+            ) && ctype_digit((string) $review->source_game_id))
+            ?->source_game_id;
+
+        return filled($sourceId) ? (string) $sourceId : null;
     }
 
     private function averageRating(Collection $reviews): ?float

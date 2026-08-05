@@ -76,7 +76,7 @@ const recommendationImage = (item) => {
 
     return failedImages.value.has(gameId)
         ? item.game.image_fallback_url
-        : item.game.header_image_url;
+        : item.game.cover_image_url || item.game.header_image_url;
 };
 
 const useFallbackImage = (item) => {
@@ -180,39 +180,63 @@ const shareResults = async () => {
 
                     <div
                         v-if="nextThree.length"
-                        class="grid gap-4 md:grid-cols-3"
+                        class="grid gap-4 xl:grid-cols-3"
                     >
                         <Link
                             v-for="(item, index) in nextThree"
                             :key="item.game.id ?? item.game.title"
                             :href="item.game.public_url"
-                            class="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition hover:-translate-y-1 hover:border-indigo-500/60"
+                            class="group relative flex min-h-56 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition duration-200 hover:-translate-y-1 hover:border-indigo-500/60 hover:shadow-xl hover:shadow-indigo-950/20"
                         >
-                            <div class="relative">
+                            <div class="relative w-36 shrink-0 sm:w-40">
                                 <img
                                     v-if="recommendationImage(item)"
                                     :src="recommendationImage(item)"
                                     :alt="item.game.title"
-                                    class="aspect-[616/353] w-full bg-zinc-950 object-cover object-center"
+                                    class="absolute inset-0 h-full w-full bg-zinc-950 object-cover object-center"
                                     loading="eager"
                                     @error="useFallbackImage(item)"
                                 />
                                 <div
                                     v-else
-                                    class="aspect-[616/353] w-full bg-gradient-to-br from-zinc-800 via-zinc-900 to-indigo-950/60"
+                                    class="absolute inset-0 bg-gradient-to-br from-zinc-800 via-zinc-900 to-indigo-950/60"
                                 />
-                                <span
-                                    class="absolute top-3 left-3 rounded-lg bg-black/80 px-3 py-1 text-sm font-black text-white"
-                                    >#{{ index + 1 }}</span
-                                >
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-zinc-900/60"
+                                />
                             </div>
-                            <div class="p-5">
-                                <h2 class="text-xl font-black text-white">
+                            <span
+                                class="absolute top-3 left-3 flex h-9 min-w-9 items-center justify-center rounded-full border border-white/15 bg-black/80 px-2 text-sm font-black text-white shadow-lg backdrop-blur"
+                            >
+                                {{ index + 1 }}
+                            </span>
+                            <div
+                                class="flex min-w-0 flex-1 flex-col p-5 sm:p-6"
+                            >
+                                <p
+                                    class="text-[10px] font-bold tracking-[0.16em] text-indigo-400 uppercase"
+                                >
+                                    {{
+                                        index === 0
+                                            ? 'Best match'
+                                            : 'Personal pick'
+                                    }}
+                                </p>
+                                <h2
+                                    class="mt-2 text-xl leading-tight font-black text-white"
+                                >
                                     {{ item.game.title }}
                                 </h2>
-                                <p class="mt-2 text-sm leading-6 text-zinc-400">
+                                <p
+                                    class="mt-3 line-clamp-3 text-sm leading-6 text-zinc-400"
+                                >
                                     {{ item.reason }}
                                 </p>
+                                <div
+                                    class="mt-auto pt-5 text-xs font-bold text-zinc-300 transition group-hover:text-white"
+                                >
+                                    View game <span aria-hidden="true">→</span>
+                                </div>
                             </div>
                         </Link>
                     </div>
