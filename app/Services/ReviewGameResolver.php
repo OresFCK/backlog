@@ -21,7 +21,9 @@ class ReviewGameResolver
                 true
             ))
             ->pluck('source_game_id')
-            ->filter()
+            ->filter(fn ($id) => ctype_digit((string) $id))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
             ->unique()
             ->values();
 

@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Game;
+use App\Services\IgdbImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class IgdbGameSearchController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(
+        Request $request,
+        IgdbImageService $images
+    ): JsonResponse
     {
         $data = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
@@ -43,7 +47,11 @@ class IgdbGameSearchController extends Controller
                 'igdb_cover_url',
                 'release_date',
             ])
-            ->map(fn (Game $game) => [
+            ->values();
+
+        $imageData = $images->forGames($games->pluck('igdb_id')->all());
+
+        return response()->json($games->map(fn (Game $game) => [
                 'id' => $game->id,
                 'igdb_id' => $game->igdb_id,
                 'title' => $game->title,
@@ -52,13 +60,14 @@ class IgdbGameSearchController extends Controller
                 'igdb_url' => $game->slug
                     ? 'https://www.igdb.com/games/' . $game->slug
                     : null,
-                'cover_url' => $game->igdb_cover_url,
-                'header_image_url' => $game->igdb_cover_url,
+                'cover_url' => data_get($imageData, "{$game->igdb_id}.cover_url")
+                    ?: $game->igdb_cover_url,
+                'header_image_url' => data_get(
+                    $imageData,
+                    "{$game->igdb_id}.header_image_url"
+                ),
                 'release_date' => $game->release_date?->format('Y-m-d'),
-            ])
-            ->values();
-
-        return response()->json($games);
+        ])->values());
     }
 
     private function normalize(string $title): string

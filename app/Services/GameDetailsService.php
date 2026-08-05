@@ -16,7 +16,9 @@ class GameDetailsService
     private array $achievementsCache = [];
 
     public function __construct(
-        private GameMetaService $meta
+        private GameMetaService $meta,
+        private IgdbImageService $igdbImages,
+        private SteamImageService $steamImages
     ) {}
 
     public function gameDetails(string $gameId, SteamService $steam): array
@@ -31,7 +33,7 @@ class GameDetailsService
         $user = Auth::user();
 
         return Cache::remember(
-            "user:{$user->id}:game-details:{$gameId}",
+            "user:{$user->id}:game-details:v3:{$gameId}",
             now()->addMinutes(30),
             function () use ($user, $gameId) {
                 $customGame = $user
@@ -39,6 +41,21 @@ class GameDetailsService
                     ->findOrFail($this->customGameDatabaseId($gameId));
 
                 $meta = $this->meta->metaFor($gameId);
+                $igdbImages = $customGame->igdb_id
+                    ? $this->igdbImages->forGame((int) $customGame->igdb_id)
+                    : [];
+                $steamAppId = $this->steamImages->appIdFromUrls(
+                    $customGame->header_image_url,
+                    $customGame->cover_url
+                );
+                $coverUrl = $igdbImages['cover_url']
+                    ?? ($steamAppId
+                        ? $this->steamImages->coverUrl($steamAppId)
+                        : $customGame->cover_url);
+                $headerImageUrl = $igdbImages['header_image_url']
+                    ?? ($steamAppId
+                        ? $this->steamImages->headerUrl($steamAppId)
+                        : $customGame->header_image_url);
 
                 $achievementsUnlocked = $customGame->achievements_unlocked !== null
                     ? (int) $customGame->achievements_unlocked
@@ -61,9 +78,9 @@ class GameDetailsService
                     'publisher' => $customGame->publisher,
                     'developer' => $customGame->developer,
 
-                    'cover_url' => $customGame->cover_url,
-                    'header_image' => $customGame->header_image_url ?: $customGame->cover_url,
-                    'header_image_url' => $customGame->header_image_url,
+                    'cover_url' => $coverUrl,
+                    'header_image' => $headerImageUrl ?: $coverUrl,
+                    'header_image_url' => $headerImageUrl,
 
                     'description' => $customGame->description,
                     'about' => $customGame->description,

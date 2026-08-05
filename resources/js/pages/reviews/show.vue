@@ -106,6 +106,8 @@ const shareReview = async () => {
                         :src="seo.image"
                         :alt="seo.image_alt"
                         class="h-48 w-full border-b border-zinc-800 object-cover sm:h-72"
+                        loading="eager"
+                        fetchpriority="high"
                     />
 
                     <div class="p-5 sm:p-9">

@@ -12,7 +12,9 @@ use App\Models\PublicReview;
 use App\Models\UserConnection;
 use App\Models\UserGameMeta;
 use App\Services\SteamService;
+use App\Services\IgdbImageService;
 use App\Services\ReviewGameResolver;
+use App\Services\SteamImageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -22,7 +24,9 @@ use Inertia\Response;
 class PublicReviewController extends Controller
 {
     public function __construct(
-        private ReviewGameResolver $reviewGameResolver
+        private ReviewGameResolver $reviewGameResolver,
+        private IgdbImageService $igdbImages,
+        private SteamImageService $steamImages
     ) {}
 
     public function index(SteamService $steam): Response
@@ -96,6 +100,14 @@ class PublicReviewController extends Controller
         $resolvedGame = $this->reviewGameResolver
             ->resolveMany(collect([$review]))
             ->get($review->id);
+        $igdbImages = $resolvedGame?->igdb_id
+            ? $this->igdbImages->forGame((int) $resolvedGame->igdb_id)
+            : [];
+        $steamAppId = $resolvedGame?->steam_app_id
+            ?: $this->steamImages->appIdFromUrls(
+                $resolvedGame?->header_image_url,
+                $resolvedGame?->cover_url
+            );
 
         $reviewData = $this->reviewData($review, $resolvedGame);
         $authorReviews = PublicReview::query()
@@ -124,6 +136,14 @@ class PublicReviewController extends Controller
         $description = mb_strlen($plainBody) > 155
             ? mb_substr($plainBody, 0, 152).'...'
             : $plainBody;
+        $seoImage = $igdbImages['header_image_url']
+            ?? ($steamAppId
+                ? $this->steamImages->headerUrl((int) $steamAppId)
+                : ($resolvedGame?->header_image_url
+                    ?: $resolvedGame?->cover_url
+                    ?: $resolvedGame?->igdb_cover_url
+                    ?: $reviewData['screenshot_url']
+                    ?: asset('og-image.jpg')));
 
         return Inertia::render('reviews/show', [
             'review' => $reviewData,
@@ -132,11 +152,7 @@ class PublicReviewController extends Controller
                     .' — '.$reviewData['game_title'].' | Curator.gg',
                 'description' => $description,
                 'url' => $reviewData['share_url'],
-                'image' => $resolvedGame?->header_image_url
-                    ?: $resolvedGame?->cover_url
-                    ?: $resolvedGame?->igdb_cover_url
-                    ?: $reviewData['screenshot_url']
-                    ?: asset('og-image.jpg'),
+                'image' => $seoImage,
                 'image_alt' => $reviewData['game_title'].' review by '
                     .($reviewData['user']['name'] ?: 'a Curator.gg user'),
             ],

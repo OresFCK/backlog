@@ -16,7 +16,7 @@ defineEmits(['create-review']);
         class="relative bg-cover bg-center"
         :style="{
             backgroundImage: game.header_image
-                ? `linear-gradient(to right, rgba(9,9,11,.95), rgba(9,9,11,.55)), url(${game.header_image})`
+                ? `linear-gradient(to right, rgba(9,9,11,.95), rgba(9,9,11,.45)), url(${game.header_image})`
                 : null,
         }"
     >
