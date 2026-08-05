@@ -77,7 +77,9 @@ class PublicGameController extends Controller
             ->latest()
             ->paginate(10)
             ->withQueryString();
-        $reviewsForSchema = $reviews->getCollection();
+        // Paginator::through() replaces items in its underlying collection.
+        // Keep an independent collection of models for schema.org generation.
+        $reviewsForSchema = collect($reviews->getCollection()->all());
 
         $relatedGames = $this->relatedGames($game);
         $seoDescription = $this->seoDescription($game, $reviewCount);
