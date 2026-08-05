@@ -1,12 +1,14 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
+import { Check, Share2 } from 'lucide-vue-next';
 
 import Sidebar from '@/components/layout/Sidebar.vue';
 import Topbar from '@/components/layout/Topbar.vue';
 
 import RecommendationsSection from '@/components/recommendations/RecommendationsSection.vue';
 import RecommendationCarousel from '@/components/recommendations/RecommendationCarousel.vue';
+import { track } from '@/lib/analytics';
 
 const props = defineProps({
     user: {
@@ -43,6 +45,78 @@ const topRecommendation = computed(() => {
         ...props.globalRanking,
     ].sort((a, b) => Number(b.score ?? 0) - Number(a.score ?? 0))[0];
 });
+
+const nextThree = computed(() => {
+    const seen = new Set();
+
+    return [
+        ...props.backlogRecommendations,
+        ...props.steamRecommendations,
+        ...props.friendsRanking,
+        ...props.globalRanking,
+    ]
+        .sort((a, b) => Number(b.score ?? 0) - Number(a.score ?? 0))
+        .filter((item) => {
+            const id = item.game?.id ?? item.game?.title;
+            if (!id || seen.has(id)) return false;
+            seen.add(id);
+            return true;
+        })
+        .slice(0, 3);
+});
+
+const shared = ref(false);
+
+onMounted(() => {
+    const connected =
+        new URLSearchParams(window.location.search).get('onboarding') ===
+        'connected';
+
+    if (connected) {
+        track('steam_connection_completed', { funnel: 'next_three_games' });
+    }
+
+    track('recommendation_result_viewed', {
+        funnel: 'next_three_games',
+        result_count: nextThree.value.length,
+        onboarding: connected,
+    });
+});
+
+const shareResults = async () => {
+    const titles = nextThree.value
+        .map((item, index) => `${index + 1}. ${item.game.title}`)
+        .join('\n');
+    const text = `My next three games on Curator.gg:\n${titles}`;
+    const method = navigator.share ? 'native' : 'clipboard';
+
+    try {
+        if (navigator.share) {
+            await navigator.share({
+                title: 'My next three games',
+                text,
+                url: window.location.origin,
+            });
+        } else {
+            await navigator.clipboard.writeText(
+                `${text}\n${window.location.origin}`,
+            );
+        }
+
+        shared.value = true;
+        track('recommendation_result_shared', {
+            funnel: 'next_three_games',
+            method,
+        });
+        window.setTimeout(() => (shared.value = false), 2500);
+    } catch (error) {
+        if (error?.name !== 'AbortError') {
+            track('recommendation_share_failed', {
+                funnel: 'next_three_games',
+            });
+        }
+    }
+};
 </script>
 
 <template>
@@ -54,15 +128,66 @@ const topRecommendation = computed(() => {
 
             <main class="flex-1 space-y-10 p-8">
                 <section>
-                    <div class="mb-6">
-                        <h1 class="text-4xl font-black text-white">
-                            Recommendations
-                        </h1>
+                    <div
+                        class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+                    >
+                        <div>
+                            <p class="text-sm font-bold text-indigo-400">
+                                YOUR PERSONAL SHORTLIST
+                            </p>
+                            <h1 class="text-4xl font-black text-white">
+                                Your next three games
+                            </h1>
 
-                        <p class="mt-2 text-zinc-400">
-                            Personalized recommendations powered by your
-                            community.
-                        </p>
+                            <p class="mt-2 text-zinc-400">
+                                Pick any one. You cannot go wrong.
+                            </p>
+                        </div>
+                        <button
+                            v-if="nextThree.length"
+                            type="button"
+                            class="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-zinc-800"
+                            @click="shareResults"
+                        >
+                            <Check
+                                v-if="shared"
+                                class="h-4 w-4 text-emerald-400"
+                            />
+                            <Share2 v-else class="h-4 w-4" />
+                            {{ shared ? 'Copied' : 'Share my three' }}
+                        </button>
+                    </div>
+
+                    <div
+                        v-if="nextThree.length"
+                        class="grid gap-4 md:grid-cols-3"
+                    >
+                        <Link
+                            v-for="(item, index) in nextThree"
+                            :key="item.game.id ?? item.game.title"
+                            :href="item.game.public_url"
+                            class="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 transition hover:-translate-y-1 hover:border-indigo-500/60"
+                        >
+                            <div class="relative">
+                                <img
+                                    :src="item.game.header_image_url"
+                                    :alt="item.game.title"
+                                    class="aspect-video w-full object-cover"
+                                />
+                                <span
+                                    class="absolute top-3 left-3 rounded-lg bg-black/80 px-3 py-1 text-sm font-black text-white"
+                                    >#{{ index + 1 }}</span
+                                >
+                            </div>
+                            <div class="p-5">
+                                <h2 class="text-xl font-black text-white">
+                                    {{ item.game.title }}
+                                </h2>
+                                <p class="mt-2 text-sm leading-6 text-zinc-400">
+                                    {{ item.reason }}
+                                </p>
+                            </div>
+                        </Link>
                     </div>
                 </section>
 

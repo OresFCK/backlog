@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
+import { onMounted } from 'vue';
 
 import CommunityTierListsSection from '@/components/home/CommunityTierListsSection.vue';
 import FaqSection from '@/components/home/FaqSection.vue';
@@ -10,6 +11,7 @@ import HomeHeader from '@/components/home/HomeHeader.vue';
 import HowItWorksSection from '@/components/home/HowItWorksSection.vue';
 import ShowcaseSection from '@/components/home/ShowcaseSection.vue';
 import SupportSection from '@/components/home/SupportSection.vue';
+import { track } from '@/lib/analytics';
 
 defineProps({
     auth: {
@@ -21,6 +23,8 @@ defineProps({
         default: () => [],
     },
 });
+
+onMounted(() => track('homepage_viewed', { funnel: 'next_three_games' }));
 </script>
 
 <template>

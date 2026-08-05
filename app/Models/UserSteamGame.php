@@ -11,6 +11,12 @@ class UserSteamGame extends Model
         'steam_app_id',
         'name',
         'playtime_forever',
+        'last_played_at',
         'last_synced_at',
+    ];
+
+    protected $casts = [
+        'last_played_at' => 'datetime',
+        'last_synced_at' => 'datetime',
     ];
 }

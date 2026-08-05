@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\UserSteamGame;
+use Illuminate\Support\Carbon;
 
 class SteamLibrarySyncService
 {
@@ -38,6 +39,11 @@ class SteamLibrarySyncService
                 [
                     'name' => $game['name'] ?? null,
                     'playtime_forever' => (int) ($game['playtime_forever'] ?? 0),
+                    'last_played_at' => ! empty($game['rtime_last_played'])
+                        ? Carbon::createFromTimestampUTC(
+                            (int) $game['rtime_last_played']
+                        )
+                        : null,
                     'last_synced_at' => now(),
                 ]
             );
