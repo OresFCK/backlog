@@ -137,23 +137,29 @@ const imageUrl = (item, portrait = false) => {
 };
 
 const loadStoreArtwork = async (item) => {
-    const appId = item?.game?.steam_app_id;
+    const gameId = item?.game?.id;
 
-    if (!appId || storeArtwork.value[item.game.id] !== undefined) {
+    if (!gameId || storeArtwork.value[gameId] !== undefined) {
         return;
     }
 
-    storeArtwork.value = { ...storeArtwork.value, [item.game.id]: null };
+    storeArtwork.value = { ...storeArtwork.value, [gameId]: null };
 
     try {
-        const response = await fetch(`/recommendations/artwork/${appId}`, {
-            headers: { Accept: 'application/json' },
-        });
+        const steamQuery = item.game.steam_app_id
+            ? `?steam_app_id=${encodeURIComponent(item.game.steam_app_id)}`
+            : '';
+        const response = await fetch(
+            `/recommendations/artwork/${gameId}${steamQuery}`,
+            {
+                headers: { Accept: 'application/json' },
+            },
+        );
         const data = response.ok ? await response.json() : {};
 
         storeArtwork.value = {
             ...storeArtwork.value,
-            [item.game.id]: data.url || null,
+            [gameId]: data.url || null,
         };
     } catch {
         // The existing Steam artwork remains the fallback.

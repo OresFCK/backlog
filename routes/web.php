@@ -180,7 +180,7 @@ Route::middleware('auth')->group(function () {
         'index',
     ])->name('recommendations.index');
 
-    Route::get('/recommendations/artwork/{steamAppId}', [
+    Route::get('/recommendations/artwork/{gameId}', [
         RecommendationController::class,
         'artwork',
     ])->name('recommendations.artwork');
