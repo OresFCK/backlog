@@ -530,24 +530,6 @@ onMounted(() => {
                     <p class="mx-auto mt-5 max-w-xl text-lg text-zinc-400">
                         No more browsing. Your game is marked as Playing.
                     </p>
-                    <div
-                        class="mt-8 flex flex-col justify-center gap-3 sm:flex-row"
-                    >
-                        <a
-                            :href="
-                                selectedGame.game.steam_app_id
-                                    ? `steam://run/${selectedGame.game.steam_app_id}`
-                                    : selectedGame.game.public_url
-                            "
-                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-4 font-black text-black"
-                            ><Play class="h-5 w-5" /> Start on Steam</a
-                        >
-                        <Link
-                            href="/challenges"
-                            class="inline-flex items-center justify-center rounded-xl border border-zinc-700 px-6 py-4 font-black hover:bg-zinc-900"
-                            >Add to current challenge</Link
-                        >
-                    </div>
                 </section>
 
                 <section v-else class="w-full max-w-7xl py-2">
