@@ -124,6 +124,11 @@ Route::get('/invite/{steamId}', function (
     ]);
 })->name('invite.show');
 
+Route::get('/shared/recommendations', [
+    RecommendationController::class,
+    'shared',
+])->name('recommendations.shared');
+
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function (
         SteamService $steam,

@@ -157,7 +157,7 @@ class BlogPostController extends Controller
                     }
                 },
             ],
-            'images' => ['nullable', 'array', 'max:5'],
+            'images' => ['nullable', 'array', 'max:10'],
             'images.*' => [
                 'image',
                 'mimes:jpg,jpeg,png,webp',
@@ -165,6 +165,7 @@ class BlogPostController extends Controller
                 'max:5120',
             ],
             'remove_images' => ['nullable', 'boolean'],
+            'image_layout' => ['required', 'in:grid,carousel,full'],
             'is_published' => ['required', 'boolean'],
         ]);
     }
@@ -200,6 +201,7 @@ class BlogPostController extends Controller
             ...$this->summary($post),
             'body' => $post->body,
             'images' => $this->imageUrls($post),
+            'image_layout' => $post->image_layout ?: 'grid',
             'youtube_url' => $post->youtube_url,
             'youtube_embed_url' => $this->youtubeEmbedUrl($post->youtube_url),
             'score' => (int) $post->votes->sum('value'),

@@ -1,6 +1,9 @@
+<!-- eslint-disable vue/block-lang -->
 <script setup>
+import { Flag, ImagePlus, Pencil, Share2, Star } from 'lucide-vue-next';
 import { ref } from 'vue';
-import { Flag, Pencil, Share2, Star } from 'lucide-vue-next';
+import ReviewGraphicModal from '@/components/reviews/ReviewGraphicModal.vue';
+import RichTextContent from '@/components/ui/RichTextContent.vue';
 
 const props = defineProps({
     review: {
@@ -26,10 +29,12 @@ const emit = defineEmits([
 ]);
 
 const isExpanded = ref(false);
+const graphicCreatorOpen = ref(false);
 
 const handleReadMore = () => {
     if (props.expandInline) {
         isExpanded.value = !isExpanded.value;
+
         return;
     }
 
@@ -46,9 +51,12 @@ const shareReview = async (review) => {
     if (navigator.share) {
         try {
             await navigator.share(shareData);
+
             return;
         } catch (error) {
-            if (error.name === 'AbortError') return;
+            if (error.name === 'AbortError') {
+                return;
+            }
         }
     }
 
@@ -168,15 +176,14 @@ const truncatedBody = (body) => {
                     />
                 </a>
 
-                <p
-                    class="mt-3 text-sm leading-6 break-words whitespace-pre-line text-zinc-300 sm:mt-4 sm:text-base"
-                >
-                    {{
+                <RichTextContent
+                    :content="
                         expandInline && isExpanded
                             ? review.body
                             : truncatedBody(review.body)
-                    }}
-                </p>
+                    "
+                    class="mt-3 text-sm leading-6 break-words whitespace-pre-line text-zinc-300 sm:mt-4 sm:text-base"
+                />
 
                 <div class="mt-5 flex flex-wrap items-center gap-3">
                     <template v-if="review.can_vote">
@@ -219,6 +226,15 @@ const truncatedBody = (body) => {
                     >
                         <Share2 class="h-4 w-4" />
                         Share
+                    </button>
+
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-1 text-sm font-bold text-zinc-300 transition hover:border-indigo-500/60 hover:text-white"
+                        @click="graphicCreatorOpen = true"
+                    >
+                        <ImagePlus class="h-4 w-4" />
+                        Create graphic
                     </button>
 
                     <button
@@ -272,5 +288,11 @@ const truncatedBody = (body) => {
                 </button>
             </div>
         </div>
+        <ReviewGraphicModal
+            :open="graphicCreatorOpen"
+            :review="review"
+            :image-url="review.graphic_image_url"
+            @close="graphicCreatorOpen = false"
+        />
     </article>
 </template>

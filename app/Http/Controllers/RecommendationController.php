@@ -36,6 +36,50 @@ class RecommendationController extends Controller
         );
     }
 
+    public function shared(Request $request): Response
+    {
+        $ids = collect(explode(',', (string) $request->query('games')))
+            ->filter(fn (string $id) => ctype_digit($id))
+            ->unique()
+            ->take(3)
+            ->values();
+
+        abort_if($ids->isEmpty(), 404);
+
+        $games = Game::query()
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy(fn (Game $game) => (string) $game->id);
+
+        $orderedGames = $ids
+            ->map(fn (string $id) => $games->get($id))
+            ->filter()
+            ->map(fn (Game $game) => [
+                'id' => $game->id,
+                'title' => $game->title,
+                'url' => route('games.public.show', $game),
+                'cover_image_url' => filled($game->steam_app_id)
+                    ? "https://cdn.cloudflare.steamstatic.com/steam/apps/{$game->steam_app_id}/library_600x900.jpg"
+                    : ($game->cover_url ?: $game->igdb_cover_url),
+                'image_fallback_url' => filled($game->steam_app_id)
+                    ? "https://cdn.cloudflare.steamstatic.com/steam/apps/{$game->steam_app_id}/header.jpg"
+                    : ($game->header_image_url ?: $game->igdb_cover_url),
+            ])
+            ->values();
+
+        abort_if($orderedGames->isEmpty(), 404);
+
+        $moods = ['short', 'immersive', 'chill', 'friends', 'surprise'];
+        $mood = in_array($request->query('mood'), $moods, true)
+            ? $request->query('mood')
+            : null;
+
+        return Inertia::render('recommendations/shared', [
+            'games' => $orderedGames,
+            'mood' => $mood,
+        ]);
+    }
+
     public function artwork(
         string $gameId,
         SteamService $steam,

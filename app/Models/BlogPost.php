@@ -15,6 +15,7 @@ class BlogPost extends Model
         'excerpt',
         'body',
         'image_paths',
+        'image_layout',
         'youtube_url',
         'is_published',
         'published_at',

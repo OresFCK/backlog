@@ -5,6 +5,7 @@ import { ref } from 'vue';
 
 import Sidebar from '@/components/layout/Sidebar.vue';
 import Topbar from '@/components/layout/Topbar.vue';
+import RichTextEditor from '@/components/ui/RichTextEditor.vue';
 
 const props = defineProps({
     user: Object,
@@ -17,6 +18,7 @@ const form = ref({
     body: props.post?.body ?? '',
     youtube_url: props.post?.youtube_url ?? '',
     images: [],
+    image_layout: props.post?.image_layout ?? 'grid',
     remove_images: false,
     is_published: props.post?.is_published ?? false,
 });
@@ -26,7 +28,7 @@ const imagePreviews = ref([]);
 const allowedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const selectImages = (event) => {
-    const files = Array.from(event.target.files ?? []).slice(0, 5);
+    const files = Array.from(event.target.files ?? []).slice(0, 10);
 
     if (files.some((file) => !allowedImageTypes.has(file.type))) {
         errors.value.images = 'Only JPG, PNG and WEBP image files are allowed.';
@@ -43,6 +45,23 @@ const selectImages = (event) => {
     imagePreviews.value.forEach((url) => URL.revokeObjectURL(url));
     imagePreviews.value = files.map((file) => URL.createObjectURL(file));
     form.value.remove_images = files.length > 0;
+};
+
+const moveImage = (index, direction) => {
+    const target = index + direction;
+
+    if (target < 0 || target >= form.value.images.length) return;
+
+    [form.value.images[index], form.value.images[target]] = [
+        form.value.images[target],
+        form.value.images[index],
+    ];
+    [imagePreviews.value[index], imagePreviews.value[target]] = [
+        imagePreviews.value[target],
+        imagePreviews.value[index],
+    ];
+    form.value.images = [...form.value.images];
+    imagePreviews.value = [...imagePreviews.value];
 };
 
 const save = () => {
@@ -152,13 +171,34 @@ const save = () => {
                                 v-if="imagePreviews.length"
                                 class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3"
                             >
-                                <img
-                                    v-for="image in imagePreviews"
+                                <div
+                                    v-for="(image, index) in imagePreviews"
                                     :key="image"
-                                    :src="image"
-                                    alt="Selected upload"
-                                    class="aspect-video w-full rounded-xl object-cover"
-                                />
+                                    class="overflow-hidden rounded-xl border border-zinc-700"
+                                >
+                                    <img
+                                        :src="image"
+                                        alt="Selected upload"
+                                        class="aspect-video w-full object-cover"
+                                    />
+                                    <div
+                                        class="grid grid-cols-2 border-t border-zinc-700 text-xs"
+                                    >
+                                        <button
+                                            type="button"
+                                            class="p-2 hover:bg-zinc-800"
+                                            @click="moveImage(index, -1)"
+                                        >
+                                            ←</button
+                                        ><button
+                                            type="button"
+                                            class="p-2 hover:bg-zinc-800"
+                                            @click="moveImage(index, 1)"
+                                        >
+                                            →
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             <input
                                 type="file"
@@ -168,7 +208,7 @@ const save = () => {
                                 @change="selectImages"
                             />
                             <p class="mt-2 text-xs text-zinc-500">
-                                Up to 5 JPG, PNG or WEBP images, maximum 5 MB
+                                Up to 10 JPG, PNG or WEBP images, maximum 5 MB
                                 each. New files replace the current gallery.
                             </p>
                             <label
@@ -188,6 +228,20 @@ const save = () => {
                                 {{ errors.images }}
                             </span>
                         </div>
+
+                        <label class="block">
+                            <span class="text-sm font-bold"
+                                >Gallery layout</span
+                            >
+                            <select
+                                v-model="form.image_layout"
+                                class="mt-2 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 outline-none focus:border-indigo-400"
+                            >
+                                <option value="grid">Grid</option>
+                                <option value="carousel">Carousel</option>
+                                <option value="full">Full width</option>
+                            </select>
+                        </label>
 
                         <label class="block">
                             <span class="text-sm font-bold">YouTube video</span>
@@ -212,12 +266,11 @@ const save = () => {
 
                         <label class="block">
                             <span class="text-sm font-bold">Content</span>
-                            <textarea
+                            <RichTextEditor
                                 v-model="form.body"
-                                rows="18"
-                                maxlength="50000"
-                                required
-                                class="mt-2 w-full resize-y rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 leading-7 outline-none focus:border-indigo-400"
+                                :rows="18"
+                                :maxlength="50000"
+                                class="mt-2"
                                 placeholder="Write your post..."
                             />
                             <div

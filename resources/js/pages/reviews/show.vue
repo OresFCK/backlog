@@ -1,15 +1,19 @@
+<!-- eslint-disable vue/block-lang -->
 <script setup>
-import { computed, ref } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import {
     ArrowUpRight,
     Gamepad2,
+    ImagePlus,
     Library,
     Share2,
     Sparkles,
     Star,
     Users,
 } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
+import ReviewGraphicModal from '@/components/reviews/ReviewGraphicModal.vue';
+import RichTextContent from '@/components/ui/RichTextContent.vue';
 
 const props = defineProps({
     review: { type: Object, required: true },
@@ -22,6 +26,7 @@ const props = defineProps({
 
 const pageTitle = computed(() => props.seo.title);
 const reviewExpanded = ref(false);
+const graphicCreatorOpen = ref(false);
 const shouldCollapseReview = computed(
     () =>
         String(props.review.body || '').length > 700 ||
@@ -38,9 +43,12 @@ const shareReview = async () => {
     if (navigator.share) {
         try {
             await navigator.share(data);
+
             return;
         } catch (error) {
-            if (error.name === 'AbortError') return;
+            if (error.name === 'AbortError') {
+                return;
+            }
         }
     }
 
@@ -71,6 +79,14 @@ const shareReview = async () => {
                 </Link>
 
                 <div class="flex items-center gap-2 sm:gap-3">
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-2 rounded-xl border border-zinc-700 px-3 py-2 text-sm font-bold text-zinc-200 transition hover:border-indigo-500/60 hover:bg-zinc-900 sm:px-4"
+                        @click="graphicCreatorOpen = true"
+                    >
+                        <ImagePlus class="h-4 w-4" />
+                        <span class="hidden sm:inline">Create graphic</span>
+                    </button>
                     <button
                         type="button"
                         class="inline-flex items-center gap-2 rounded-xl border border-zinc-700 px-3 py-2 text-sm font-bold text-zinc-200 transition hover:border-zinc-500 hover:bg-zinc-900 sm:px-4"
@@ -229,16 +245,15 @@ const shareReview = async () => {
                         </div>
 
                         <div class="relative mt-7">
-                            <p
+                            <RichTextContent
+                                :content="review.body"
                                 class="text-base leading-8 break-words whitespace-pre-wrap text-zinc-300 transition-[max-height] duration-300 sm:text-lg"
                                 :class="
                                     shouldCollapseReview && !reviewExpanded
                                         ? 'max-h-64 overflow-hidden sm:max-h-72'
                                         : 'max-h-none'
                                 "
-                            >
-                                {{ review.body }}
-                            </p>
+                            />
 
                             <div
                                 v-if="shouldCollapseReview && !reviewExpanded"
@@ -259,6 +274,32 @@ const shareReview = async () => {
                                     : 'Read full review'
                             }}
                         </button>
+
+                        <div
+                            v-if="review.images?.length"
+                            class="mt-8 grid gap-4"
+                            :class="{
+                                'sm:grid-cols-2':
+                                    review.image_layout === 'grid' &&
+                                    review.images.length > 1,
+                                'flex snap-x overflow-x-auto':
+                                    review.image_layout === 'carousel',
+                                'grid-cols-1': review.image_layout === 'full',
+                            }"
+                        >
+                            <img
+                                v-for="image in review.images"
+                                :key="image"
+                                :src="image"
+                                :alt="review.game_title"
+                                class="max-h-[620px] w-full rounded-2xl border border-zinc-800 object-cover"
+                                :class="
+                                    review.image_layout === 'carousel'
+                                        ? 'min-w-[85%] snap-center sm:min-w-[60%]'
+                                        : ''
+                                "
+                            />
+                        </div>
                     </div>
                 </article>
             </section>
@@ -368,5 +409,12 @@ const shareReview = async () => {
                 </div>
             </div>
         </footer>
+
+        <ReviewGraphicModal
+            :open="graphicCreatorOpen"
+            :review="review"
+            :image-url="seo.image"
+            @close="graphicCreatorOpen = false"
+        />
     </div>
 </template>

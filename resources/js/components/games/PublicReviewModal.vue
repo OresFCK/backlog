@@ -1,7 +1,9 @@
+<!-- eslint-disable vue/block-lang -->
 <script setup>
 import { computed, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { ThumbsUp, X } from 'lucide-vue-next';
+import RichTextEditor from '@/components/ui/RichTextEditor.vue';
 
 const props = defineProps({
     game: {
@@ -53,6 +55,7 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    imageLayout: { type: String, default: 'grid' },
 });
 
 const emit = defineEmits(['close']);
@@ -78,6 +81,9 @@ const publicReviewRecommended = ref(props.recommended);
 const publicReviewNotRecommended = ref(props.notRecommended);
 const publicReviewPlatform = ref(props.platform);
 const publicReviewScreenshot = ref(null);
+const publicReviewImages = ref([]);
+const imagePreviews = ref([]);
+const publicReviewImageLayout = ref(props.imageLayout);
 const publicReviewTimeToBeatHours = ref(String(props.timeToBeatHours ?? ''));
 
 const reviewedGameId = computed(() => {
@@ -189,6 +195,32 @@ const handleScreenshotInput = (event) => {
     publicReviewScreenshot.value = event.target.files[0] ?? null;
 };
 
+const handleImagesInput = (event) => {
+    imagePreviews.value.forEach((url) => URL.revokeObjectURL(url));
+    publicReviewImages.value = Array.from(event.target.files ?? []).slice(
+        0,
+        10,
+    );
+    imagePreviews.value = publicReviewImages.value.map((file) =>
+        URL.createObjectURL(file),
+    );
+};
+
+const moveImage = (index, direction) => {
+    const target = index + direction;
+    if (target < 0 || target >= publicReviewImages.value.length) return;
+    [publicReviewImages.value[index], publicReviewImages.value[target]] = [
+        publicReviewImages.value[target],
+        publicReviewImages.value[index],
+    ];
+    [imagePreviews.value[index], imagePreviews.value[target]] = [
+        imagePreviews.value[target],
+        imagePreviews.value[index],
+    ];
+    publicReviewImages.value = [...publicReviewImages.value];
+    imagePreviews.value = [...imagePreviews.value];
+};
+
 const submitPublicReview = () => {
     router.post(
         '/reviews/public',
@@ -209,6 +241,8 @@ const submitPublicReview = () => {
                 : null,
             platform: publicReviewPlatform.value,
             screenshot: publicReviewScreenshot.value,
+            images: publicReviewImages.value,
+            image_layout: publicReviewImageLayout.value,
             time_to_beat_hours: publicReviewTimeToBeatHours.value || null,
             recommended: publicReviewRecommended.value,
             not_recommended: publicReviewNotRecommended.value,
@@ -286,11 +320,11 @@ const submitPublicReview = () => {
                         Review
                     </label>
 
-                    <textarea
+                    <RichTextEditor
                         v-model="publicReviewBody"
-                        required
-                        maxlength="5000"
-                        class="mt-1.5 min-h-28 w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-200 outline-none placeholder:text-zinc-500 focus:border-zinc-600 sm:mt-2 sm:min-h-48 sm:p-4"
+                        :maxlength="5000"
+                        :rows="9"
+                        class="mt-2"
                         placeholder="Write your public review..."
                     />
                 </div>
@@ -372,6 +406,65 @@ const submitPublicReview = () => {
                     <p class="mt-2 text-xs text-zinc-500">
                         Stored for future features. Not displayed yet.
                     </p>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between gap-3">
+                        <label class="text-sm font-semibold text-zinc-300"
+                            >Gallery images</label
+                        >
+                        <select
+                            v-model="publicReviewImageLayout"
+                            class="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-white"
+                        >
+                            <option value="grid">Grid</option>
+                            <option value="carousel">Carousel</option>
+                            <option value="full">Full width</option>
+                        </select>
+                    </div>
+                    <input
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/png,image/webp"
+                        class="mt-2 w-full rounded-xl border border-zinc-800 bg-zinc-900 p-3 text-sm text-zinc-300"
+                        @input="handleImagesInput"
+                    />
+                    <p class="mt-2 text-xs text-zinc-500">
+                        Up to 10 images. Use arrows to arrange their order.
+                    </p>
+                    <div
+                        v-if="imagePreviews.length"
+                        class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4"
+                    >
+                        <div
+                            v-for="(preview, index) in imagePreviews"
+                            :key="preview"
+                            class="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900"
+                        >
+                            <img
+                                :src="preview"
+                                alt=""
+                                class="aspect-video w-full object-cover"
+                            />
+                            <div
+                                class="grid grid-cols-2 border-t border-zinc-800 text-xs"
+                            >
+                                <button
+                                    type="button"
+                                    class="p-2 hover:bg-zinc-800"
+                                    @click="moveImage(index, -1)"
+                                >
+                                    ←</button
+                                ><button
+                                    type="button"
+                                    class="p-2 hover:bg-zinc-800"
+                                    @click="moveImage(index, 1)"
+                                >
+                                    →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div>

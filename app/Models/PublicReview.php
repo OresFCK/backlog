@@ -19,6 +19,8 @@ class PublicReview extends Model
         'rating',
         'platform',
         'screenshot_path',
+        'image_paths',
+        'image_layout',
         'recommended',
         'not_recommended',
         'is_featured_on_profile',
@@ -33,6 +35,7 @@ class PublicReview extends Model
         'is_public' => 'boolean',
         'rating' => 'integer',
         'time_to_beat_minutes' => 'integer',
+        'image_paths' => 'array',
     ];
 
     public function user(): BelongsTo

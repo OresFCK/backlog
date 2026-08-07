@@ -2,7 +2,6 @@
 import { router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
-
 import PublicReviewModal from '@/components/games/PublicReviewModal.vue';
 import Sidebar from '@/components/layout/Sidebar.vue';
 import Topbar from '@/components/layout/Topbar.vue';
@@ -252,6 +251,7 @@ const reportReview = (review) => {
             :recommended="reviewToEdit.recommended"
             :not-recommended="reviewToEdit.not_recommended"
             :featured-on-profile="reviewToEdit.is_featured_on_profile"
+            :image-layout="reviewToEdit.image_layout ?? 'grid'"
             editing
             @close="closeEditModal"
         />

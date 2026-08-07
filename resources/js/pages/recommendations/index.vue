@@ -1,5 +1,6 @@
+<!-- eslint-disable vue/block-lang -->
 <script setup>
-import { Link, router } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import {
     ArrowDownToLine,
     ArrowLeft,
@@ -73,25 +74,44 @@ const rawPool = computed(() => {
 
 const moodBonus = (item) => {
     const minutes = Number(item.game?.average_playtime_minutes ?? 0);
+    const genres = new Set(
+        (item.game?.genres ?? []).map((genre) => Number(genre)),
+    );
+    const genreMatches = (wanted) =>
+        wanted.filter((genre) => genres.has(genre)).length;
 
     if (mood.value === 'short') {
-        return minutes > 0 ? Math.max(0, 30 - minutes / 120) : 0;
+        const durationFit = minutes > 0 ? Math.max(-45, 65 - minutes / 45) : 0;
+
+        return durationFit + genreMatches([4, 8, 9, 33]) * 14;
     }
 
     if (mood.value === 'immersive') {
-        return Math.min(30, minutes / 300);
+        const durationFit = minutes > 0 ? Math.min(45, minutes / 90) : 0;
+
+        return durationFit + genreMatches([12, 15, 24, 31]) * 18;
     }
 
     if (mood.value === 'friends') {
-        return Number(item.friend_recommendations ?? 0) * 15;
+        return (
+            Number(item.friend_recommendations ?? 0) * 28 +
+            genreMatches([4, 5, 10, 14, 36]) * 16
+        );
     }
 
     if (mood.value === 'chill') {
-        return Number(item.average_rating ?? 0) * 1.5;
+        const longSessionPenalty = minutes > 3600 ? -20 : 0;
+
+        return genreMatches([7, 9, 13, 32, 35]) * 20 + longSessionPenalty;
     }
 
     if (mood.value === 'surprise') {
-        return (Number(item.game?.id ?? 0) % 17) - 8;
+        const tastePenalty = Number(item.behavior_score ?? 0) * 0.65;
+        const discoveryBonus = item.friend_recommendations ? 0 : 30;
+
+        return (
+            discoveryBonus - tastePenalty + (Number(item.game?.id ?? 0) % 31)
+        );
     }
 
     return 0;
@@ -317,15 +337,25 @@ const shareResults = async () => {
         .map((item, index) => `${index + 1}. ${item.game.title}`)
         .join('\n')}`;
 
+    const params = new URLSearchParams({
+        games: nextThree.value.map((item) => item.game.id).join(','),
+    });
+
+    if (mood.value) {
+        params.set('mood', mood.value);
+    }
+
+    const shareUrl = `${location.origin}/shared/recommendations?${params}`;
+
     try {
         if (navigator.share) {
             await navigator.share({
                 title: 'My next three games',
                 text,
-                url: location.origin,
+                url: shareUrl,
             });
         } else {
-            await navigator.clipboard.writeText(`${text}\n${location.origin}`);
+            await navigator.clipboard.writeText(`${text}\n${shareUrl}`);
         }
 
         shared.value = true;

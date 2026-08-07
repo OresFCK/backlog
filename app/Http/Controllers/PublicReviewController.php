@@ -69,12 +69,22 @@ class PublicReviewController extends Controller
         $gamesByReview = $this->reviewGameResolver->resolveMany(
             $reviewModels->getCollection()
         );
+        $igdbImagesByGame = $this->igdbImages->forGames(
+            $gamesByReview
+                ->pluck('igdb_id')
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->all()
+        );
 
         $reviewModels->setCollection(
             $reviewModels->getCollection()
             ->map(fn ($review) => $this->reviewData(
                 $review,
-                $gamesByReview->get($review->id)
+                $gamesByReview->get($review->id),
+                $igdbImagesByGame[
+                    (int) $gamesByReview->get($review->id)?->igdb_id
+                ] ?? []
             ))
             ->values()
         );
@@ -109,7 +119,11 @@ class PublicReviewController extends Controller
                 $resolvedGame?->cover_url
             );
 
-        $reviewData = $this->reviewData($review, $resolvedGame);
+        $reviewData = $this->reviewData(
+            $review,
+            $resolvedGame,
+            $igdbImages
+        );
         $authorReviews = PublicReview::query()
             ->where('user_id', $review->user_id)
             ->where('is_public', true);
@@ -161,9 +175,18 @@ class PublicReviewController extends Controller
 
     private function reviewData(
         PublicReview $review,
-        ?Game $resolvedGame = null
+        ?Game $resolvedGame = null,
+        array $igdbImages = []
     ): array
     {
+        $graphicImageUrl = $igdbImages['header_image_url']
+            ?? $igdbImages['cover_url']
+            ?? $resolvedGame?->igdb_cover_url
+            ?? (filled($resolvedGame?->steam_app_id)
+                ? $this->steamImages->headerUrl((int) $resolvedGame->steam_app_id)
+                : ($resolvedGame?->header_image_url
+                    ?: $resolvedGame?->cover_url));
+
         return [
             'id' => $review->id,
             'title' => $review->title,
@@ -173,6 +196,11 @@ class PublicReviewController extends Controller
             'screenshot_url' => $review->screenshot_path
                 ? url(Storage::url($review->screenshot_path))
                 : null,
+            'images' => collect($review->image_paths ?? [])
+                ->map(fn (string $path) => url(Storage::url($path)))
+                ->values(),
+            'image_layout' => $review->image_layout ?: 'grid',
+            'graphic_image_url' => $graphicImageUrl,
             'recommended' => $review->recommended,
             'not_recommended' => $review->not_recommended,
             'is_featured_on_profile' => $review->is_featured_on_profile,
@@ -248,7 +276,15 @@ class PublicReviewController extends Controller
                 ->store('review-screenshots', 'public');
         }
 
-        unset($data['screenshot']);
+        if ($request->hasFile('images')) {
+            Storage::disk('public')->delete($existingReview?->image_paths ?? []);
+            $data['image_paths'] = collect($request->file('images'))
+                ->map(fn ($image) => $image->store('review-images', 'public'))
+                ->values()
+                ->all();
+        }
+
+        unset($data['screenshot'], $data['images']);
 
         $review = $existingReview ?? new PublicReview();
 
@@ -266,6 +302,9 @@ class PublicReviewController extends Controller
 
             'screenshot_path' => $data['screenshot_path']
                 ?? $existingReview?->screenshot_path,
+            'image_paths' => $data['image_paths']
+                ?? $existingReview?->image_paths,
+            'image_layout' => $data['image_layout'] ?? 'grid',
 
             'recommended' => $request->boolean('recommended'),
             'not_recommended' => $request->boolean('not_recommended'),

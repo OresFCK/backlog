@@ -52,6 +52,13 @@ class StorePublicReviewRequest extends FormRequest
                 'mimes:jpg,jpeg,png,webp',
                 'max:10240',
             ],
+            'images' => ['nullable', 'array', 'max:10'],
+            'images.*' => [
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:10240',
+            ],
+            'image_layout' => ['nullable', 'in:grid,carousel,full'],
 
             'recommended' => ['boolean'],
             'not_recommended' => ['boolean'],

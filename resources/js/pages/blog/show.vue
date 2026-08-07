@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, Flag, Pencil, Share2 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 import BlogHeader from '@/components/blog/BlogHeader.vue';
+import RichTextContent from '@/components/ui/RichTextContent.vue';
 
 const props = defineProps({
     post: {
@@ -162,11 +163,16 @@ const share = async () => {
                 <div
                     v-if="post.images?.length"
                     class="mt-10 grid gap-4"
-                    :class="
-                        post.images.length > 1
-                            ? 'sm:grid-cols-2'
-                            : 'grid-cols-1'
-                    "
+                    :class="{
+                        'sm:grid-cols-2':
+                            post.image_layout === 'grid' &&
+                            post.images.length > 1,
+                        'flex snap-x overflow-x-auto':
+                            post.image_layout === 'carousel',
+                        'grid-cols-1':
+                            post.image_layout === 'full' ||
+                            post.images.length === 1,
+                    }"
                 >
                     <img
                         v-for="image in post.images"
@@ -174,14 +180,18 @@ const share = async () => {
                         :src="image"
                         :alt="post.title"
                         class="max-h-[620px] w-full rounded-2xl border border-zinc-800 object-cover"
+                        :class="
+                            post.image_layout === 'carousel'
+                                ? 'min-w-[85%] snap-center sm:min-w-[60%]'
+                                : ''
+                        "
                     />
                 </div>
 
-                <div
-                    class="mt-10 text-lg leading-8 whitespace-pre-wrap text-zinc-200"
-                >
-                    {{ post.body }}
-                </div>
+                <RichTextContent
+                    :content="post.body"
+                    class="mt-10 text-lg leading-8 text-zinc-200"
+                />
 
                 <div
                     v-if="post.youtube_embed_url"
