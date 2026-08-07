@@ -12,14 +12,29 @@ const props = defineProps({
 defineEmits(['close']);
 const canvas = ref(null);
 const excerpt = ref('');
-const theme = ref('gold');
+const theme = ref('aurora');
 const rendering = ref(false);
 const imageWarning = ref(false);
 
 const themes = {
-    gold: { accent: '#f5c451', glow: '#6d4b16', label: 'Gold' },
-    violet: { accent: '#a78bfa', glow: '#4c1d95', label: 'Violet' },
-    mint: { accent: '#6ee7b7', glow: '#064e3b', label: 'Mint' },
+    aurora: {
+        accent: '#67e8f9',
+        secondary: '#6366f1',
+        glow: '#164e63',
+        label: 'Aurora',
+    },
+    sunset: {
+        accent: '#fb7185',
+        secondary: '#f97316',
+        glow: '#7c2d12',
+        label: 'Sunset',
+    },
+    mint: {
+        accent: '#6ee7b7',
+        secondary: '#14b8a6',
+        glow: '#064e3b',
+        label: 'Mint',
+    },
 };
 
 const defaultExcerpt = computed(() => {
@@ -45,15 +60,26 @@ const loadImage = (url) =>
         image.src = url;
     });
 
-const drawCoverImage = (context, image, width, height) => {
+const roundedRectPath = (context, x, y, width, height, radius) => {
+    const corner = Math.min(radius, width / 2, height / 2);
+    context.beginPath();
+    context.moveTo(x + corner, y);
+    context.arcTo(x + width, y, x + width, y + height, corner);
+    context.arcTo(x + width, y + height, x, y + height, corner);
+    context.arcTo(x, y + height, x, y, corner);
+    context.arcTo(x, y, x + width, y, corner);
+    context.closePath();
+};
+
+const drawCoverImage = (context, image, x, y, width, height) => {
     const scale = Math.max(width / image.width, height / image.height);
     const drawnWidth = image.width * scale;
     const drawnHeight = image.height * scale;
 
     context.drawImage(
         image,
-        (width - drawnWidth) / 2,
-        (height - drawnHeight) / 2,
+        x + (width - drawnWidth) / 2,
+        y + (height - drawnHeight) / 2,
         drawnWidth,
         drawnHeight,
     );
@@ -90,28 +116,10 @@ const wrapText = (context, text, maxWidth, maxLines) => {
     return lines;
 };
 
-const drawHexagon = (context, centerX, centerY, radius, accent) => {
-    context.beginPath();
+const drawHexagon = () => {};
 
-    for (let index = 0; index < 6; index += 1) {
-        const angle = (Math.PI / 3) * index - Math.PI / 2;
-        const x = centerX + radius * Math.cos(angle);
-        const y = centerY + radius * Math.sin(angle);
-
-        if (index === 0) {
-            context.moveTo(x, y);
-        } else {
-            context.lineTo(x, y);
-        }
-    }
-
-    context.closePath();
-    context.strokeStyle = accent;
-    context.lineWidth = 5;
-    context.stroke();
-};
-
-const renderGraphic = async () => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _renderLegacyGraphic = async () => {
     if (!canvas.value) {
         return;
     }
@@ -189,6 +197,138 @@ const renderGraphic = async () => {
         70,
         1300,
     );
+    rendering.value = false;
+};
+
+const renderGraphic = async () => {
+    if (!canvas.value) {
+        return;
+    }
+
+    rendering.value = true;
+    imageWarning.value = false;
+    const context = canvas.value.getContext('2d');
+    const width = 1080;
+    const height = 1350;
+    const palette = themes[theme.value];
+    canvas.value.width = width;
+    canvas.value.height = height;
+
+    context.fillStyle = '#09090f';
+    context.fillRect(0, 0, width, height);
+    const ambient = context.createRadialGradient(900, 70, 0, 900, 70, 620);
+    ambient.addColorStop(0, palette.glow);
+    ambient.addColorStop(0.5, `${palette.secondary}33`);
+    ambient.addColorStop(1, 'rgba(9, 9, 15, 0)');
+    context.fillStyle = ambient;
+    context.fillRect(0, 0, width, 760);
+
+    context.fillStyle = '#ffffff';
+    context.beginPath();
+    context.arc(72, 72, 11, 0, Math.PI * 2);
+    context.fill();
+    context.font = '800 25px Arial, sans-serif';
+    context.fillText('curator.gg', 96, 81);
+    context.fillStyle = '#a1a1aa';
+    context.font = '600 20px Arial, sans-serif';
+    context.textAlign = 'right';
+    context.fillText('a player perspective', 1008, 79);
+    context.textAlign = 'left';
+
+    const imageX = 54;
+    const imageY = 126;
+    const imageWidth = 972;
+    const imageHeight = 620;
+    context.save();
+    roundedRectPath(context, imageX, imageY, imageWidth, imageHeight, 46);
+    context.clip();
+
+    try {
+        const image = await loadImage(
+            props.imageUrl || props.review.screenshot_url,
+        );
+        drawCoverImage(context, image, imageX, imageY, imageWidth, imageHeight);
+    } catch {
+        imageWarning.value = Boolean(
+            props.imageUrl || props.review.screenshot_url,
+        );
+        context.fillStyle = palette.glow;
+        context.fillRect(imageX, imageY, imageWidth, imageHeight);
+    }
+
+    const imageShade = context.createLinearGradient(0, 380, 0, 746);
+    imageShade.addColorStop(0, 'rgba(9, 9, 15, 0)');
+    imageShade.addColorStop(1, 'rgba(9, 9, 15, .74)');
+    context.fillStyle = imageShade;
+    context.fillRect(imageX, imageY, imageWidth, imageHeight);
+    context.restore();
+    roundedRectPath(context, imageX, imageY, imageWidth, imageHeight, 46);
+    context.strokeStyle = 'rgba(255,255,255,.16)';
+    context.lineWidth = 2;
+    context.stroke();
+
+    const ribbon = context.createLinearGradient(84, 0, 374, 0);
+    ribbon.addColorStop(0, palette.accent);
+    ribbon.addColorStop(1, palette.secondary);
+    roundedRectPath(context, 84, 665, 290, 48, 24);
+    context.fillStyle = ribbon;
+    context.fill();
+    context.fillStyle = '#09090f';
+    context.font = '800 19px Arial, sans-serif';
+    context.fillText(
+        props.review.recommended ? 'Worth your time' : 'Player reviewed',
+        112,
+        696,
+    );
+
+    const rating = props.review.rating ?? '—';
+    context.beginPath();
+    context.arc(890, 744, 96, 0, Math.PI * 2);
+    context.fillStyle = '#f4f4f5';
+    context.fill();
+    context.beginPath();
+    context.arc(890, 744, 83, 0, Math.PI * 2);
+    context.fillStyle = '#111118';
+    context.fill();
+    context.textAlign = 'center';
+    context.fillStyle = '#ffffff';
+    context.font = '900 62px Arial, sans-serif';
+    context.fillText(String(rating), 890, 756);
+    context.fillStyle = palette.accent;
+    context.font = '800 17px Arial, sans-serif';
+    context.fillText('/ 10', 890, 791);
+    context.textAlign = 'left';
+
+    context.fillStyle = '#ffffff';
+    context.font = '900 68px Arial, sans-serif';
+    wrapText(context, props.review.game_title, 760, 2).forEach(
+        (line, index) => {
+            context.fillText(line, 64, 850 + index * 72);
+        },
+    );
+
+    roundedRectPath(context, 54, 986, 972, 270, 38);
+    context.fillStyle = 'rgba(255,255,255,.065)';
+    context.fill();
+    context.fillStyle = palette.accent;
+    roundedRectPath(context, 84, 1020, 8, 170, 4);
+    context.fill();
+    context.fillStyle = '#e4e4e7';
+    context.font = '500 31px Arial, sans-serif';
+    wrapText(context, excerpt.value, 850, 4).forEach((line, index) => {
+        context.fillText(line, 122, 1062 + index * 42);
+    });
+
+    context.fillStyle = '#a1a1aa';
+    context.font = '600 22px Arial, sans-serif';
+    context.fillText(
+        `@ ${props.review.user?.name || 'Curator.gg player'}`,
+        64,
+        1310,
+    );
+    context.textAlign = 'right';
+    context.fillText('Share what you play.', 1016, 1310);
+    context.textAlign = 'left';
     rendering.value = false;
 };
 
