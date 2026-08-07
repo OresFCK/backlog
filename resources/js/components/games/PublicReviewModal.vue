@@ -1,8 +1,8 @@
 <!-- eslint-disable vue/block-lang -->
 <script setup>
-import { computed, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { ThumbsUp, X } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 import RichTextEditor from '@/components/ui/RichTextEditor.vue';
 
 const props = defineProps({
@@ -158,7 +158,7 @@ const blockInvalidTimeKeys = (event) => {
 };
 
 const normalizeRating = (value) => {
-    let normalizedValue = value.replace(/\D/g, '').slice(0, 2);
+    const normalizedValue = value.replace(/\D/g, '').slice(0, 2);
 
     if (normalizedValue === '') {
         return '';
@@ -208,7 +208,11 @@ const handleImagesInput = (event) => {
 
 const moveImage = (index, direction) => {
     const target = index + direction;
-    if (target < 0 || target >= publicReviewImages.value.length) return;
+
+    if (target < 0 || target >= publicReviewImages.value.length) {
+        return;
+    }
+
     [publicReviewImages.value[index], publicReviewImages.value[target]] = [
         publicReviewImages.value[target],
         publicReviewImages.value[index],

@@ -50,7 +50,9 @@ const selectImages = (event) => {
 const moveImage = (index, direction) => {
     const target = index + direction;
 
-    if (target < 0 || target >= form.value.images.length) return;
+    if (target < 0 || target >= form.value.images.length) {
+        return;
+    }
 
     [form.value.images[index], form.value.images[target]] = [
         form.value.images[target],

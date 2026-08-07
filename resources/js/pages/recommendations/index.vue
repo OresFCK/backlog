@@ -147,13 +147,21 @@ const swipeCandidates = computed(() => rawPool.value.slice(0, 10));
 const swipeGame = computed(() => swipeCandidates.value[swipeIndex.value]);
 
 const imageUrl = (item, portrait = false) => {
-    if (failedImages.value.has(item.game.id)) {
-        return item.game.image_fallback_url;
+    if (portrait) {
+        return failedImages.value.has(item.game.id)
+            ? item.game.image_fallback_url
+            : item.game.cover_image_url || item.game.header_image_url;
     }
 
-    return portrait
-        ? item.game.cover_image_url || item.game.header_image_url
-        : storeArtwork.value[item.game.id] || item.game.header_image_url;
+    const artwork = storeArtwork.value[item.game.id];
+
+    if (artwork === undefined) {
+        return null;
+    }
+
+    return (
+        artwork || item.game.header_image_url || item.game.image_fallback_url
+    );
 };
 
 const loadStoreArtwork = async (item) => {
@@ -186,9 +194,21 @@ const loadStoreArtwork = async (item) => {
     }
 };
 
-watch(swipeGame, (item) => loadStoreArtwork(item));
+watch(swipeGame, (item) => {
+    loadStoreArtwork(item);
+    loadStoreArtwork(swipeCandidates.value[swipeIndex.value + 1]);
+});
 
-const imageFailed = (item) => {
+const imageFailed = (item, portrait = false) => {
+    if (!portrait && storeArtwork.value[item.game.id]) {
+        storeArtwork.value = {
+            ...storeArtwork.value,
+            [item.game.id]: null,
+        };
+
+        return;
+    }
+
     failedImages.value = new Set([...failedImages.value, item.game.id]);
 };
 
@@ -214,6 +234,7 @@ const showInstantPicks = () => {
 };
 
 const tunePicks = () => {
+    swipeCandidates.value.slice(0, 3).forEach(loadStoreArtwork);
     screen.value = 'swipe';
     swipeIndex.value = 0;
     track('recommendation_path_selected', { path: 'tune', mood: mood.value });
@@ -387,7 +408,7 @@ onMounted(() => {
     }
 
     track('recommendations_opened', { onboarding: Boolean(onboarding) });
-    loadStoreArtwork(swipeGame.value);
+    swipeCandidates.value.slice(0, 3).forEach(loadStoreArtwork);
 });
 </script>
 
@@ -487,10 +508,16 @@ onMounted(() => {
                         @touchend="onTouchEnd"
                     >
                         <img
+                            v-if="imageUrl(swipeGame)"
                             :src="imageUrl(swipeGame)"
                             :alt="swipeGame.game.title"
                             class="aspect-video w-full object-cover"
                             @error="imageFailed(swipeGame)"
+                        />
+                        <div
+                            v-else
+                            class="aspect-video w-full animate-pulse bg-gradient-to-br from-zinc-800 via-zinc-900 to-zinc-800"
+                            aria-label="Loading game artwork"
                         />
                         <div class="p-6">
                             <h1 class="text-3xl font-black">
@@ -606,7 +633,7 @@ onMounted(() => {
                                     :src="imageUrl(item, true)"
                                     :alt="item.game.title"
                                     class="absolute inset-0 h-full w-full object-cover"
-                                    @error="imageFailed(item)"
+                                    @error="imageFailed(item, true)"
                                 />
                                 <span
                                     class="absolute top-3 left-3 rounded-full bg-black/80 px-3 py-1 text-sm font-black"
