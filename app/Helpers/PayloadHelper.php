@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateCustomLabelRequest;
 use App\Http\Requests\StoreCustomStatusRequest;
 use App\Http\Requests\UpdateGameMetaRequest;
 use App\Models\PublicReview;
+use App\Models\BlogPost;
 use App\Models\CustomList;
 use App\Models\PublicReviewReport;
 use App\Models\User;
@@ -99,6 +100,67 @@ class PayloadHelper
                 ];
             }
         );
+    }
+
+    public static function publicProfileContent(User $user): array
+    {
+        $viewerId = Auth::id();
+
+        $reviews = PublicReview::query()
+            ->where('user_id', $user->id)
+            ->where('is_public', true)
+            ->with('votes:id,public_review_id,user_id,value')
+            ->latest()
+            ->get()
+            ->map(fn (PublicReview $review) => [
+                'id' => $review->id,
+                'title' => $review->title,
+                'body' => $review->body,
+                'rating' => $review->rating,
+                'recommended' => $review->recommended,
+                'not_recommended' => $review->not_recommended,
+                'game_title' => $review->game_title,
+                'created_at' => $review->created_at?->diffForHumans(),
+                'score' => (int) $review->votes->sum('value'),
+                'user_vote' => $viewerId
+                    ? $review->votes->firstWhere('user_id', $viewerId)?->value
+                    : null,
+                'can_interact' => $viewerId && $viewerId !== $review->user_id,
+                'url' => route('reviews.public.show', $review),
+            ])
+            ->values();
+
+        $posts = BlogPost::query()
+            ->where('user_id', $user->id)
+            ->where('is_published', true)
+            ->with('votes:id,blog_post_id,user_id,value')
+            ->latest('published_at')
+            ->get()
+            ->map(fn (BlogPost $post) => [
+                'id' => $post->id,
+                'slug' => $post->slug,
+                'title' => $post->title,
+                'excerpt' => $post->excerpt
+                    ?: \Illuminate\Support\Str::limit(
+                        \Illuminate\Support\Str::squish(strip_tags($post->body)),
+                        240
+                    ),
+                'published_at' => $post->published_at?->diffForHumans(),
+                'score' => (int) $post->votes->sum('value'),
+                'user_vote' => $viewerId
+                    ? $post->votes->firstWhere('user_id', $viewerId)?->value
+                    : null,
+                'can_interact' => $viewerId && $viewerId !== $post->user_id,
+                'url' => route('blog.show', $post),
+            ])
+            ->values();
+
+        return [
+            'publicReviews' => $reviews,
+            'publicBlogPosts' => $posts,
+            'viewerAuthenticated' => Auth::check(),
+            'isOwnProfile' => $viewerId === $user->id,
+        ];
     }
 
     public static function backlogPageData(SteamService $steam): array

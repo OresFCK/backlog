@@ -9,7 +9,6 @@ use App\Models\ActivityLog;
 use App\Models\Game;
 use App\Models\CustomGame;
 use App\Models\PublicReview;
-use App\Models\UserConnection;
 use App\Models\UserGameMeta;
 use App\Services\SteamService;
 use App\Services\IgdbImageService;
@@ -215,8 +214,7 @@ class PublicReviewController extends Controller
             'created_at' => $review->created_at?->diffForHumans(),
             'share_url' => route('reviews.public.show', $review),
             'can_vote' => auth()->check()
-                && $review->user_id !== auth()->id()
-                && $this->canVoteForReview(auth()->id(), $review->user_id),
+                && $review->user_id !== auth()->id(),
             'votes_score' => $review->votes->sum('value'),
             'user_vote' => auth()->check()
                 ? $review->votes->firstWhere('user_id', auth()->id())?->value
@@ -362,41 +360,6 @@ class PublicReviewController extends Controller
         ]);
 
         return back();
-    }
-
-    private function canVoteForReview(
-        int $voterId,
-        int $reviewAuthorId
-    ): bool {
-        return UserConnection::query()
-            ->where(function ($query) use ($voterId, $reviewAuthorId) {
-                $query
-                    ->where(function ($query) use ($voterId, $reviewAuthorId) {
-                        $query
-                            ->where('type', 'friend')
-                            ->where('status', 'accepted')
-                            ->where(function ($query) use ($voterId, $reviewAuthorId) {
-                                $query
-                                    ->where(function ($query) use ($voterId, $reviewAuthorId) {
-                                        $query
-                                            ->where('sender_id', $voterId)
-                                            ->where('receiver_id', $reviewAuthorId);
-                                    })
-                                    ->orWhere(function ($query) use ($voterId, $reviewAuthorId) {
-                                        $query
-                                            ->where('sender_id', $reviewAuthorId)
-                                            ->where('receiver_id', $voterId);
-                                    });
-                            });
-                    })
-                    ->orWhere(function ($query) use ($voterId, $reviewAuthorId) {
-                        $query
-                            ->where('type', 'follow')
-                            ->where('sender_id', $voterId)
-                            ->where('receiver_id', $reviewAuthorId);
-                    });
-            })
-            ->exists();
     }
 
     private function resolveReviewedGame(

@@ -98,7 +98,10 @@ Route::get('/u/{user:steam_id}', fn (
     SteamService $steam
 ) => Inertia::render(
     'profile/public',
-    Payload::publicProfilePageData($user, $steam)
+    [
+        ...Payload::publicProfilePageData($user, $steam),
+        ...Payload::publicProfileContent($user),
+    ]
 ))->name('profile.public');
 
 Route::controller(SteamAuthController::class)

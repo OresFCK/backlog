@@ -1,8 +1,21 @@
+<!-- eslint-disable vue/block-lang -->
 <script setup>
+import { router } from '@inertiajs/vue3';
+import {
+    ArrowDown,
+    ArrowUp,
+    BookOpen,
+    Flag,
+    List,
+    Package,
+    Star,
+    ThumbsUp,
+    X,
+} from 'lucide-vue-next';
 import { ref } from 'vue';
-import { List, Package, Star, ThumbsUp, X } from 'lucide-vue-next';
+import RichTextContent from '@/components/ui/RichTextContent.vue';
 
-defineProps({
+const props = defineProps({
     profileUser: Object,
 
     featuredGames: {
@@ -24,6 +37,10 @@ defineProps({
         type: Array,
         default: () => [],
     },
+    publicReviews: { type: Array, default: () => [] },
+    publicBlogPosts: { type: Array, default: () => [] },
+    viewerAuthenticated: { type: Boolean, default: false },
+    isOwnProfile: { type: Boolean, default: false },
 });
 
 const selectedList = ref(null);
@@ -35,6 +52,74 @@ function openList(list) {
 function closeList() {
     selectedList.value = null;
 }
+
+const requireLogin = () => {
+    window.location.assign(
+        `/auth/steam?intended=${encodeURIComponent(window.location.pathname)}`,
+    );
+};
+
+const voteReview = (review, value) => {
+    if (!props.viewerAuthenticated) {
+        return requireLogin();
+    }
+
+    if (!review.can_interact) {
+        return;
+    }
+
+    if (review.user_vote === value) {
+        router.delete(`/reviews/${review.id}/vote`, { preserveScroll: true });
+    } else {
+        router.post(
+            `/reviews/${review.id}/vote`,
+            { value },
+            { preserveScroll: true },
+        );
+    }
+};
+
+const votePost = (post, value) => {
+    if (!props.viewerAuthenticated) {
+        return requireLogin();
+    }
+
+    if (!post.can_interact) {
+        return;
+    }
+
+    if (post.user_vote === value) {
+        router.delete(`/blog/${post.slug}/vote`, { preserveScroll: true });
+    } else {
+        router.post(
+            `/blog/${post.slug}/vote`,
+            { value },
+            { preserveScroll: true },
+        );
+    }
+};
+
+const reportContent = (type, item) => {
+    if (!props.viewerAuthenticated) {
+        return requireLogin();
+    }
+
+    if (!item.can_interact) {
+        return;
+    }
+
+    const reason = window.prompt('What is wrong with this content?');
+
+    if (!reason?.trim()) {
+        return;
+    }
+
+    const url =
+        type === 'review'
+            ? `/reviews/${item.id}/report`
+            : `/blog/${item.slug}/report`;
+    router.post(url, { reason: reason.trim() }, { preserveScroll: true });
+};
 </script>
 
 <template>
@@ -285,6 +370,212 @@ function closeList() {
                         This user has not featured any reviews yet.
                     </p>
                 </div>
+            </section>
+
+            <section
+                class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 shadow-2xl shadow-black/20 sm:rounded-3xl sm:p-6"
+            >
+                <div class="mb-6 flex items-end justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-black sm:text-3xl">
+                            All public reviews
+                        </h2>
+                        <p class="mt-1 text-sm text-zinc-500">
+                            Every public game review published by this user.
+                        </p>
+                    </div>
+                    <span
+                        class="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1 text-xs font-bold text-zinc-400"
+                        >{{ publicReviews.length }} reviews</span
+                    >
+                </div>
+
+                <div v-if="publicReviews.length" class="space-y-4">
+                    <article
+                        v-for="review in publicReviews"
+                        :key="review.id"
+                        class="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:p-6"
+                    >
+                        <div
+                            class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+                        >
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-indigo-300">
+                                    {{ review.game_title }}
+                                </p>
+                                <h3 class="mt-1 text-2xl font-black">
+                                    {{ review.title || 'Untitled review' }}
+                                </h3>
+                            </div>
+                            <span
+                                v-if="review.rating"
+                                class="shrink-0 rounded-xl bg-white px-3 py-2 text-sm font-black text-zinc-950"
+                                >{{ review.rating }}/10</span
+                            >
+                        </div>
+                        <RichTextContent
+                            :content="review.body"
+                            class="mt-4 line-clamp-6 text-sm leading-7 text-zinc-300"
+                        />
+                        <div
+                            class="mt-5 flex flex-wrap items-center gap-2 border-t border-zinc-800 pt-4"
+                        >
+                            <div
+                                class="inline-flex items-center rounded-xl border border-zinc-700"
+                            >
+                                <button
+                                    type="button"
+                                    :disabled="isOwnProfile"
+                                    class="p-2.5 hover:text-emerald-400 disabled:opacity-30"
+                                    :class="
+                                        review.user_vote === 1
+                                            ? 'text-emerald-400'
+                                            : 'text-zinc-400'
+                                    "
+                                    aria-label="Upvote review"
+                                    @click="voteReview(review, 1)"
+                                >
+                                    <ArrowUp class="h-4 w-4" />
+                                </button>
+                                <strong class="min-w-9 text-center text-sm">{{
+                                    review.score
+                                }}</strong>
+                                <button
+                                    type="button"
+                                    :disabled="isOwnProfile"
+                                    class="p-2.5 hover:text-red-400 disabled:opacity-30"
+                                    :class="
+                                        review.user_vote === -1
+                                            ? 'text-red-400'
+                                            : 'text-zinc-400'
+                                    "
+                                    aria-label="Downvote review"
+                                    @click="voteReview(review, -1)"
+                                >
+                                    <ArrowDown class="h-4 w-4" />
+                                </button>
+                            </div>
+                            <a
+                                :href="review.url"
+                                class="rounded-xl border border-zinc-700 px-3 py-2 text-sm font-bold text-zinc-300 hover:text-white"
+                                >Read review</a
+                            >
+                            <button
+                                v-if="!isOwnProfile"
+                                type="button"
+                                class="ml-auto inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-900 hover:text-red-300"
+                                @click="reportContent('review', review)"
+                            >
+                                <Flag class="h-4 w-4" /> Report
+                            </button>
+                        </div>
+                    </article>
+                </div>
+                <p
+                    v-else
+                    class="rounded-2xl border border-dashed border-zinc-800 p-8 text-center text-zinc-500"
+                >
+                    No public reviews yet.
+                </p>
+            </section>
+
+            <section
+                class="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 shadow-2xl shadow-black/20 sm:rounded-3xl sm:p-6"
+            >
+                <div class="mb-6 flex items-end justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-black sm:text-3xl">
+                            Blog posts
+                        </h2>
+                        <p class="mt-1 text-sm text-zinc-500">
+                            All published articles from this user.
+                        </p>
+                    </div>
+                    <span
+                        class="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1 text-xs font-bold text-zinc-400"
+                        >{{ publicBlogPosts.length }} posts</span
+                    >
+                </div>
+
+                <div
+                    v-if="publicBlogPosts.length"
+                    class="grid gap-4 md:grid-cols-2"
+                >
+                    <article
+                        v-for="post in publicBlogPosts"
+                        :key="post.id"
+                        class="flex flex-col rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:p-6"
+                    >
+                        <BookOpen class="h-6 w-6 text-indigo-300" />
+                        <h3 class="mt-4 text-2xl font-black">
+                            {{ post.title }}
+                        </h3>
+                        <p
+                            class="mt-3 line-clamp-5 text-sm leading-7 text-zinc-400"
+                        >
+                            {{ post.excerpt }}
+                        </p>
+                        <div
+                            class="mt-auto flex flex-wrap items-center gap-2 border-t border-zinc-800 pt-5"
+                        >
+                            <div
+                                class="inline-flex items-center rounded-xl border border-zinc-700"
+                            >
+                                <button
+                                    type="button"
+                                    :disabled="isOwnProfile"
+                                    class="p-2.5 hover:text-emerald-400 disabled:opacity-30"
+                                    :class="
+                                        post.user_vote === 1
+                                            ? 'text-emerald-400'
+                                            : 'text-zinc-400'
+                                    "
+                                    aria-label="Upvote post"
+                                    @click="votePost(post, 1)"
+                                >
+                                    <ArrowUp class="h-4 w-4" />
+                                </button>
+                                <strong class="min-w-9 text-center text-sm">{{
+                                    post.score
+                                }}</strong>
+                                <button
+                                    type="button"
+                                    :disabled="isOwnProfile"
+                                    class="p-2.5 hover:text-red-400 disabled:opacity-30"
+                                    :class="
+                                        post.user_vote === -1
+                                            ? 'text-red-400'
+                                            : 'text-zinc-400'
+                                    "
+                                    aria-label="Downvote post"
+                                    @click="votePost(post, -1)"
+                                >
+                                    <ArrowDown class="h-4 w-4" />
+                                </button>
+                            </div>
+                            <a
+                                :href="post.url"
+                                class="rounded-xl border border-zinc-700 px-3 py-2 text-sm font-bold text-zinc-300 hover:text-white"
+                                >Read post</a
+                            >
+                            <button
+                                v-if="!isOwnProfile"
+                                type="button"
+                                class="ml-auto rounded-xl p-2 text-zinc-500 hover:bg-zinc-900 hover:text-red-300"
+                                aria-label="Report post"
+                                @click="reportContent('post', post)"
+                            >
+                                <Flag class="h-4 w-4" />
+                            </button>
+                        </div>
+                    </article>
+                </div>
+                <p
+                    v-else
+                    class="rounded-2xl border border-dashed border-zinc-800 p-8 text-center text-zinc-500"
+                >
+                    No published blog posts yet.
+                </p>
             </section>
 
             <section

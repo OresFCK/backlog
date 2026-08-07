@@ -13,6 +13,8 @@ class PublicReviewReportController extends Controller
         Request $request,
         PublicReview $review
     ): RedirectResponse {
+        abort_unless($review->is_public, 404);
+
         abort_if(
             $review->user_id === $request->user()->id,
             403
