@@ -1,25 +1,43 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ArrowRight, PenLine, TrendingUp } from 'lucide-vue-next';
+import { ArrowRight, PenLine, Search, TrendingUp, X } from 'lucide-vue-next';
+import { ref } from 'vue';
 
 import BlogHeader from '@/components/blog/BlogHeader.vue';
 import PaginationLinks from '@/components/PaginationLinks.vue';
 
-defineProps({
+const props = defineProps({
     posts: {
         type: Object,
         default: () => ({ data: [] }),
     },
     categories: { type: Object, default: () => ({}) },
     activeCategory: { type: String, default: null },
+    search: { type: String, default: '' },
 });
 
-const filterCategory = (category) => {
-    router.get('/blog', category ? { category } : {}, {
+const searchQuery = ref(props.search);
+
+const loadPosts = (category: string | null = props.activeCategory) => {
+    const parameters: Record<string, string> = {};
+
+    if (category) parameters.category = category;
+    if (searchQuery.value.trim()) parameters.q = searchQuery.value.trim();
+
+    router.get('/blog', parameters, {
         preserveState: true,
         preserveScroll: true,
         replace: true,
     });
+};
+
+const filterCategory = (category: string | null) => {
+    loadPosts(category);
+};
+
+const clearSearch = () => {
+    searchQuery.value = '';
+    loadPosts();
 };
 </script>
 
@@ -52,6 +70,38 @@ const filterCategory = (category) => {
                     <PenLine class="h-4 w-4" /> Write a post
                 </Link>
             </header>
+
+            <form
+                class="relative mt-8 max-w-2xl"
+                role="search"
+                @submit.prevent="loadPosts()"
+            >
+                <Search
+                    class="pointer-events-none absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-zinc-500"
+                />
+                <input
+                    v-model="searchQuery"
+                    type="search"
+                    maxlength="100"
+                    placeholder="Search articles..."
+                    class="w-full rounded-2xl border border-zinc-700 bg-zinc-900 py-3.5 pr-24 pl-12 text-white outline-none placeholder:text-zinc-500 focus:border-indigo-400"
+                />
+                <button
+                    v-if="searchQuery"
+                    type="button"
+                    class="absolute top-1/2 right-16 -translate-y-1/2 p-2 text-zinc-500 hover:text-white"
+                    aria-label="Clear search"
+                    @click="clearSearch"
+                >
+                    <X class="h-4 w-4" />
+                </button>
+                <button
+                    type="submit"
+                    class="absolute top-1/2 right-2 -translate-y-1/2 rounded-xl bg-white px-3 py-2 text-xs font-black text-zinc-950"
+                >
+                    Search
+                </button>
+            </form>
 
             <nav class="mt-8 flex flex-wrap gap-2" aria-label="Blog categories">
                 <button
@@ -148,9 +198,9 @@ const filterCategory = (category) => {
                 v-else
                 class="mt-10 rounded-3xl border border-dashed border-zinc-700 py-20 text-center"
             >
-                <h2 class="text-2xl font-black">No posts yet</h2>
+                <h2 class="text-2xl font-black">No posts found</h2>
                 <p class="mt-2 text-zinc-500">
-                    Be the first person to publish something.
+                    Try another search phrase or category.
                 </p>
             </section>
 

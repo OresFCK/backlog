@@ -27,6 +27,8 @@ class BlogPostController extends Controller
     public function index(Request $request): Response
     {
         $category = $request->string('category')->toString();
+        $search = Str::limit(trim($request->string('q')->toString()), 100, '');
+        $escapedSearch = addcslashes($search, '%_\\');
 
         return Inertia::render('blog/index', [
             'posts' => BlogPost::query()
@@ -35,6 +37,12 @@ class BlogPostController extends Controller
                     array_key_exists($category, self::CATEGORIES),
                     fn ($query) => $query->where('category', $category)
                 )
+                ->when(filled($search), fn ($query) => $query->where(
+                    fn ($query) => $query
+                        ->where('title', 'like', "%{$escapedSearch}%")
+                        ->orWhere('excerpt', 'like', "%{$escapedSearch}%")
+                        ->orWhere('body', 'like', "%{$escapedSearch}%")
+                ))
                 ->with('user')
                 ->withSum('votes', 'value')
                 ->latest('published_at')
@@ -45,6 +53,7 @@ class BlogPostController extends Controller
             'activeCategory' => array_key_exists($category, self::CATEGORIES)
                 ? $category
                 : null,
+            'search' => $search,
         ]);
     }
 
@@ -123,6 +132,7 @@ class BlogPostController extends Controller
         return Inertia::render('blog/editor', [
             'user' => Payload::currentUser(),
             'post' => $this->payload($post),
+            'categories' => self::CATEGORIES,
         ]);
     }
 
