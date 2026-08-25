@@ -464,6 +464,11 @@ Route::middleware('auth')->group(function () {
                 'store',
             ])->name('public.store');
 
+            Route::patch('/{review}', [
+                PublicReviewController::class,
+                'update',
+            ])->name('update');
+
             Route::post('/{review}/feature', [
                 PublicReviewController::class,
                 'toggleFeatured',

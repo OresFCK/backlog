@@ -13,6 +13,7 @@ class BlogPost extends Model
         'title',
         'slug',
         'excerpt',
+        'category',
         'body',
         'image_paths',
         'image_layout',

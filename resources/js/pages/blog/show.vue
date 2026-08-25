@@ -122,6 +122,10 @@ const share = async () => {
                     >
                         {{ post.title }}
                     </h1>
+                    <span
+                        class="mt-4 inline-flex rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-bold text-indigo-300"
+                        >{{ post.category_label }}</span
+                    >
                     <p
                         v-if="post.excerpt"
                         class="mt-5 text-lg leading-8 text-zinc-400"
@@ -162,14 +166,14 @@ const share = async () => {
 
                 <div
                     v-if="post.images?.length"
-                    class="mt-10 grid gap-4"
+                    class="mt-10 gap-4"
                     :class="{
-                        'sm:grid-cols-2':
+                        'grid grid-cols-1 sm:grid-cols-2':
                             post.image_layout === 'grid' &&
                             post.images.length > 1,
-                        'flex snap-x overflow-x-auto':
+                        'flex snap-x snap-mandatory overflow-x-auto pb-2':
                             post.image_layout === 'carousel',
-                        'grid-cols-1':
+                        'grid grid-cols-1':
                             post.image_layout === 'full' ||
                             post.images.length === 1,
                     }"
@@ -179,12 +183,15 @@ const share = async () => {
                         :key="image"
                         :src="image"
                         :alt="post.title"
-                        class="max-h-[620px] w-full rounded-2xl border border-zinc-800 object-cover"
-                        :class="
+                        class="max-h-[620px] w-full rounded-2xl border border-zinc-800"
+                        :class="[
                             post.image_layout === 'carousel'
-                                ? 'min-w-[85%] snap-center sm:min-w-[60%]'
-                                : ''
-                        "
+                                ? 'min-w-[85%] snap-center object-cover sm:min-w-[60%]'
+                                : '',
+                            post.image_layout === 'full'
+                                ? 'object-contain'
+                                : 'object-cover',
+                        ]"
                     />
                 </div>
 

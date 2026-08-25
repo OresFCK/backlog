@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import Sidebar from '@/components/layout/Sidebar.vue';
 import Topbar from '@/components/layout/Topbar.vue';
@@ -10,11 +10,13 @@ import RichTextEditor from '@/components/ui/RichTextEditor.vue';
 const props = defineProps({
     user: Object,
     post: Object,
+    categories: { type: Object, default: () => ({}) },
 });
 
 const form = ref({
     title: props.post?.title ?? '',
     excerpt: props.post?.excerpt ?? '',
+    category: props.post?.category ?? 'other',
     body: props.post?.body ?? '',
     youtube_url: props.post?.youtube_url ?? '',
     images: [],
@@ -26,6 +28,17 @@ const errors = ref({});
 const saving = ref(false);
 const imagePreviews = ref([]);
 const allowedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const displayedImages = computed(() =>
+    imagePreviews.value.length
+        ? imagePreviews.value
+        : (props.post?.images ?? []),
+);
+const galleryClasses = computed(() => ({
+    'grid grid-cols-1 sm:grid-cols-2': form.value.image_layout === 'grid',
+    'flex snap-x snap-mandatory overflow-x-auto pb-2':
+        form.value.image_layout === 'carousel',
+    'grid grid-cols-1': form.value.image_layout === 'full',
+}));
 
 const selectImages = (event) => {
     const files = Array.from(event.target.files ?? []).slice(0, 10);
@@ -136,6 +149,28 @@ const save = () => {
                         </label>
 
                         <label class="block">
+                            <span class="text-sm font-bold">Category</span>
+                            <select
+                                v-model="form.category"
+                                required
+                                class="mt-2 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 outline-none focus:border-indigo-400"
+                            >
+                                <option
+                                    v-for="(label, value) in categories"
+                                    :key="value"
+                                    :value="value"
+                                >
+                                    {{ label }}
+                                </option>
+                            </select>
+                            <span
+                                v-if="errors.category"
+                                class="mt-1 block text-sm text-red-400"
+                                >{{ errors.category }}</span
+                            >
+                        </label>
+
+                        <label class="block">
                             <span class="text-sm font-bold">Short summary</span>
                             <textarea
                                 v-model="form.excerpt"
@@ -155,35 +190,35 @@ const save = () => {
                             <span class="text-sm font-bold">Images</span>
                             <div
                                 v-if="
-                                    post?.images?.length &&
-                                    !form.remove_images &&
-                                    !imagePreviews.length
+                                    displayedImages.length &&
+                                    (!form.remove_images ||
+                                        imagePreviews.length)
                                 "
-                                class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3"
-                            >
-                                <img
-                                    v-for="image in post.images"
-                                    :key="image"
-                                    :src="image"
-                                    alt=""
-                                    class="aspect-video w-full rounded-xl object-cover"
-                                />
-                            </div>
-                            <div
-                                v-if="imagePreviews.length"
-                                class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3"
+                                class="mt-3 gap-3"
+                                :class="galleryClasses"
                             >
                                 <div
-                                    v-for="(image, index) in imagePreviews"
+                                    v-for="(image, index) in displayedImages"
                                     :key="image"
-                                    class="overflow-hidden rounded-xl border border-zinc-700"
+                                    class="overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950"
+                                    :class="
+                                        form.image_layout === 'carousel'
+                                            ? 'min-w-[82%] snap-center sm:min-w-[55%]'
+                                            : ''
+                                    "
                                 >
                                     <img
                                         :src="image"
-                                        alt="Selected upload"
-                                        class="aspect-video w-full object-cover"
+                                        alt="Gallery preview"
+                                        class="w-full"
+                                        :class="
+                                            form.image_layout === 'full'
+                                                ? 'max-h-[620px] object-contain'
+                                                : 'aspect-video object-cover'
+                                        "
                                     />
                                     <div
+                                        v-if="imagePreviews.length"
                                         class="grid grid-cols-2 border-t border-zinc-700 text-xs"
                                     >
                                         <button
@@ -214,7 +249,10 @@ const save = () => {
                                 each. New files replace the current gallery.
                             </p>
                             <label
-                                v-if="post?.images?.length"
+                                v-if="
+                                    post?.images?.length &&
+                                    !imagePreviews.length
+                                "
                                 class="mt-3 flex items-center gap-2 text-sm text-zinc-400"
                             >
                                 <input

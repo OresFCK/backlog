@@ -51,6 +51,11 @@ const props = defineProps({
         default: false,
     },
 
+    reviewId: {
+        type: [Number, String],
+        default: null,
+    },
+
     featuredOnProfile: {
         type: Boolean,
         default: false,
@@ -226,9 +231,15 @@ const moveImage = (index, direction) => {
 };
 
 const submitPublicReview = () => {
+    const url =
+        props.editing && props.reviewId
+            ? `/reviews/${props.reviewId}`
+            : '/reviews/public';
+
     router.post(
-        '/reviews/public',
+        url,
         {
+            ...(props.editing ? { _method: 'patch' } : {}),
             game_id: reviewedGameId.value,
             source: props.game.source || null,
             source_game_id:

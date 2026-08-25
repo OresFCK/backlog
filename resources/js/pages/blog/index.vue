@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowRight, PenLine, TrendingUp } from 'lucide-vue-next';
 
 import BlogHeader from '@/components/blog/BlogHeader.vue';
@@ -10,7 +10,17 @@ defineProps({
         type: Object,
         default: () => ({ data: [] }),
     },
+    categories: { type: Object, default: () => ({}) },
+    activeCategory: { type: String, default: null },
 });
+
+const filterCategory = (category) => {
+    router.get('/blog', category ? { category } : {}, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+};
 </script>
 
 <template>
@@ -42,6 +52,35 @@ defineProps({
                     <PenLine class="h-4 w-4" /> Write a post
                 </Link>
             </header>
+
+            <nav class="mt-8 flex flex-wrap gap-2" aria-label="Blog categories">
+                <button
+                    type="button"
+                    class="rounded-full border px-4 py-2 text-sm font-bold"
+                    :class="
+                        !activeCategory
+                            ? 'border-white bg-white text-zinc-950'
+                            : 'border-zinc-700 text-zinc-300'
+                    "
+                    @click="filterCategory(null)"
+                >
+                    All
+                </button>
+                <button
+                    v-for="(label, value) in categories"
+                    :key="value"
+                    type="button"
+                    class="rounded-full border px-4 py-2 text-sm font-bold"
+                    :class="
+                        activeCategory === value
+                            ? 'border-white bg-white text-zinc-950'
+                            : 'border-zinc-700 text-zinc-300'
+                    "
+                    @click="filterCategory(value)"
+                >
+                    {{ label }}
+                </button>
+            </nav>
 
             <section
                 v-if="posts.data.length"
@@ -80,6 +119,10 @@ defineProps({
                     >
                         {{ post.title }}
                     </h2>
+                    <span
+                        class="mt-3 w-fit rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-bold text-indigo-300"
+                        >{{ post.category_label }}</span
+                    >
                     <p
                         class="mt-3 line-clamp-3 text-sm leading-6 text-zinc-400"
                     >

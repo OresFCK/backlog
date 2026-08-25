@@ -14,17 +14,37 @@ use Inertia\Response;
 
 class BlogPostController extends Controller
 {
-    public function index(): Response
+    private const CATEGORIES = [
+        'news' => 'News',
+        'reviews' => 'Reviews',
+        'guides' => 'Guides',
+        'opinion' => 'Opinion',
+        'hardware' => 'Hardware',
+        'industry' => 'Industry',
+        'other' => 'Other',
+    ];
+
+    public function index(Request $request): Response
     {
+        $category = $request->string('category')->toString();
+
         return Inertia::render('blog/index', [
             'posts' => BlogPost::query()
                 ->where('is_published', true)
+                ->when(
+                    array_key_exists($category, self::CATEGORIES),
+                    fn ($query) => $query->where('category', $category)
+                )
                 ->with('user')
                 ->withSum('votes', 'value')
                 ->latest('published_at')
                 ->paginate(12)
                 ->withQueryString()
                 ->through(fn (BlogPost $post) => $this->summary($post)),
+            'categories' => self::CATEGORIES,
+            'activeCategory' => array_key_exists($category, self::CATEGORIES)
+                ? $category
+                : null,
         ]);
     }
 
@@ -47,6 +67,7 @@ class BlogPostController extends Controller
         return Inertia::render('blog/editor', [
             'user' => Payload::currentUser(),
             'post' => null,
+            'categories' => self::CATEGORIES,
         ]);
     }
 
@@ -83,6 +104,7 @@ class BlogPostController extends Controller
 
         return Inertia::render('blog/show', [
             'post' => $this->payload($post),
+            'categories' => self::CATEGORIES,
             'isOwner' => $post->user_id === Auth::id(),
             'seo' => [
                 'title' => $post->title.' | Curator.gg Blog',
@@ -143,9 +165,15 @@ class BlogPostController extends Controller
 
     private function validated(Request $request): array
     {
+        $request->merge([
+            'category' => $request->input('category', 'other'),
+            'image_layout' => $request->input('image_layout', 'grid'),
+        ]);
+
         return $request->validate([
             'title' => ['required', 'string', 'min:3', 'max:160'],
             'excerpt' => ['nullable', 'string', 'max:320'],
+            'category' => ['required', 'string', 'in:'.implode(',', array_keys(self::CATEGORIES))],
             'body' => ['required', 'string', 'min:20', 'max:50000'],
             'youtube_url' => [
                 'nullable',
@@ -178,6 +206,8 @@ class BlogPostController extends Controller
             'slug' => $post->slug,
             'excerpt' => $post->excerpt
                 ?: Str::limit(Str::squish(strip_tags($post->body)), 180),
+            'category' => $post->category ?: 'other',
+            'category_label' => self::CATEGORIES[$post->category ?: 'other'] ?? self::CATEGORIES['other'],
             'is_published' => $post->is_published,
             'published_at' => $post->published_at?->diffForHumans(),
             'updated_at' => $post->updated_at?->diffForHumans(),

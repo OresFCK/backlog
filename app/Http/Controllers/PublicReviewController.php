@@ -345,6 +345,44 @@ class PublicReviewController extends Controller
         return back();
     }
 
+    public function update(
+        StorePublicReviewRequest $request,
+        PublicReview $review
+    ): RedirectResponse {
+        abort_unless($review->user_id === $request->user()->id, 403);
+        $data = $request->validated();
+
+        if ($request->hasFile('screenshot')) {
+            Storage::disk('public')->delete($review->screenshot_path);
+            $review->screenshot_path = $request->file('screenshot')
+                ->store('review-screenshots', 'public');
+        }
+
+        if ($request->hasFile('images')) {
+            Storage::disk('public')->delete($review->image_paths ?? []);
+            $review->image_paths = collect($request->file('images'))
+                ->map(fn ($image) => $image->store('review-images', 'public'))
+                ->values()
+                ->all();
+        }
+
+        $review->fill([
+            'title' => $data['title'],
+            'body' => $data['body'],
+            'rating' => $data['rating'],
+            'platform' => $data['platform'] ?? null,
+            'image_layout' => $data['image_layout'] ?? 'grid',
+            'recommended' => $request->boolean('recommended'),
+            'not_recommended' => $request->boolean('not_recommended'),
+            'is_featured_on_profile' => $request->boolean('is_featured_on_profile'),
+            'time_to_beat_minutes' => filled($data['time_to_beat_hours'] ?? null)
+                ? (int) round(((float) $data['time_to_beat_hours']) * 60)
+                : null,
+        ])->save();
+
+        return back();
+    }
+
     public function toggleFeatured(
         Request $request,
         PublicReview $review

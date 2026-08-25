@@ -229,6 +229,7 @@ const reportReview = (review) => {
 
         <PublicReviewModal
             v-if="reviewToEdit"
+            :review-id="reviewToEdit.id"
             :game="{
                 id: reviewToEdit.game_id,
                 database_id: reviewToEdit.game_id,
