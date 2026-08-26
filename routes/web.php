@@ -212,6 +212,11 @@ Route::middleware('auth')->group(function () {
                 StoreCustomGameRequest $request
             ) => Payload::storeCustomGame($request))->name('store');
 
+            Route::post('/bulk', [
+                CustomGameController::class,
+                'storeBulk',
+            ])->name('bulk-store');
+
             Route::post('/{game}/meta', fn (
                 UpdateGameMetaRequest $request,
                 string $game
@@ -768,6 +773,11 @@ Route::get('/sitemaps/static.xml', [
     SitemapController::class,
     'staticPages',
 ])->name('sitemap.static');
+
+Route::get('/sitemaps/blog.xml', [
+    SitemapController::class,
+    'blog',
+])->name('sitemap.blog');
 
 Route::get('/sitemaps/games-{page}.xml', [
     SitemapController::class,

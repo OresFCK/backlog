@@ -1,12 +1,13 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { computed, ref, watch } from 'vue';
+import { router } from '@inertiajs/vue3';
+import { ListPlus } from 'lucide-vue-next';
 
-import Sidebar from '@/components/layout/Sidebar.vue'
-import Topbar from '@/components/layout/Topbar.vue'
-import GameAddHeader from '@/components/game/GameAddHeader.vue'
-import GameSearchResults from '@/components/game/GameSearchResults.vue'
-import GameManualForm from '@/components/game/GameManualForm.vue'
+import Sidebar from '@/components/layout/Sidebar.vue';
+import Topbar from '@/components/layout/Topbar.vue';
+import GameAddHeader from '@/components/game/GameAddHeader.vue';
+import GameSearchResults from '@/components/game/GameSearchResults.vue';
+import GameManualForm from '@/components/game/GameManualForm.vue';
 
 const props = defineProps({
     user: {
@@ -18,37 +19,56 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-})
+});
 
-const title = ref('')
-const publisher = ref('')
-const developer = ref('')
-const description = ref('')
-const releaseDate = ref('')
+const title = ref('');
+const publisher = ref('');
+const developer = ref('');
+const description = ref('');
+const releaseDate = ref('');
 
-const coverUrl = ref('')
-const headerImageUrl = ref('')
+const coverUrl = ref('');
+const headerImageUrl = ref('');
 
-const steamAppId = ref(null)
-const igdbId = ref(null)
-const igdbSlug = ref(null)
-const igdbUrl = ref(null)
+const steamAppId = ref(null);
+const igdbId = ref(null);
+const igdbSlug = ref(null);
+const igdbUrl = ref(null);
 
-const source = ref('manual')
+const source = ref('manual');
 
-const steamResults = ref([])
-const igdbResults = ref([])
+const steamResults = ref([]);
+const igdbResults = ref([]);
 
-const loadingSteam = ref(false)
-const loadingIgdb = ref(false)
-const submitting = ref(false)
-const selectingResult = ref(false)
+const loadingSteam = ref(false);
+const loadingIgdb = ref(false);
+const submitting = ref(false);
+const selectingResult = ref(false);
 
-const errors = ref({})
-const successMessage = ref('')
+const errors = ref({});
+const successMessage = ref('');
+const bulkOpen = ref(false);
+const bulkTitles = ref('');
+const bulkSubmitting = ref(false);
+const bulkErrors = ref({});
 
-let searchTimeout = null
-let searchController = null
+const parsedBulkTitles = computed(() => {
+    const unique = new Map();
+
+    bulkTitles.value.split(/\r?\n/).forEach((value) => {
+        const title = value.trim();
+        const normalized = normalizeTitle(title);
+
+        if (title && normalized && !unique.has(normalized)) {
+            unique.set(normalized, title);
+        }
+    });
+
+    return Array.from(unique.values()).slice(0, 100);
+});
+
+let searchTimeout = null;
+let searchController = null;
 
 const normalizeTitle = (value) => {
     return String(value || '')
@@ -58,441 +78,343 @@ const normalizeTitle = (value) => {
         .replace(/[^a-z0-9]+/g, ' ')
         .replace(
             /\b(the|game|edition|standard|deluxe|ultimate|complete)\b/g,
-            ''
+            '',
         )
         .trim()
-        .replace(/\s+/g, ' ')
-}
+        .replace(/\s+/g, ' ');
+};
 
 const countLettersAndNumbers = (value) => {
-    return (
-        String(value || '').match(/[\p{L}\p{N}]/gu) ?? []
-    ).length
-}
+    return (String(value || '').match(/[\p{L}\p{N}]/gu) ?? []).length;
+};
 
 const containsExcessiveRepetition = (value) => {
-    return /(.)\1{7,}/u.test(String(value || ''))
-}
+    return /(.)\1{7,}/u.test(String(value || ''));
+};
 
 const hasTooManySymbols = (value) => {
-    const text = String(value || '').trim()
+    const text = String(value || '').trim();
 
     if (!text) {
-        return false
+        return false;
     }
 
-    const symbols = (
-        text.match(/[^\p{L}\p{N}\s]/gu) ?? []
-    ).length
+    const symbols = (text.match(/[^\p{L}\p{N}\s]/gu) ?? []).length;
 
-    return symbols / text.length > 0.4
-}
+    return symbols / text.length > 0.4;
+};
 
-const isMeaningfulText = (
-    value,
-    minimumCharacters = 2
-) => {
-    const text = String(value || '').trim()
+const isMeaningfulText = (value, minimumCharacters = 2) => {
+    const text = String(value || '').trim();
 
     return (
-        countLettersAndNumbers(text) >=
-            minimumCharacters &&
+        countLettersAndNumbers(text) >= minimumCharacters &&
         !containsExcessiveRepetition(text) &&
         !hasTooManySymbols(text)
-    )
-}
+    );
+};
 
 const isSearchableTitle = (value) => {
-    const text = String(value || '').trim()
+    const text = String(value || '').trim();
 
-    return (
-        text.length >= 2 &&
-        text.length <= 255 &&
-        isMeaningfulText(text)
-    )
-}
+    return text.length >= 2 && text.length <= 255 && isMeaningfulText(text);
+};
 
 const isValidUrl = (value) => {
     if (!value) {
-        return true
+        return true;
     }
 
     try {
-        const url = new URL(String(value).trim())
+        const url = new URL(String(value).trim());
 
-        return ['http:', 'https:'].includes(
-            url.protocol
-        )
+        return ['http:', 'https:'].includes(url.protocol);
     } catch {
-        return false
+        return false;
     }
-}
+};
 
 const duplicate = computed(() => {
-    const current = normalizeTitle(title.value)
+    const current = normalizeTitle(title.value);
 
     if (!current) {
-        return false
+        return false;
     }
 
     return props.games.some((game) => {
-        const existingTitle =
-            game.name ??
-            game.title ??
-            ''
+        const existingTitle = game.name ?? game.title ?? '';
 
-        return (
-            normalizeTitle(existingTitle) === current
-        )
-    })
-})
+        return normalizeTitle(existingTitle) === current;
+    });
+});
 
 const loading = computed(() => {
-    return (
-        loadingSteam.value ||
-        loadingIgdb.value
-    )
-})
+    return loadingSteam.value || loadingIgdb.value;
+});
 
 const clearFieldError = (field) => {
     if (!errors.value[field]) {
-        return
+        return;
     }
 
     const nextErrors = {
         ...errors.value,
-    }
+    };
 
-    delete nextErrors[field]
+    delete nextErrors[field];
 
-    errors.value = nextErrors
-}
+    errors.value = nextErrors;
+};
 
 const clearSearchResults = () => {
-    steamResults.value = []
-    igdbResults.value = []
-}
+    steamResults.value = [];
+    igdbResults.value = [];
+};
 
 const cancelPendingSearch = () => {
-    clearTimeout(searchTimeout)
+    clearTimeout(searchTimeout);
 
     if (searchController) {
-        searchController.abort()
-        searchController = null
+        searchController.abort();
+        searchController = null;
     }
-}
+};
 
 const resetExternalSelection = () => {
-    steamAppId.value = null
+    steamAppId.value = null;
 
-    igdbId.value = null
-    igdbSlug.value = null
-    igdbUrl.value = null
+    igdbId.value = null;
+    igdbSlug.value = null;
+    igdbUrl.value = null;
 
-    source.value = 'manual'
-}
+    source.value = 'manual';
+};
 
 const validate = () => {
-    const validationErrors = {}
+    const validationErrors = {};
 
-    const trimmedTitle = title.value.trim()
-    const trimmedPublisher =
-        publisher.value.trim()
+    const trimmedTitle = title.value.trim();
+    const trimmedPublisher = publisher.value.trim();
 
     if (!trimmedTitle) {
-        validationErrors.title =
-            'Game title is required.'
+        validationErrors.title = 'Game title is required.';
     } else if (trimmedTitle.length < 2) {
         validationErrors.title =
-            'Game title must contain at least 2 characters.'
+            'Game title must contain at least 2 characters.';
     } else if (trimmedTitle.length > 255) {
-        validationErrors.title =
-            'Game title cannot exceed 255 characters.'
+        validationErrors.title = 'Game title cannot exceed 255 characters.';
     } else if (!isMeaningfulText(trimmedTitle)) {
         validationErrors.title =
-            'Enter a valid game title containing letters or numbers.'
+            'Enter a valid game title containing letters or numbers.';
     }
 
     if (trimmedPublisher.length > 255) {
-        validationErrors.publisher =
-            'Publisher cannot exceed 255 characters.'
-    } else if (
-        trimmedPublisher &&
-        !isMeaningfulText(trimmedPublisher)
-    ) {
-        validationErrors.publisher =
-            'Enter a valid publisher name.'
+        validationErrors.publisher = 'Publisher cannot exceed 255 characters.';
+    } else if (trimmedPublisher && !isMeaningfulText(trimmedPublisher)) {
+        validationErrors.publisher = 'Enter a valid publisher name.';
     }
 
     if (!isValidUrl(coverUrl.value)) {
         validationErrors.cover_url =
-            'Cover URL must be a valid HTTP or HTTPS URL.'
+            'Cover URL must be a valid HTTP or HTTPS URL.';
     }
 
-    errors.value = validationErrors
+    errors.value = validationErrors;
 
-    return (
-        Object.keys(validationErrors).length === 0
-    )
-}
+    return Object.keys(validationErrors).length === 0;
+};
 
 watch(title, (value) => {
-    cancelPendingSearch()
-    clearFieldError('title')
+    cancelPendingSearch();
+    clearFieldError('title');
 
-    successMessage.value = ''
+    successMessage.value = '';
 
     if (selectingResult.value) {
-        selectingResult.value = false
-        return
+        selectingResult.value = false;
+        return;
     }
 
-    resetExternalSelection()
+    resetExternalSelection();
 
     if (!isSearchableTitle(value)) {
-        clearSearchResults()
+        clearSearchResults();
 
-        loadingSteam.value = false
-        loadingIgdb.value = false
+        loadingSteam.value = false;
+        loadingIgdb.value = false;
 
-        return
+        return;
     }
 
     searchTimeout = setTimeout(async () => {
-        const query = value.trim()
+        const query = value.trim();
 
-        searchController = new AbortController()
+        searchController = new AbortController();
 
-        loadingSteam.value = true
-        loadingIgdb.value = true
+        loadingSteam.value = true;
+        loadingIgdb.value = true;
 
         try {
-            const encodedQuery =
-                encodeURIComponent(query)
+            const encodedQuery = encodeURIComponent(query);
 
-            const [
-                steamResponse,
-                igdbResponse,
-            ] = await Promise.all([
-                fetch(
-                    `/steam/search?q=${encodedQuery}`,
-                    {
-                        signal:
-                            searchController.signal,
-                    }
-                ),
+            const [steamResponse, igdbResponse] = await Promise.all([
+                fetch(`/steam/search?q=${encodedQuery}`, {
+                    signal: searchController.signal,
+                }),
 
-                fetch(
-                    `/igdb/search?q=${encodedQuery}`,
-                    {
-                        signal:
-                            searchController.signal,
-                    }
-                ),
-            ])
+                fetch(`/igdb/search?q=${encodedQuery}`, {
+                    signal: searchController.signal,
+                }),
+            ]);
 
-            steamResults.value =
-                steamResponse.ok
-                    ? await steamResponse.json()
-                    : []
+            steamResults.value = steamResponse.ok
+                ? await steamResponse.json()
+                : [];
 
-            igdbResults.value =
-                igdbResponse.ok
-                    ? await igdbResponse.json()
-                    : []
+            igdbResults.value = igdbResponse.ok
+                ? await igdbResponse.json()
+                : [];
         } catch (error) {
             if (error.name !== 'AbortError') {
-                clearSearchResults()
+                clearSearchResults();
             }
         } finally {
-            loadingSteam.value = false
-            loadingIgdb.value = false
-            searchController = null
+            loadingSteam.value = false;
+            loadingIgdb.value = false;
+            searchController = null;
         }
-    }, 350)
-})
+    }, 350);
+});
 
 watch(publisher, () => {
-    clearFieldError('publisher')
-})
+    clearFieldError('publisher');
+});
 
 watch(developer, () => {
-    clearFieldError('developer')
-})
+    clearFieldError('developer');
+});
 
 watch(description, () => {
-    clearFieldError('description')
-})
+    clearFieldError('description');
+});
 
 watch(releaseDate, () => {
-    clearFieldError('release_date')
-})
+    clearFieldError('release_date');
+});
 
 watch(coverUrl, () => {
-    clearFieldError('cover_url')
-})
+    clearFieldError('cover_url');
+});
 
 watch(headerImageUrl, () => {
-    clearFieldError('header_image_url')
-})
+    clearFieldError('header_image_url');
+});
 
 function selectSteamGame(game) {
-    cancelPendingSearch()
+    cancelPendingSearch();
 
-    selectingResult.value = true
-    errors.value = {}
-    successMessage.value = ''
+    selectingResult.value = true;
+    errors.value = {};
+    successMessage.value = '';
 
-    title.value = game.title ?? ''
+    title.value = game.title ?? '';
 
-    coverUrl.value =
-        game.cover_url ??
-        ''
+    coverUrl.value = game.cover_url ?? '';
 
-    headerImageUrl.value =
-        game.header_image_url ??
-        game.cover_url ??
-        ''
+    headerImageUrl.value = game.header_image_url ?? game.cover_url ?? '';
 
-    steamAppId.value =
-        game.appid ??
-        null
+    steamAppId.value = game.appid ?? null;
 
-    igdbId.value = null
-    igdbSlug.value = null
-    igdbUrl.value = null
+    igdbId.value = null;
+    igdbSlug.value = null;
+    igdbUrl.value = null;
 
-    publisher.value =
-        game.publisher ??
-        ''
+    publisher.value = game.publisher ?? '';
 
-    developer.value =
-        game.developer ??
-        ''
+    developer.value = game.developer ?? '';
 
-    description.value =
-        game.description ??
-        ''
+    description.value = game.description ?? '';
 
-    releaseDate.value =
-        game.release_date ??
-        ''
+    releaseDate.value = game.release_date ?? '';
 
-    source.value = 'steam'
+    source.value = 'steam';
 
-    clearSearchResults()
+    clearSearchResults();
 }
 
 function selectIgdbGame(game) {
-    cancelPendingSearch()
+    cancelPendingSearch();
 
-    selectingResult.value = true
-    errors.value = {}
-    successMessage.value = ''
+    selectingResult.value = true;
+    errors.value = {};
+    successMessage.value = '';
 
-    title.value = game.title ?? ''
+    title.value = game.title ?? '';
 
-    coverUrl.value =
-        game.cover_url ??
-        ''
+    coverUrl.value = game.cover_url ?? '';
 
-    headerImageUrl.value =
-        game.header_image_url ??
-        game.cover_url ??
-        ''
+    headerImageUrl.value = game.header_image_url ?? game.cover_url ?? '';
 
-    steamAppId.value = null
+    steamAppId.value = null;
 
-    igdbId.value =
-        game.igdb_id ??
-        null
+    igdbId.value = game.igdb_id ?? null;
 
-    igdbSlug.value =
-        game.slug ??
-        game.igdb_slug ??
-        null
+    igdbSlug.value = game.slug ?? game.igdb_slug ?? null;
 
     igdbUrl.value =
         game.igdb_url ??
-        (
-            igdbSlug.value
-                ? `https://www.igdb.com/games/${igdbSlug.value}`
-                : null
-        )
+        (igdbSlug.value
+            ? `https://www.igdb.com/games/${igdbSlug.value}`
+            : null);
 
-    description.value =
-        game.description ??
-        ''
+    description.value = game.description ?? '';
 
-    releaseDate.value =
-        game.release_date ??
-        ''
+    releaseDate.value = game.release_date ?? '';
 
-    developer.value =
-        game.developer ??
-        ''
+    developer.value = game.developer ?? '';
 
-    publisher.value =
-        game.publisher ??
-        ''
+    publisher.value = game.publisher ?? '';
 
-    source.value = 'igdb'
+    source.value = 'igdb';
 
-    clearSearchResults()
+    clearSearchResults();
 }
 
 function submit() {
-    successMessage.value = ''
+    successMessage.value = '';
 
     if (submitting.value || !validate()) {
-        return
+        return;
     }
 
-    submitting.value = true
+    submitting.value = true;
 
     router.post(
         '/games',
         {
             title: title.value.trim(),
 
-            publisher:
-                publisher.value.trim() ||
-                null,
+            publisher: publisher.value.trim() || null,
 
-            developer:
-                developer.value.trim() ||
-                null,
+            developer: developer.value.trim() || null,
 
-            description:
-                description.value.trim() ||
-                null,
+            description: description.value.trim() || null,
 
-            release_date:
-                releaseDate.value ||
-                null,
+            release_date: releaseDate.value || null,
 
-            cover_url:
-                coverUrl.value.trim() ||
-                null,
+            cover_url: coverUrl.value.trim() || null,
 
-            header_image_url:
-                headerImageUrl.value.trim() ||
-                null,
+            header_image_url: headerImageUrl.value.trim() || null,
 
-            steam_app_id:
-                steamAppId.value,
+            steam_app_id: steamAppId.value,
 
-            igdb_id:
-                igdbId.value,
+            igdb_id: igdbId.value,
 
-            igdb_slug:
-                igdbSlug.value,
+            igdb_slug: igdbSlug.value,
 
-            igdb_url:
-                igdbUrl.value,
+            igdb_url: igdbUrl.value,
 
-            source:
-                source.value,
+            source: source.value,
         },
         {
             preserveScroll: true,
@@ -503,21 +425,44 @@ function submit() {
                     general:
                         Object.values(serverErrors)[0] ??
                         'The game could not be added.',
-                }
+                };
             },
 
             onSuccess() {
-                errors.value = {}
+                errors.value = {};
 
-                successMessage.value =
-                    'Game added successfully.'
+                successMessage.value = 'Game added successfully.';
             },
 
             onFinish() {
-                submitting.value = false
+                submitting.value = false;
             },
-        }
-    )
+        },
+    );
+}
+
+function submitBulk() {
+    if (!parsedBulkTitles.value.length || bulkSubmitting.value) return;
+
+    bulkSubmitting.value = true;
+    bulkErrors.value = {};
+
+    router.post(
+        '/games/bulk',
+        { titles: parsedBulkTitles.value },
+        {
+            preserveScroll: true,
+            onError(serverErrors) {
+                bulkErrors.value = serverErrors;
+            },
+            onSuccess() {
+                bulkTitles.value = '';
+            },
+            onFinish() {
+                bulkSubmitting.value = false;
+            },
+        },
+    );
 }
 </script>
 
@@ -528,14 +473,82 @@ function submit() {
         <div class="flex flex-1 flex-col">
             <Topbar :user="user" />
 
-            <main
-                class="mx-auto w-full max-w-7xl flex-1 p-8"
-            >
+            <main class="mx-auto w-full max-w-7xl flex-1 p-8">
                 <GameAddHeader />
 
-                <div
-                    class="grid gap-8 2xl:grid-cols-[minmax(0,1fr)_380px]"
+                <section
+                    class="mb-8 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/60"
                 >
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
+                        @click="bulkOpen = !bulkOpen"
+                    >
+                        <span class="flex items-center gap-3">
+                            <span
+                                class="rounded-xl bg-indigo-500/10 p-2 text-indigo-300"
+                                ><ListPlus class="h-5 w-5"
+                            /></span>
+                            <span
+                                ><strong class="block text-white"
+                                    >Add multiple custom games</strong
+                                ><small class="text-zinc-500"
+                                    >Paste up to 100 titles, one per
+                                    line.</small
+                                ></span
+                            >
+                        </span>
+                        <span class="text-sm font-bold text-indigo-300">{{
+                            bulkOpen ? 'Hide' : 'Open'
+                        }}</span>
+                    </button>
+
+                    <form
+                        v-if="bulkOpen"
+                        class="border-t border-zinc-800 p-5 sm:p-6"
+                        @submit.prevent="submitBulk"
+                    >
+                        <textarea
+                            v-model="bulkTitles"
+                            rows="9"
+                            maxlength="25600"
+                            placeholder="Baldur's Gate 3&#10;Hades&#10;Disco Elysium"
+                            class="w-full resize-y rounded-2xl border border-zinc-700 bg-zinc-950 p-4 leading-7 text-white outline-none placeholder:text-zinc-600 focus:border-indigo-400"
+                        />
+                        <div
+                            class="mt-2 flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-500"
+                        >
+                            <span
+                                >{{ parsedBulkTitles.length }}/100 unique titles
+                                ready</span
+                            >
+                            <span
+                                v-if="
+                                    bulkErrors.titles || bulkErrors['titles.0']
+                                "
+                                class="text-red-400"
+                                >{{
+                                    bulkErrors.titles || bulkErrors['titles.0']
+                                }}</span
+                            >
+                        </div>
+                        <button
+                            type="submit"
+                            :disabled="
+                                !parsedBulkTitles.length || bulkSubmitting
+                            "
+                            class="mt-4 rounded-xl bg-white px-5 py-3 text-sm font-black text-zinc-950 disabled:opacity-40"
+                        >
+                            {{
+                                bulkSubmitting
+                                    ? 'Adding games...'
+                                    : `Add ${parsedBulkTitles.length} games`
+                            }}
+                        </button>
+                    </form>
+                </section>
+
+                <div class="grid gap-8 2xl:grid-cols-[minmax(0,1fr)_380px]">
                     <GameSearchResults
                         :steam-results="steamResults"
                         :igdb-results="igdbResults"
@@ -559,9 +572,7 @@ function submit() {
                                 maxlength="255"
                                 autocomplete="off"
                                 placeholder="e.g. Pokémon Shield"
-                                :aria-invalid="
-                                    Boolean(errors.title)
-                                "
+                                :aria-invalid="Boolean(errors.title)"
                                 :class="[
                                     'w-full rounded-2xl border bg-zinc-900 px-5 py-4 text-white outline-none placeholder:text-zinc-500',
                                     errors.title
@@ -578,14 +589,11 @@ function submit() {
                             </p>
 
                             <p
-                                v-else-if="
-                                    title &&
-                                    !isSearchableTitle(title)
-                                "
+                                v-else-if="title && !isSearchableTitle(title)"
                                 class="mt-2 text-sm text-amber-400"
                             >
-                                Enter a meaningful title
-                                containing letters or numbers.
+                                Enter a meaningful title containing letters or
+                                numbers.
                             </p>
                         </div>
                     </GameSearchResults>
@@ -597,9 +605,7 @@ function submit() {
                         v-model:description="description"
                         v-model:release-date="releaseDate"
                         v-model:cover-url="coverUrl"
-                        v-model:header-image-url="
-                            headerImageUrl
-                        "
+                        v-model:header-image-url="headerImageUrl"
                         :steam-app-id="steamAppId"
                         :igdb-id="igdbId"
                         :duplicate="duplicate"

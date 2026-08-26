@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BlogPost;
 use App\Models\Game;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -24,11 +25,20 @@ class SitemapController extends Controller
                 self::URLS_PER_SITEMAP
             )
         );
+        $latestBlogPost = BlogPost::query()
+            ->where('is_published', true)
+            ->latest('updated_at')
+            ->first(['updated_at']);
 
         $sitemaps = [
             [
                 'loc' => route('sitemap.static'),
                 'lastmod' => now()->toAtomString(),
+            ],
+            [
+                'loc' => route('sitemap.blog'),
+                'lastmod' => $latestBlogPost?->updated_at?->toAtomString()
+                    ?? now()->toAtomString(),
             ],
         ];
 
@@ -147,6 +157,39 @@ class SitemapController extends Controller
                                 ?->toAtomString(),
                         changefreq: 'weekly',
                         priority: '0.8'
+                    );
+                }
+
+                $this->endUrlSet();
+            },
+            200,
+            $this->xmlHeaders()
+        );
+    }
+
+    public function blog(): StreamedResponse
+    {
+        return response()->stream(
+            function () {
+                $this->startUrlSet();
+
+                $this->writeUrl(
+                    loc: route('blog.index'),
+                    changefreq: 'daily',
+                    priority: '0.8'
+                );
+
+                $posts = BlogPost::query()
+                    ->where('is_published', true)
+                    ->orderBy('id')
+                    ->cursor();
+
+                foreach ($posts as $post) {
+                    $this->writeUrl(
+                        loc: route('blog.show', $post),
+                        lastmod: $post->updated_at?->toAtomString(),
+                        changefreq: 'weekly',
+                        priority: '0.7'
                     );
                 }
 

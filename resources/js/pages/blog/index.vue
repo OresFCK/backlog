@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ArrowRight, PenLine, Search, TrendingUp, X } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import BlogHeader from '@/components/blog/BlogHeader.vue';
 import PaginationLinks from '@/components/PaginationLinks.vue';
@@ -16,6 +16,8 @@ const props = defineProps({
     search: { type: String, default: '' },
 });
 
+const page = usePage();
+const user = computed(() => page.props.auth?.user);
 const searchQuery = ref(props.search);
 
 const loadPosts = (category: string | null = props.activeCategory) => {
@@ -63,12 +65,16 @@ const clearSearch = () => {
                         Curator.gg community.
                     </p>
                 </div>
-                <Link
-                    href="/blog/create"
+                <a
+                    :href="
+                        user
+                            ? '/blog/create'
+                            : '/auth/steam?intended=/blog/create'
+                    "
                     class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-black text-zinc-950"
                 >
                     <PenLine class="h-4 w-4" /> Write a post
-                </Link>
+                </a>
             </header>
 
             <form
