@@ -23,8 +23,13 @@ const searchQuery = ref(props.search);
 const loadPosts = (category: string | null = props.activeCategory) => {
     const parameters: Record<string, string> = {};
 
-    if (category) parameters.category = category;
-    if (searchQuery.value.trim()) parameters.q = searchQuery.value.trim();
+    if (category) {
+        parameters.category = category;
+    }
+
+    if (searchQuery.value.trim()) {
+        parameters.q = searchQuery.value.trim();
+    }
 
     router.get('/blog', parameters, {
         preserveState: true,
@@ -146,7 +151,7 @@ const clearSearch = () => {
                     v-for="post in posts.data"
                     :key="post.id"
                     :href="post.url"
-                    class="group flex min-h-64 flex-col rounded-2xl border border-zinc-800 bg-zinc-900 p-6 transition hover:-translate-y-1 hover:border-zinc-700"
+                    class="group flex min-h-64 min-w-0 flex-col rounded-2xl border border-zinc-800 bg-zinc-900 p-6 [overflow-wrap:anywhere] transition hover:-translate-y-1 hover:border-zinc-700"
                 >
                     <img
                         v-if="post.cover_url"

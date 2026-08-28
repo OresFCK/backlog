@@ -12,11 +12,16 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 const input = ref(null);
 
+const insertImage = (number) => {
+    insert('', '\n', `[[image:${number}]]`);
+};
+defineExpose({ insertImage });
+
 const insert = (prefix, suffix = '', placeholder = 'Text') => {
     const element = input.value;
     const start = element.selectionStart;
     const end = element.selectionEnd;
-    const selected = props.modelValue.slice(start, end) || placeholder;
+    const selected = placeholder.startsWith('[[image:') ? placeholder : props.modelValue.slice(start, end) || placeholder;
     const before = props.modelValue.slice(0, start);
     const lineStart = before.length === 0 || before.endsWith('\n') ? '' : '\n';
     const value = `${before}${lineStart}${prefix}${selected}${suffix}${props.modelValue.slice(end)}`;

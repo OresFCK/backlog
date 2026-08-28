@@ -4,7 +4,8 @@ import { ArrowDown, ArrowUp, Flag, Pencil, Share2 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 import BlogHeader from '@/components/blog/BlogHeader.vue';
-import RichTextContent from '@/components/ui/RichTextContent.vue';
+import BlogPostContent from '@/components/blog/BlogPostContent.vue';
+import { galleryImages } from '@/lib/blogImages';
 
 const props = defineProps({
     post: {
@@ -19,27 +20,37 @@ const page = usePage();
 const user = computed(() => page.props.auth?.user);
 const reported = ref(false);
 const copied = ref(false);
+const voting = ref(false);
+const gallery = computed(() =>
+    galleryImages(props.post.body, props.post.images ?? []),
+);
 
-const vote = (value) => {
+const vote = (value: number) => {
+    if (voting.value || props.isOwner) {
+        return;
+    }
+
     if (!user.value) {
         window.location.assign(`/auth/steam?intended=/blog/${props.post.slug}`);
 
         return;
     }
 
+    voting.value = true;
+    const options = {
+        preserveScroll: true,
+        onFinish: () => {
+            voting.value = false;
+        },
+    };
+
     if (props.post.user_vote === value) {
-        router.delete(`/blog/${props.post.slug}/vote`, {
-            preserveScroll: true,
-        });
+        router.delete(`/blog/${props.post.slug}/vote`, options);
 
         return;
     }
 
-    router.post(
-        `/blog/${props.post.slug}/vote`,
-        { value },
-        { preserveScroll: true },
-    );
+    router.post(`/blog/${props.post.slug}/vote`, { value }, options);
 };
 
 const report = () => {
@@ -78,7 +89,7 @@ const share = async () => {
 
             return;
         } catch (error) {
-            if (error.name === 'AbortError') {
+            if (error instanceof Error && error.name === 'AbortError') {
                 return;
             }
         }
@@ -109,7 +120,7 @@ const share = async () => {
     <div class="min-h-screen bg-zinc-950 text-white">
         <BlogHeader />
         <main class="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-14">
-            <article>
+            <article class="min-w-0 [overflow-wrap:anywhere]">
                 <header>
                     <Link
                         href="/blog"
@@ -165,21 +176,20 @@ const share = async () => {
                 </header>
 
                 <div
-                    v-if="post.images?.length"
+                    v-if="gallery.length"
                     class="mt-10 gap-4"
                     :class="{
                         'grid grid-cols-1 sm:grid-cols-2':
-                            post.image_layout === 'grid' &&
-                            post.images.length > 1,
+                            post.image_layout === 'grid' && gallery.length > 1,
                         'flex snap-x snap-mandatory overflow-x-auto pb-2':
                             post.image_layout === 'carousel',
                         'grid grid-cols-1':
                             post.image_layout === 'full' ||
-                            post.images.length === 1,
+                            gallery.length === 1,
                     }"
                 >
                     <img
-                        v-for="image in post.images"
+                        v-for="image in gallery"
                         :key="image"
                         :src="image"
                         :alt="post.title"
@@ -195,8 +205,9 @@ const share = async () => {
                     />
                 </div>
 
-                <RichTextContent
+                <BlogPostContent
                     :content="post.body"
+                    :images="post.images ?? []"
                     class="mt-10 text-lg leading-8 text-zinc-200"
                 />
 
@@ -231,13 +242,14 @@ const share = async () => {
                     >
                         <button
                             type="button"
-                            :disabled="isOwner"
+                            :disabled="isOwner || voting"
                             class="p-3 hover:text-emerald-400 disabled:opacity-30"
                             :class="
                                 post.user_vote === 1
                                     ? 'text-emerald-400'
                                     : 'text-zinc-400'
                             "
+                            :aria-pressed="post.user_vote === 1"
                             aria-label="Upvote"
                             @click="vote(1)"
                         >
@@ -248,13 +260,14 @@ const share = async () => {
                         }}</strong>
                         <button
                             type="button"
-                            :disabled="isOwner"
+                            :disabled="isOwner || voting"
                             class="p-3 hover:text-red-400 disabled:opacity-30"
                             :class="
                                 post.user_vote === -1
                                     ? 'text-red-400'
                                     : 'text-zinc-400'
                             "
+                            :aria-pressed="post.user_vote === -1"
                             aria-label="Downvote"
                             @click="vote(-1)"
                         >

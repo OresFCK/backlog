@@ -14,7 +14,7 @@ defineProps({
     },
 });
 
-const removePost = (post) => {
+const removePost = (post: { title: string; slug: string }) => {
     if (window.confirm(`Delete "${post.title}"?`)) {
         router.delete(`/blog/${post.slug}`);
     }
@@ -57,7 +57,7 @@ const removePost = (post) => {
                         <article
                             v-for="post in posts.data"
                             :key="post.id"
-                            class="rounded-2xl border border-zinc-800 bg-zinc-900 p-5"
+                            class="min-w-0 rounded-2xl border border-zinc-800 bg-zinc-900 p-5 [overflow-wrap:anywhere]"
                         >
                             <div
                                 class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"

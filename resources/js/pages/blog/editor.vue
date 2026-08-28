@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { Save } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 
+import BlogPostContent from '@/components/blog/BlogPostContent.vue';
 import Sidebar from '@/components/layout/Sidebar.vue';
 import Topbar from '@/components/layout/Topbar.vue';
 import RichTextEditor from '@/components/ui/RichTextEditor.vue';
+import { remapImageMarkers } from '@/lib/blogImages';
 
 const props = defineProps({
     user: Object,
@@ -19,20 +21,30 @@ const form = ref({
     category: props.post?.category ?? 'other',
     body: props.post?.body ?? '',
     youtube_url: props.post?.youtube_url ?? '',
-    images: [],
+    images: [] as File[],
+    retained_images: (props.post?.images ?? []).map(
+        (_image: string, index: number) => index,
+    ) as number[],
     image_layout: props.post?.image_layout ?? 'grid',
     remove_images: false,
     is_published: props.post?.is_published ?? false,
 });
-const errors = ref({});
+const errors = ref<Record<string, string>>({});
 const saving = ref(false);
-const imagePreviews = ref([]);
+const imagePreviews = ref<string[]>([]);
+const imageInput = ref<HTMLInputElement | null>(null);
+const contentEditor = ref<InstanceType<typeof RichTextEditor> | null>(null);
 const allowedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const displayedImages = computed(() =>
-    imagePreviews.value.length
+const displayedImages = computed<string[]>(() =>
+    form.value.remove_images
         ? imagePreviews.value
-        : (props.post?.images ?? []),
+        : form.value.retained_images.map((index) => props.post?.images[index]),
 );
+const clearPreviews = () => {
+    imagePreviews.value.forEach((url) => URL.revokeObjectURL(url));
+    imagePreviews.value = [];
+};
+onBeforeUnmount(clearPreviews);
 const galleryClasses = computed(() => ({
     'grid grid-cols-1 sm:grid-cols-2': form.value.image_layout === 'grid',
     'flex snap-x snap-mandatory overflow-x-auto pb-2':
@@ -40,43 +52,80 @@ const galleryClasses = computed(() => ({
     'grid grid-cols-1': form.value.image_layout === 'full',
 }));
 
-const selectImages = (event) => {
-    const files = Array.from(event.target.files ?? []).slice(0, 10);
+const selectImages = (event: Event) => {
+    const element = event.target as HTMLInputElement;
+    const files = Array.from(element.files ?? []);
+    element.value = '';
 
-    if (files.some((file) => !allowedImageTypes.has(file.type))) {
-        errors.value.images = 'Only JPG, PNG and WEBP image files are allowed.';
-        form.value.images = [];
-        event.target.value = '';
-        imagePreviews.value.forEach((url) => URL.revokeObjectURL(url));
-        imagePreviews.value = [];
+    if (!files.length) {
+        return;
+    }
+
+    if (
+        files.length > 10 ||
+        files.some(
+            (file) =>
+                !allowedImageTypes.has(file.type) ||
+                file.size > 5 * 1024 * 1024,
+        )
+    ) {
+        errors.value.images =
+            'Choose up to 10 JPG, PNG or WEBP images, maximum 5 MB each.';
 
         return;
     }
 
     delete errors.value.images;
+    // Replacing the gallery must not point old inline markers at different photos.
+    form.value.body = remapImageMarkers(form.value.body, []);
+    clearPreviews();
     form.value.images = files;
-    imagePreviews.value.forEach((url) => URL.revokeObjectURL(url));
     imagePreviews.value = files.map((file) => URL.createObjectURL(file));
-    form.value.remove_images = files.length > 0;
+    form.value.remove_images = true;
 };
 
-const moveImage = (index, direction) => {
+const removeImage = (index: number) => {
+    const order = displayedImages.value
+        .map((_image, oldIndex) => oldIndex)
+        .filter((oldIndex) => oldIndex !== index);
+    form.value.body = remapImageMarkers(form.value.body, order);
+
+    if (form.value.remove_images) {
+        URL.revokeObjectURL(imagePreviews.value[index]);
+        imagePreviews.value.splice(index, 1);
+        form.value.images.splice(index, 1);
+    } else {
+        form.value.retained_images.splice(index, 1);
+
+        if (!form.value.retained_images.length) {
+            form.value.remove_images = true;
+        }
+    }
+};
+
+const moveImage = (index: number, direction: number) => {
     const target = index + direction;
 
-    if (target < 0 || target >= form.value.images.length) {
+    if (target < 0 || target >= displayedImages.value.length) {
         return;
     }
 
-    [form.value.images[index], form.value.images[target]] = [
-        form.value.images[target],
-        form.value.images[index],
-    ];
-    [imagePreviews.value[index], imagePreviews.value[target]] = [
-        imagePreviews.value[target],
-        imagePreviews.value[index],
-    ];
-    form.value.images = [...form.value.images];
-    imagePreviews.value = [...imagePreviews.value];
+    const order = displayedImages.value.map((_image, oldIndex) => oldIndex);
+    [order[index], order[target]] = [order[target], order[index]];
+    form.value.body = remapImageMarkers(form.value.body, order);
+
+    if (form.value.remove_images) {
+        form.value.images = order.map(
+            (oldIndex) => form.value.images[oldIndex],
+        );
+        imagePreviews.value = order.map(
+            (oldIndex) => imagePreviews.value[oldIndex],
+        );
+    } else {
+        form.value.retained_images = order.map(
+            (oldIndex) => form.value.retained_images[oldIndex],
+        );
+    }
 };
 
 const save = () => {
@@ -85,7 +134,7 @@ const save = () => {
     const options = {
         preserveScroll: true,
         forceFormData: true,
-        onError: (value) => {
+        onError: (value: Record<string, string>) => {
             errors.value = value;
         },
         onFinish: () => {
@@ -189,11 +238,7 @@ const save = () => {
                         <div>
                             <span class="text-sm font-bold">Images</span>
                             <div
-                                v-if="
-                                    displayedImages.length &&
-                                    (!form.remove_images ||
-                                        imagePreviews.length)
-                                "
+                                v-if="displayedImages.length"
                                 class="mt-3 gap-3"
                                 :class="galleryClasses"
                             >
@@ -218,26 +263,52 @@ const save = () => {
                                         "
                                     />
                                     <div
-                                        v-if="imagePreviews.length"
-                                        class="grid grid-cols-2 border-t border-zinc-700 text-xs"
+                                        class="flex flex-wrap border-t border-zinc-700 text-xs"
                                     >
                                         <button
                                             type="button"
                                             class="p-2 hover:bg-zinc-800"
+                                            :disabled="index === 0"
+                                            aria-label="Move image earlier"
                                             @click="moveImage(index, -1)"
                                         >
                                             ←</button
                                         ><button
                                             type="button"
                                             class="p-2 hover:bg-zinc-800"
+                                            :disabled="
+                                                index ===
+                                                displayedImages.length - 1
+                                            "
+                                            aria-label="Move image later"
                                             @click="moveImage(index, 1)"
                                         >
                                             →
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="p-2 hover:bg-zinc-800"
+                                            @mousedown.prevent
+                                            @click="
+                                                contentEditor?.insertImage(
+                                                    index + 1,
+                                                )
+                                            "
+                                        >
+                                            Insert in text
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="p-2 text-red-400 hover:bg-zinc-800"
+                                            @click="removeImage(index)"
+                                        >
+                                            Remove
                                         </button>
                                     </div>
                                 </div>
                             </div>
                             <input
+                                ref="imageInput"
                                 type="file"
                                 accept="image/jpeg,image/png,image/webp"
                                 multiple
@@ -248,19 +319,6 @@ const save = () => {
                                 Up to 10 JPG, PNG or WEBP images, maximum 5 MB
                                 each. New files replace the current gallery.
                             </p>
-                            <label
-                                v-if="
-                                    post?.images?.length &&
-                                    !imagePreviews.length
-                                "
-                                class="mt-3 flex items-center gap-2 text-sm text-zinc-400"
-                            >
-                                <input
-                                    v-model="form.remove_images"
-                                    type="checkbox"
-                                />
-                                Remove current images
-                            </label>
                             <span
                                 v-if="errors.images"
                                 class="mt-1 block text-sm text-red-400"
@@ -307,12 +365,20 @@ const save = () => {
                         <label class="block">
                             <span class="text-sm font-bold">Content</span>
                             <RichTextEditor
+                                ref="contentEditor"
                                 v-model="form.body"
                                 :rows="18"
                                 :maxlength="50000"
                                 class="mt-2"
                                 placeholder="Write your post..."
                             />
+                            <p class="mt-2 text-xs text-zinc-500">
+                                Place the cursor in the content, then click
+                                “Insert in text” below an image. The [[image:1]]
+                                marker displays that image at this position.
+                                Removing a marker returns the image to the
+                                gallery.
+                            </p>
                             <div
                                 class="mt-1 flex items-center justify-between text-xs text-zinc-500"
                             >
@@ -322,6 +388,19 @@ const save = () => {
                                 <span>{{ form.body.length }}/50000</span>
                             </div>
                         </label>
+
+                        <section
+                            v-if="form.body"
+                            class="min-w-0 rounded-xl border border-zinc-700 p-4"
+                        >
+                            <h2 class="mb-4 text-sm font-bold text-zinc-400">
+                                Content preview
+                            </h2>
+                            <BlogPostContent
+                                :content="form.body"
+                                :images="displayedImages"
+                            />
+                        </section>
 
                         <label
                             class="flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-700 px-4 py-3"

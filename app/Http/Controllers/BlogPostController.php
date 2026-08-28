@@ -84,7 +84,7 @@ class BlogPostController extends Controller
     {
         $data = $this->validated($request);
         $imagePaths = $this->storeImages($request);
-        unset($data['images'], $data['remove_images']);
+        unset($data['images'], $data['remove_images'], $data['retained_images']);
 
         $post = BlogPost::query()->create([
             ...$data,
@@ -109,7 +109,7 @@ class BlogPostController extends Controller
         $post->loadMissing(['user', 'votes']);
         $description = filled($post->excerpt)
             ? $post->excerpt
-            : Str::limit(Str::squish(strip_tags($post->body)), 155);
+            : Str::limit($this->plainBody($post), 155);
 
         return Inertia::render('blog/show', [
             'post' => $this->payload($post),
@@ -139,15 +139,19 @@ class BlogPostController extends Controller
     public function update(Request $request, BlogPost $post): RedirectResponse
     {
         $this->authorizeOwner($post);
-        $data = $this->validated($request);
+        $data = $this->validated($request, $post);
         $imagePaths = $post->image_paths ?? [];
 
         if ($request->boolean('remove_images') || $request->hasFile('images')) {
             $this->deleteImages($imagePaths);
             $imagePaths = $this->storeImages($request);
+        } elseif (array_key_exists('retained_images', $data)) {
+            $retained = array_map(fn ($index) => $imagePaths[$index], $data['retained_images'] ?? []);
+            $this->deleteImages(array_values(array_diff($imagePaths, $retained)));
+            $imagePaths = $retained;
         }
 
-        unset($data['images'], $data['remove_images']);
+        unset($data['images'], $data['remove_images'], $data['retained_images']);
 
         $post->update([
             ...$data,
@@ -173,7 +177,7 @@ class BlogPostController extends Controller
             ->with('success', 'Post deleted.');
     }
 
-    private function validated(Request $request): array
+    private function validated(Request $request, ?BlogPost $post = null): array
     {
         $request->merge([
             'category' => $request->input('category', 'other'),
@@ -203,6 +207,8 @@ class BlogPostController extends Controller
                 'max:5120',
             ],
             'remove_images' => ['nullable', 'boolean'],
+            'retained_images' => ['sometimes', 'nullable', 'array', 'max:10'],
+            'retained_images.*' => ['required', 'integer', 'distinct', \Illuminate\Validation\Rule::in(array_keys($post?->image_paths ?? []))],
             'image_layout' => ['required', 'in:grid,carousel,full'],
             'is_published' => ['required', 'boolean'],
         ]);
@@ -215,7 +221,7 @@ class BlogPostController extends Controller
             'title' => $post->title,
             'slug' => $post->slug,
             'excerpt' => $post->excerpt
-                ?: Str::limit(Str::squish(strip_tags($post->body)), 180),
+                ?: Str::limit($this->plainBody($post), 180),
             'category' => $post->category ?: 'other',
             'category_label' => self::CATEGORIES[$post->category ?: 'other'] ?? self::CATEGORIES['other'],
             'is_published' => $post->is_published,
@@ -229,6 +235,11 @@ class BlogPostController extends Controller
                 'avatar' => $post->user?->steam_avatar_url,
             ],
         ];
+    }
+
+    private function plainBody(BlogPost $post): string
+    {
+        return Str::squish(strip_tags(preg_replace('/\[\[image:\d+\]\]/', ' ', $post->body)));
     }
 
     private function payload(BlogPost $post): array

@@ -47,8 +47,8 @@ const blocks = computed(() =>
 </script>
 
 <template>
-    <div v-if="containsHtml" class="blog-html" v-html="sanitizedHtml" />
-    <div v-else class="space-y-4">
+    <div v-if="containsHtml" class="blog-html min-w-0 max-w-full [overflow-wrap:anywhere]" v-html="sanitizedHtml" />
+    <div v-else class="min-w-0 max-w-full space-y-4 [overflow-wrap:anywhere]">
         <template v-for="(block, index) in blocks" :key="index">
             <component :is="block.type === 'h2' ? 'h2' : block.type === 'h3' ? 'h3' : block.type === 'quote' ? 'blockquote' : block.type === 'list' ? 'div' : 'p'" :class="{ 'pt-4 text-3xl font-black text-white': block.type === 'h2', 'pt-3 text-2xl font-black text-white': block.type === 'h3', 'border-l-4 border-indigo-400 pl-5 italic text-zinc-300': block.type === 'quote', 'flex gap-3': block.type === 'list', 'whitespace-pre-wrap': block.type === 'p' }">
                 <span v-if="block.type === 'list'" class="text-indigo-400">•</span>
