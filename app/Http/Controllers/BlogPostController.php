@@ -30,6 +30,11 @@ class BlogPostController extends Controller
         $search = Str::limit(trim($request->string('q')->toString()), 100, '');
         $escapedSearch = addcslashes($search, '%_\\');
 
+        $seoTitle = array_key_exists($category, self::CATEGORIES)
+            ? self::CATEGORIES[$category].' articles | Curator.gg Community Blog'
+            : 'Gaming News, Reviews & Guides | Curator.gg Community Blog';
+        $seoDescription = 'Read gaming news, reviews, guides and opinions written by the Curator.gg community.';
+
         return Inertia::render('blog/index', [
             'posts' => BlogPost::query()
                 ->where('is_published', true)
@@ -54,6 +59,26 @@ class BlogPostController extends Controller
                 ? $category
                 : null,
             'search' => $search,
+            'seo' => [
+                'type' => 'website',
+                'title' => $seoTitle,
+                'description' => $seoDescription,
+                'url' => route('blog.index'),
+                'image' => asset('og-image.jpg'),
+                'image_alt' => 'Curator.gg Community Blog',
+                'schema' => [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'Blog',
+                    'name' => 'Curator.gg Community Blog',
+                    'description' => $seoDescription,
+                    'url' => route('blog.index'),
+                    'publisher' => [
+                        '@type' => 'Organization',
+                        'name' => 'Curator.gg',
+                        'url' => url('/'),
+                    ],
+                ],
+            ],
         ]);
     }
 
@@ -116,11 +141,36 @@ class BlogPostController extends Controller
             'categories' => self::CATEGORIES,
             'isOwner' => $post->user_id === Auth::id(),
             'seo' => [
+                'type' => 'article',
                 'title' => $post->title.' | Curator.gg Blog',
                 'description' => $description,
                 'url' => route('blog.show', $post),
                 'image' => $this->imageUrls($post)[0]
                     ?? asset('og-image.jpg'),
+                'image_alt' => $post->title,
+                'schema' => [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'BlogPosting',
+                    'headline' => $post->title,
+                    'description' => $description,
+                    'url' => route('blog.show', $post),
+                    'mainEntityOfPage' => route('blog.show', $post),
+                    'datePublished' => $post->published_at?->toAtomString(),
+                    'dateModified' => $post->updated_at?->toAtomString(),
+                    'image' => $this->imageUrls($post)[0]
+                        ?? asset('og-image.jpg'),
+                    'articleSection' => self::CATEGORIES[$post->category ?: 'other']
+                        ?? self::CATEGORIES['other'],
+                    'author' => [
+                        '@type' => 'Person',
+                        'name' => $post->user?->visible_name ?: 'Curator.gg player',
+                    ],
+                    'publisher' => [
+                        '@type' => 'Organization',
+                        'name' => 'Curator.gg',
+                        'url' => url('/'),
+                    ],
+                ],
             ],
         ]);
     }

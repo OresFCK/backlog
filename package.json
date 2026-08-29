@@ -5,6 +5,8 @@
     "scripts": {
         "build": "vite build",
         "build:ssr": "vite build && vite build --ssr",
+        "ssr:start": "php artisan inertia:start-ssr",
+        "ssr:stop": "php artisan inertia:stop-ssr",
         "mobile:add:android": "cap add android",
         "mobile:add:ios": "cap add ios",
         "mobile:sync": "cap sync",

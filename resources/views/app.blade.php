@@ -10,7 +10,7 @@
         $metaDescription = data_get($shareSeo, 'description', 'Connect your Steam account, organize your game library, discover what to play next, track your backlog and build your gaming profile.');
         $metaImage = data_get($shareSeo, 'image', asset('og-image.jpg'));
         $metaImageAlt = data_get($shareSeo, 'image_alt', 'Curator.gg');
-        $metaType = $shareSeo ? 'article' : 'website';
+        $metaType = data_get($shareSeo, 'type', 'website');
         $structuredData = data_get($shareSeo, 'schema');
     @endphp
 

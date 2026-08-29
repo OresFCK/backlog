@@ -14,6 +14,7 @@ const props = defineProps({
     categories: { type: Object, default: () => ({}) },
     activeCategory: { type: String, default: null },
     search: { type: String, default: '' },
+    seo: { type: Object, default: () => ({}) },
 });
 
 const page = usePage();
@@ -49,7 +50,13 @@ const clearSearch = () => {
 </script>
 
 <template>
-    <Head title="Community Blog | Curator.gg" />
+    <Head :title="seo.title || 'Community Blog | Curator.gg'">
+        <meta head-key="description" name="description" :content="seo.description" />
+        <meta property="og:title" :content="seo.title" />
+        <meta property="og:description" :content="seo.description" />
+        <meta property="og:url" :content="seo.url" />
+        <meta property="og:image" :content="seo.image" />
+    </Head>
     <div class="min-h-screen bg-zinc-950 text-white">
         <BlogHeader />
         <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16">
