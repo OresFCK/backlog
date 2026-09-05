@@ -91,4 +91,27 @@ class BlogPostEditingTest extends TestCase
         $this->delete(route('blog.vote.destroy', $post))->assertRedirect();
         $this->assertSame(0, $post->votes()->count());
     }
+
+    public function test_blog_index_contains_crawlable_server_rendered_content(): void
+    {
+        $post = $this->postWithImages();
+
+        $this->get(route('blog.index'))
+            ->assertOk()
+            ->assertSee('id="seo-fallback"', false)
+            ->assertSee('Community Blog')
+            ->assertSee($post->title)
+            ->assertSee(route('blog.show', $post), false);
+    }
+
+    public function test_blog_post_contains_crawlable_server_rendered_article(): void
+    {
+        $post = $this->postWithImages();
+
+        $this->get(route('blog.show', $post))
+            ->assertOk()
+            ->assertSee('id="seo-fallback"', false)
+            ->assertSee('<h1>'.$post->title.'</h1>', false)
+            ->assertSee('A sufficiently long test body.');
+    }
 }

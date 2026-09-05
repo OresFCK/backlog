@@ -51,7 +51,11 @@ const clearSearch = () => {
 
 <template>
     <Head :title="seo.title || 'Community Blog | Curator.gg'">
-        <meta head-key="description" name="description" :content="seo.description" />
+        <meta
+            head-key="description"
+            name="description"
+            :content="seo.description"
+        />
         <meta property="og:title" :content="seo.title" />
         <meta property="og:description" :content="seo.description" />
         <meta property="og:url" :content="seo.url" />

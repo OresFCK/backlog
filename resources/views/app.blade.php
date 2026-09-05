@@ -91,6 +91,38 @@
         html.dark {
             background-color: oklch(0.145 0 0);
         }
+
+        .seo-fallback {
+            box-sizing: border-box;
+            max-width: 72rem;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            background: #09090b;
+            color: #e4e4e7;
+            font-family: system-ui, sans-serif;
+            line-height: 1.7;
+        }
+
+        .seo-fallback h1,
+        .seo-fallback h2 {
+            color: #fff;
+        }
+
+        .seo-fallback a {
+            color: #a5b4fc;
+        }
+
+        .seo-fallback article {
+            margin-top: 2rem;
+        }
+
+        .seo-fallback img {
+            display: block;
+            max-width: 100%;
+            max-height: 36rem;
+            margin-top: 1rem;
+            object-fit: contain;
+        }
     </style>
 
     <script
@@ -107,6 +139,7 @@
 </head>
 
 <body class="font-sans antialiased">
+    @include('seo.blog-fallback')
     <x-inertia::app />
 </body>
 </html>
