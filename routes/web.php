@@ -764,27 +764,34 @@ Route::get('/igdb/search', [
     'index',
 ])->name('igdb.search');
 
-Route::get('/sitemap.xml', [
-    SitemapController::class,
-    'index',
-])->name('sitemap.index');
+Route::withoutMiddleware([
+    \App\Http\Middleware\HandleInertiaRequests::class,
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+])->group(function () {
+    Route::get('/sitemap.xml', [
+        SitemapController::class,
+        'index',
+    ])->name('sitemap.index');
 
-Route::get('/sitemaps/static.xml', [
-    SitemapController::class,
-    'staticPages',
-])->name('sitemap.static');
+    Route::get('/sitemaps/static.xml', [
+        SitemapController::class,
+        'staticPages',
+    ])->name('sitemap.static');
 
-Route::get('/sitemaps/blog.xml', [
-    SitemapController::class,
-    'blog',
-])->name('sitemap.blog');
+    Route::get('/sitemaps/blog.xml', [
+        SitemapController::class,
+        'blog',
+    ])->name('sitemap.blog');
 
-Route::get('/sitemaps/games-{page}.xml', [
-    SitemapController::class,
-    'games',
-])
-    ->whereNumber('page')
-    ->name('sitemap.games');
+    Route::get('/sitemaps/games-{page}.xml', [
+        SitemapController::class,
+        'games',
+    ])
+        ->whereNumber('page')
+        ->name('sitemap.games');
+});
 
 Route::get('/shared/reviews/{review}', [
     PublicReviewController::class,

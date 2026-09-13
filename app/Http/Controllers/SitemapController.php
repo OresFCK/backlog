@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\BlogPost;
 use App\Models\Game;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SitemapController extends Controller
@@ -13,17 +15,11 @@ class SitemapController extends Controller
 
     public function index(): Response
     {
-        $gameCount = Game::query()
-            ->whereNotNull('slug')
-            ->where('slug', '!=', '')
-            ->count();
+        $gameCount = $this->gameSitemapQuery()->count();
 
-        $gameSitemapCount = max(
-            1,
-            (int) ceil(
-                $gameCount /
-                self::URLS_PER_SITEMAP
-            )
+        $gameSitemapCount = (int) ceil(
+            $gameCount /
+            self::URLS_PER_SITEMAP
         );
         $latestBlogPost = BlogPost::query()
             ->where('is_published', true)
@@ -33,12 +29,12 @@ class SitemapController extends Controller
         $sitemaps = [
             [
                 'loc' => route('sitemap.static'),
-                'lastmod' => now()->toAtomString(),
+                'lastmod' => null,
             ],
             [
                 'loc' => route('sitemap.blog'),
                 'lastmod' => $latestBlogPost?->updated_at?->toAtomString()
-                    ?? now()->toAtomString(),
+                    ?? null,
             ],
         ];
 
@@ -52,7 +48,7 @@ class SitemapController extends Controller
                     'sitemap.games',
                     ['page' => $page]
                 ),
-                'lastmod' => now()->toAtomString(),
+                'lastmod' => null,
             ];
         }
 
@@ -66,16 +62,37 @@ class SitemapController extends Controller
             ->header(
                 'Content-Type',
                 'application/xml; charset=UTF-8'
-            );
+            )
+            ->header('Cache-Control', 'public, max-age=3600');
     }
 
     public function staticPages(): StreamedResponse
     {
         $urls = [
             [
-                'loc' => url('/'),
+                'loc' => route('home'),
                 'changefreq' => 'daily',
                 'priority' => '1.0',
+            ],
+            [
+                'loc' => route('about'),
+                'changefreq' => 'monthly',
+                'priority' => '0.6',
+            ],
+            [
+                'loc' => route('contact'),
+                'changefreq' => 'monthly',
+                'priority' => '0.5',
+            ],
+            [
+                'loc' => route('community-guidelines'),
+                'changefreq' => 'monthly',
+                'priority' => '0.5',
+            ],
+            [
+                'loc' => route('tier-lists.index'),
+                'changefreq' => 'daily',
+                'priority' => '0.7',
             ],
             [
                 'loc' => url('/privacy'),
@@ -119,10 +136,7 @@ class SitemapController extends Controller
             ($page - 1) *
             self::URLS_PER_SITEMAP;
 
-        $gameCount = Game::query()
-            ->whereNotNull('slug')
-            ->where('slug', '!=', '')
-            ->count();
+        $gameCount = $this->gameSitemapQuery()->count();
 
         abort_if(
             $offset >= $gameCount,
@@ -133,9 +147,7 @@ class SitemapController extends Controller
             function () use ($offset) {
                 $this->startUrlSet();
 
-                $games = Game::query()
-                    ->whereNotNull('slug')
-                    ->where('slug', '!=', '')
+                $games = $this->gameSitemapQuery()
                     ->orderBy('id')
                     ->offset($offset)
                     ->limit(
@@ -206,6 +218,32 @@ class SitemapController extends Controller
         echo "\n";
         echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
         echo "\n";
+    }
+
+    private function gameSitemapQuery(): Builder
+    {
+        return Game::query()
+            ->whereNotNull('slug')
+            ->where('slug', '!=', '')
+            ->whereNotIn('slug', $this->reservedTopLevelSlugs());
+    }
+
+    /**
+     * A game URL lives at /{slug}, so literal top-level application routes
+     * always win during route matching and must never be emitted as game URLs.
+     *
+     * @return list<string>
+     */
+    private function reservedTopLevelSlugs(): array
+    {
+        return collect(Route::getRoutes()->getRoutes())
+            ->map(fn ($route) => trim($route->uri(), '/'))
+            ->filter(fn (string $uri) => $uri !== ''
+                && ! str_contains($uri, '/')
+                && ! str_contains($uri, '{'))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function endUrlSet(): void
