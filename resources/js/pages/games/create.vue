@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
-import { ListPlus } from 'lucide-vue-next';
+import { Gamepad2, ListPlus, RefreshCw, Unplug } from 'lucide-vue-next';
 
 import Sidebar from '@/components/layout/Sidebar.vue';
 import Topbar from '@/components/layout/Topbar.vue';
@@ -18,6 +18,10 @@ const props = defineProps({
     games: {
         type: Array,
         default: () => [],
+    },
+    nintendo: {
+        type: Object,
+        default: () => ({ connected: false, last_synced_at: null }),
     },
 });
 
@@ -36,6 +40,8 @@ const igdbSlug = ref(null);
 const igdbUrl = ref(null);
 
 const source = ref('manual');
+const platform = ref(null);
+const nintendoTitleId = ref(null);
 
 const steamResults = ref([]);
 const igdbResults = ref([]);
@@ -51,6 +57,42 @@ const bulkOpen = ref(false);
 const bulkTitles = ref('');
 const bulkSubmitting = ref(false);
 const bulkErrors = ref({});
+const nintendoLoginOpen = ref(false);
+const nintendoCallbackUrl = ref('');
+const nintendoError = ref('');
+const nintendoProcessing = ref(false);
+const catalogOpen = ref(false);
+const catalogLoading = ref(false);
+const catalogGames = ref([]);
+const catalogPage = ref(1);
+const catalogTotalPages = ref(1);
+const catalogPlatform = ref('switch');
+const catalogSearch = ref('');
+
+const filteredCatalogGames = computed(() => {
+    const query = catalogSearch.value.trim().toLocaleLowerCase();
+
+    if (!query) {
+        return catalogGames.value;
+    }
+
+    return catalogGames.value.filter((game) =>
+        [game.title, game.publisher, game.developer].some((value) =>
+            String(value ?? '').toLocaleLowerCase().includes(query),
+        ),
+    );
+});
+
+const nintendoLastSynced = computed(() => {
+    if (!props.nintendo.last_synced_at) {
+        return null;
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    }).format(new Date(props.nintendo.last_synced_at));
+});
 
 const parsedBulkTitles = computed(() => {
     const unique = new Map();
@@ -186,6 +228,8 @@ const resetExternalSelection = () => {
     igdbId.value = null;
     igdbSlug.value = null;
     igdbUrl.value = null;
+    nintendoTitleId.value = null;
+    platform.value = null;
 
     source.value = 'manual';
 };
@@ -338,6 +382,7 @@ function selectSteamGame(game) {
     releaseDate.value = game.release_date ?? '';
 
     source.value = 'steam';
+    platform.value = 'PC';
 
     clearSearchResults();
 }
@@ -414,6 +459,10 @@ function submit() {
 
             igdb_url: igdbUrl.value,
 
+            nintendo_title_id: nintendoTitleId.value,
+
+            platform: platform.value,
+
             source: source.value,
         },
         {
@@ -442,7 +491,9 @@ function submit() {
 }
 
 function submitBulk() {
-    if (!parsedBulkTitles.value.length || bulkSubmitting.value) return;
+    if (!parsedBulkTitles.value.length || bulkSubmitting.value) {
+        return;
+    }
 
     bulkSubmitting.value = true;
     bulkErrors.value = {};
@@ -464,6 +515,115 @@ function submitBulk() {
         },
     );
 }
+
+async function startNintendoLogin() {
+    const loginWindow = window.open('', '_blank');
+    nintendoError.value = '';
+
+    try {
+        const response = await fetch('/games/nintendo/connect', {
+            headers: { Accept: 'application/json' },
+        });
+        const payload = response.ok ? await response.json() : null;
+
+        if (!payload?.login_url) {
+            throw new Error();
+        }
+
+        if (loginWindow) {
+            loginWindow.opener = null;
+            loginWindow.location.href = payload.login_url;
+        } else {
+            window.location.href = payload.login_url;
+        }
+
+        nintendoLoginOpen.value = true;
+    } catch {
+        loginWindow?.close();
+        nintendoError.value = 'Could not start Nintendo login. Try again.';
+    }
+}
+
+function finishNintendoLogin() {
+    if (!nintendoCallbackUrl.value.trim() || nintendoProcessing.value) {
+        return;
+    }
+
+    nintendoProcessing.value = true;
+    nintendoError.value = '';
+    router.post(
+        '/games/nintendo/connect',
+        { callback_url: nintendoCallbackUrl.value.trim() },
+        {
+            preserveScroll: true,
+            onError: (serverErrors) => {
+                nintendoError.value = serverErrors.callback_url ?? 'Nintendo connection failed.';
+            },
+            onFinish: () => (nintendoProcessing.value = false),
+        },
+    );
+}
+
+function syncNintendo() {
+    nintendoProcessing.value = true;
+    nintendoError.value = '';
+    router.post('/games/nintendo/sync', {}, {
+        preserveScroll: true,
+        onError: (serverErrors) => {
+            nintendoError.value = serverErrors.nintendo ?? 'Nintendo sync failed.';
+        },
+        onFinish: () => (nintendoProcessing.value = false),
+    });
+}
+
+function disconnectNintendo() {
+    router.delete('/games/nintendo', { preserveScroll: true });
+}
+
+async function loadNintendoCatalog(page = 1) {
+    catalogLoading.value = true;
+    nintendoError.value = '';
+
+    try {
+        const response = await fetch(`/games/nintendo/catalog?page=${page}&platform=${catalogPlatform.value}`, {
+            headers: { Accept: 'application/json' },
+        });
+        const payload = response.ok ? await response.json() : null;
+
+        if (!payload?.games) {
+            throw new Error();
+        }
+
+        catalogGames.value = payload.games;
+        catalogPage.value = payload.pagination?.page ?? page;
+        catalogTotalPages.value = payload.pagination?.totalPages ?? 1;
+        catalogOpen.value = true;
+    } catch {
+        nintendoError.value = 'Could not load the Nintendo catalog.';
+    } finally {
+        catalogLoading.value = false;
+    }
+}
+
+function selectNintendoCatalogGame(game) {
+    selectingResult.value = true;
+    title.value = game.title ?? '';
+    publisher.value = game.publisher ?? '';
+    developer.value = game.developer ?? '';
+    description.value = game.description ?? '';
+    releaseDate.value = game.release_date ?? '';
+    coverUrl.value = game.cover_url ?? '';
+    headerImageUrl.value = game.header_image_url ?? game.cover_url ?? '';
+    platform.value = game.platform ?? 'Nintendo Switch';
+    nintendoTitleId.value = game.nintendo_title_id ?? null;
+    steamAppId.value = null;
+    igdbId.value = null;
+    igdbSlug.value = null;
+    igdbUrl.value = null;
+    source.value = 'nintendo';
+    catalogOpen.value = false;
+    window.scrollTo({ top: 650, behavior: 'smooth' });
+}
 </script>
 
 <template>
@@ -475,6 +635,84 @@ function submitBulk() {
 
             <main class="mx-auto w-full max-w-7xl flex-1 p-8">
                 <GameAddHeader />
+
+                <section class="mb-8 rounded-3xl border border-red-950/70 bg-gradient-to-br from-red-950/30 to-zinc-900/60 p-5 sm:p-6">
+                    <div class="flex flex-wrap items-start justify-between gap-5">
+                        <div class="flex gap-3">
+                            <span class="h-fit rounded-xl bg-red-500/10 p-2 text-red-300"><Gamepad2 class="h-5 w-5" /></span>
+                            <div>
+                                <strong class="block text-white">Nintendo Switch play history</strong>
+                                <p class="mt-1 max-w-2xl text-sm leading-6 text-zinc-400">
+                                    Import games missing from your Curator library as custom games, including Nintendo artwork, platform and playtime. Existing Steam and custom titles are skipped.
+                                </p>
+                                <p v-if="nintendoLastSynced" class="mt-2 text-xs text-zinc-500">Last synced {{ nintendoLastSynced }}</p>
+                            </div>
+                        </div>
+                        <div v-if="nintendo.connected" class="flex flex-wrap gap-2">
+                            <button type="button" :disabled="nintendoProcessing" class="inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50" @click="syncNintendo">
+                                <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': nintendoProcessing }" />
+                                {{ nintendoProcessing ? 'Syncing...' : 'Sync now' }}
+                            </button>
+                            <button type="button" class="inline-flex items-center gap-2 rounded-xl border border-zinc-700 px-4 py-2.5 text-sm font-bold text-zinc-300" @click="disconnectNintendo">
+                                <Unplug class="h-4 w-4" /> Disconnect
+                            </button>
+                        </div>
+                        <button v-else type="button" class="rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white" @click="startNintendoLogin">Connect Nintendo</button>
+                    </div>
+
+                    <form v-if="nintendoLoginOpen && !nintendo.connected" class="mt-5 border-t border-zinc-800 pt-5" @submit.prevent="finishNintendoLogin">
+                        <label for="nintendo-callback" class="block text-sm font-semibold text-zinc-200">Paste the “Select this person” link</label>
+                        <p class="mt-1 text-xs leading-5 text-zinc-500">After signing in, right-click or hold the red button on Nintendo's page, copy its link address, and paste the complete <code>npf...://auth</code> URL here.</p>
+                        <div class="mt-3 flex flex-col gap-3 sm:flex-row">
+                            <input id="nintendo-callback" v-model="nintendoCallbackUrl" type="text" autocomplete="off" placeholder="npf5c38e31cd085304b://auth#..." class="min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-red-400" />
+                            <button type="submit" :disabled="!nintendoCallbackUrl.trim() || nintendoProcessing" class="rounded-xl bg-white px-5 py-3 text-sm font-black text-zinc-950 disabled:opacity-40">{{ nintendoProcessing ? 'Importing...' : 'Finish and import' }}</button>
+                        </div>
+                    </form>
+                    <p v-if="nintendoError" class="mt-3 text-sm text-red-400">{{ nintendoError }}</p>
+                </section>
+
+                <section class="mb-8 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/60">
+                    <div class="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
+                        <div>
+                            <strong class="block text-white">Add from Nintendo catalog</strong>
+                            <small class="text-zinc-500">Choose a game to fill its title, artwork and details automatically.</small>
+                        </div>
+                        <div class="flex flex-1 flex-wrap justify-end gap-2">
+                            <label class="relative min-w-56 flex-1 sm:max-w-xs">
+                                <span class="sr-only">Search Nintendo games</span>
+                                <input v-model="catalogSearch" type="search" placeholder="Search games..." class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-2 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-red-400" />
+                            </label>
+                            <select v-model="catalogPlatform" class="rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white" @change="loadNintendoCatalog(1)">
+                                <option value="switch">Nintendo Switch</option>
+                                <option value="switch2">Nintendo Switch 2</option>
+                            </select>
+                            <button type="button" :disabled="catalogLoading" class="rounded-xl bg-white px-4 py-2 text-sm font-black text-zinc-950 disabled:opacity-50" @click="loadNintendoCatalog(catalogPage)">
+                                {{ catalogLoading ? 'Loading...' : catalogOpen ? 'Refresh' : 'Browse games' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="catalogOpen" class="border-t border-zinc-800 p-5 sm:p-6">
+                        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            <button v-for="game in filteredCatalogGames" :key="game.nintendo_title_id" type="button" class="group flex gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/70 p-3 text-left hover:border-red-500/60" @click="selectNintendoCatalogGame(game)">
+                                <img v-if="game.cover_url" :src="game.cover_url" :alt="game.title" class="h-20 w-16 shrink-0 rounded-lg object-cover" loading="lazy" />
+                                <div class="min-w-0">
+                                    <strong class="line-clamp-2 text-sm text-white group-hover:text-red-300">{{ game.title }}</strong>
+                                    <span class="mt-1 block truncate text-xs text-zinc-500">{{ game.publisher || game.platform }}</span>
+                                    <span class="mt-2 block text-xs font-bold text-red-400">Select game</span>
+                                </div>
+                            </button>
+                        </div>
+                        <div v-if="catalogSearch && !filteredCatalogGames.length" class="rounded-2xl border border-dashed border-zinc-800 px-5 py-10 text-center text-sm text-zinc-500">
+                            No matching games on this page. Try another page or platform.
+                        </div>
+                        <div class="mt-5 flex items-center justify-between">
+                            <button type="button" :disabled="catalogPage <= 1 || catalogLoading" class="rounded-lg border border-zinc-700 px-3 py-2 text-xs font-bold text-zinc-300 disabled:opacity-30" @click="loadNintendoCatalog(catalogPage - 1)">Previous</button>
+                            <span class="text-xs text-zinc-500">Page {{ catalogPage }} of {{ catalogTotalPages }}</span>
+                            <button type="button" :disabled="catalogPage >= catalogTotalPages || catalogLoading" class="rounded-lg border border-zinc-700 px-3 py-2 text-xs font-bold text-zinc-300 disabled:opacity-30" @click="loadNintendoCatalog(catalogPage + 1)">Next</button>
+                        </div>
+                    </div>
+                </section>
 
                 <section
                     class="mb-8 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/60"

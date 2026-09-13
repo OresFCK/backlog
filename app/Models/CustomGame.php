@@ -12,6 +12,7 @@ class CustomGame extends Model
         'igdb_id',
         'igdb_slug',
         'igdb_url',
+        'nintendo_title_id',
         'title',
         'normalized_title',
         'publisher',
@@ -25,10 +26,14 @@ class CustomGame extends Model
         'playtime_minutes',
         'achievements_unlocked',
         'achievements_total',
+        'first_played_at',
+        'last_played_at',
     ];
 
     protected $casts = [
         'release_date' => 'date',
+        'first_played_at' => 'datetime',
+        'last_played_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

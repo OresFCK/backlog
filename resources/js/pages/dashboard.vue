@@ -118,7 +118,7 @@ const mappedGames = computed(() => {
                 game.cover_url ??
                 `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appid}/library_600x900.jpg`,
 
-            status: status?.name ?? 'No status',
+            status: status?.name ?? 'Unsorted',
 
             status_color: status?.color ?? '#71717a',
 

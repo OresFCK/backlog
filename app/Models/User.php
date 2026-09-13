@@ -75,6 +75,11 @@ class User extends Authenticatable
         return $this->hasMany(CustomGame::class);
     }
 
+    public function nintendoAccount(): HasOne
+    {
+        return $this->hasOne(NintendoAccount::class);
+    }
+
     public function customStatuses()
     {
         return $this->hasMany(CustomStatus::class);

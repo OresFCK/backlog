@@ -92,13 +92,13 @@ const gameHref = computed(() => {
             class="flex flex-1 flex-col items-start justify-between gap-2 p-3 sm:flex-row sm:items-center sm:gap-3 sm:p-4"
         >
             <h3
-                class="line-clamp-1 w-full text-xs font-bold text-white sm:text-sm"
+                class="line-clamp-1 min-w-0 flex-1 text-xs font-bold text-white sm:text-sm"
             >
                 {{ gameTitle }}
             </h3>
 
             <StatusBadge
-                :status="game.status || 'No status'"
+                :status="game.status || 'Unsorted'"
                 :color="game.status_color || '#71717a'"
             />
         </div>

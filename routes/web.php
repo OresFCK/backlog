@@ -20,6 +20,7 @@ use App\Http\Controllers\CustomListController;
 use App\Http\Controllers\IgdbDumpController;
 use App\Http\Controllers\IgdbGameSearchController;
 use App\Http\Controllers\MiniCuratorController;
+use App\Http\Controllers\NintendoAccountController;
 use App\Http\Controllers\PremiereController;
 use App\Http\Controllers\PublicGameController;
 use App\Http\Controllers\PublicGameSearchController;
@@ -205,7 +206,12 @@ Route::middleware('auth')->group(function () {
     Route::prefix('games')
         ->name('games.')
         ->group(function () {
-            Route::get('/create', fn (SteamService $steam) => Inertia::render('games/create', Payload::pageData($steam))
+            Route::get('/create', fn (SteamService $steam) => Inertia::render('games/create', [
+                ...Payload::pageData($steam),
+                'nintendo' => auth()->user()->nintendoAccount
+                    ? ['connected' => true, 'last_synced_at' => auth()->user()->nintendoAccount->last_synced_at?->toIso8601String()]
+                    : ['connected' => false, 'last_synced_at' => null],
+            ])
             )->name('create');
 
             Route::post('/', fn (
@@ -216,6 +222,12 @@ Route::middleware('auth')->group(function () {
                 CustomGameController::class,
                 'storeBulk',
             ])->name('bulk-store');
+
+            Route::get('/nintendo/connect', [NintendoAccountController::class, 'start'])->name('nintendo.start');
+            Route::get('/nintendo/catalog', [NintendoAccountController::class, 'catalog'])->name('nintendo.catalog');
+            Route::post('/nintendo/connect', [NintendoAccountController::class, 'connect'])->name('nintendo.connect');
+            Route::post('/nintendo/sync', [NintendoAccountController::class, 'sync'])->name('nintendo.sync');
+            Route::delete('/nintendo', [NintendoAccountController::class, 'destroy'])->name('nintendo.destroy');
 
             Route::post('/{game}/meta', fn (
                 UpdateGameMetaRequest $request,

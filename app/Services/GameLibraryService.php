@@ -262,6 +262,10 @@ class GameLibraryService
                 if (! empty($validated['igdb_id'])) {
                     $query->orWhere('igdb_id', $validated['igdb_id']);
                 }
+
+                if (! empty($validated['nintendo_title_id'])) {
+                    $query->orWhere('nintendo_title_id', $validated['nintendo_title_id']);
+                }
             })
             ->first();
 
@@ -269,6 +273,7 @@ class GameLibraryService
             'igdb_id' => $validated['igdb_id'] ?? null,
             'igdb_slug' => $validated['igdb_slug'] ?? null,
             'igdb_url' => $validated['igdb_url'] ?? null,
+            'nintendo_title_id' => $validated['nintendo_title_id'] ?? null,
             'title' => $validated['title'],
             'normalized_title' => $normalizedTitle,
             'publisher' => $validated['publisher'] ?? null,
@@ -291,6 +296,7 @@ class GameLibraryService
                 'igdb_id' => $existingGame->igdb_id ?? $payload['igdb_id'],
                 'igdb_slug' => $existingGame->igdb_slug ?? $payload['igdb_slug'],
                 'igdb_url' => $existingGame->igdb_url ?? $payload['igdb_url'],
+                'nintendo_title_id' => $existingGame->nintendo_title_id ?? $payload['nintendo_title_id'],
                 'publisher' => $existingGame->publisher ?? $payload['publisher'],
                 'developer' => $existingGame->developer ?? $payload['developer'],
                 'description' => $existingGame->description ?? $payload['description'],

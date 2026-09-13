@@ -18,13 +18,14 @@ class StoreCustomGameRequest extends FormRequest
             'igdb_id' => ['nullable', 'integer'],
             'igdb_slug' => ['nullable', 'string', 'max:255'],
             'igdb_url' => ['nullable', 'string', 'max:2000'],
+            'nintendo_title_id' => ['nullable', 'string', 'max:255'],
             'publisher' => ['nullable', 'string', 'max:255'],
             'developer' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'release_date' => ['nullable', 'date'],
             'cover_url' => ['nullable', 'string', 'max:2000'],
             'header_image_url' => ['nullable', 'string', 'max:2000'],
-            'source' => ['nullable', 'in:manual,igdb,steam'],
+            'source' => ['nullable', 'in:manual,igdb,steam,nintendo'],
             'platform' => ['nullable', 'string', 'max:255'],
         ];
     }
