@@ -37,7 +37,12 @@ class NintendoService
 
     public function callbackParameters(string $callbackUrl): array
     {
-        $url = trim($callbackUrl);
+        $url = html_entity_decode(trim($callbackUrl, " \n\r\t\v\0\"'"), ENT_QUOTES | ENT_HTML5);
+
+        if (! str_starts_with($url, 'npf'.self::CLIENT_ID.'://auth')) {
+            throw new RuntimeException('Paste the complete Nintendo “Select this person” link.');
+        }
+
         $query = parse_url($url, PHP_URL_QUERY);
         $fragment = parse_url($url, PHP_URL_FRAGMENT);
         parse_str(is_string($query) && $query !== '' ? $query : (string) $fragment, $parameters);
@@ -54,14 +59,20 @@ class NintendoService
 
     public function exchangeSessionToken(string $code, string $verifier): string
     {
-        $response = $this->http()->asForm()->post(
+        $response = $this->http()
+            ->withHeaders([
+                'Accept-Language' => 'en-US',
+                'Accept' => 'application/json',
+            ])
+            ->asForm()
+            ->post(
             'https://accounts.nintendo.com/connect/1.0.0/api/session_token',
             [
                 'client_id' => self::CLIENT_ID,
                 'session_token_code' => $code,
                 'session_token_code_verifier' => $verifier,
             ]
-        );
+            );
 
         $token = $response->successful() ? $response->json('session_token') : null;
 

@@ -45,4 +45,33 @@ class IgdbDumpService
 
         return $response->json();
     }
+
+    public function searchGames(string $query, int $limit = 15): array
+    {
+        if (
+            blank(config('services.igdb.client_id'))
+            || blank(config('services.igdb.client_secret'))
+        ) {
+            return [];
+        }
+
+        $escapedQuery = addcslashes($query, "\\\"");
+        $limit = max(1, min($limit, 50));
+        $response = Http::withHeaders([
+            'Client-ID' => config('services.igdb.client_id'),
+            'Authorization' => 'Bearer '.$this->token(),
+            'Accept' => 'application/json',
+        ])->withBody(
+            'search "'.$escapedQuery.'"; '
+            .'fields id,name,slug,summary,first_release_date,cover.image_id,'
+            .'screenshots.image_id,involved_companies.company.name,'
+            .'involved_companies.developer,involved_companies.publisher; '
+            .'limit '.$limit.';',
+            'text/plain'
+        )->post('https://api.igdb.com/v4/games');
+
+        $response->throw();
+
+        return $response->json();
+    }
 }

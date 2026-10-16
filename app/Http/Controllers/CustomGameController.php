@@ -18,12 +18,15 @@ class CustomGameController extends Controller
     public function storeBulk(StoreBulkCustomGamesRequest $request): RedirectResponse
     {
         $userId = (int) $request->user()->id;
-        $titles = collect($request->validated('titles'))
-            ->map(fn (string $title) => trim($title))
-            ->mapWithKeys(fn (string $title) => [
-                GameTitleNormalizer::normalize($title) => $title,
-            ])
-            ->filter(fn (string $title, string $normalized) => filled($normalized));
+        $games = collect($request->validated('games'))
+            ->map(function (array $game) {
+                $game['title'] = trim($game['title']);
+                $game['normalized_title'] = GameTitleNormalizer::normalize($game['title']);
+
+                return $game;
+            })
+            ->filter(fn (array $game) => filled($game['normalized_title']))
+            ->keyBy('normalized_title');
 
         $existingTitles = CustomGame::query()
             ->where('user_id', $userId)
@@ -32,14 +35,23 @@ class CustomGameController extends Controller
                 ?: GameTitleNormalizer::normalize($game->title))
             ->flip();
 
-        $newGames = $titles
-            ->reject(fn (string $title, string $normalized) =>
+        $newGames = $games
+            ->reject(fn (array $game, string $normalized) =>
                 $existingTitles->has($normalized))
-            ->map(fn (string $title, string $normalized) => [
+            ->map(fn (array $game, string $normalized) => [
                 'user_id' => $userId,
-                'title' => $title,
+                'igdb_id' => $game['igdb_id'] ?? null,
+                'igdb_slug' => $game['igdb_slug'] ?? null,
+                'igdb_url' => $game['igdb_url'] ?? null,
+                'title' => $game['title'],
                 'normalized_title' => $normalized,
-                'source' => 'manual',
+                'publisher' => $game['publisher'] ?? null,
+                'developer' => $game['developer'] ?? null,
+                'description' => $game['description'] ?? null,
+                'release_date' => $game['release_date'] ?? null,
+                'cover_url' => $game['cover_url'] ?? null,
+                'header_image_url' => $game['header_image_url'] ?? null,
+                'source' => $game['source'],
                 'created_at' => now(),
                 'updated_at' => now(),
             ])
@@ -53,7 +65,7 @@ class CustomGameController extends Controller
         UserCache::flush($userId);
 
         $created = $newGames->count();
-        $skipped = $titles->count() - $created;
+        $skipped = $games->count() - $created;
 
         return back()->with(
             'success',

@@ -1,7 +1,9 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
-import { Gamepad2, ListPlus, RefreshCw, Unplug } from 'lucide-vue-next';
+import { Gamepad2, ListPlus, RefreshCw, Trash2, Unplug } from 'lucide-vue-next';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 
 import Sidebar from '@/components/layout/Sidebar.vue';
 import Topbar from '@/components/layout/Topbar.vue';
@@ -54,9 +56,15 @@ const selectingResult = ref(false);
 const errors = ref({});
 const successMessage = ref('');
 const bulkOpen = ref(false);
-const bulkTitles = ref('');
+const bulkQuery = ref('');
+const bulkSteamResults = ref([]);
+const bulkIgdbResults = ref([]);
+const bulkSelectedGames = ref([]);
+const bulkSearching = ref(false);
 const bulkSubmitting = ref(false);
 const bulkErrors = ref({});
+const bulkSuccess = ref('');
+const bulkDuplicateNotice = ref('');
 const nintendoLoginOpen = ref(false);
 const nintendoCallbackUrl = ref('');
 const nintendoError = ref('');
@@ -68,6 +76,7 @@ const catalogPage = ref(1);
 const catalogTotalPages = ref(1);
 const catalogPlatform = ref('switch');
 const catalogSearch = ref('');
+const catalogError = ref('');
 
 const filteredCatalogGames = computed(() => {
     const query = catalogSearch.value.trim().toLocaleLowerCase();
@@ -94,23 +103,10 @@ const nintendoLastSynced = computed(() => {
     }).format(new Date(props.nintendo.last_synced_at));
 });
 
-const parsedBulkTitles = computed(() => {
-    const unique = new Map();
-
-    bulkTitles.value.split(/\r?\n/).forEach((value) => {
-        const title = value.trim();
-        const normalized = normalizeTitle(title);
-
-        if (title && normalized && !unique.has(normalized)) {
-            unique.set(normalized, title);
-        }
-    });
-
-    return Array.from(unique.values()).slice(0, 100);
-});
-
 let searchTimeout = null;
 let searchController = null;
+let bulkSearchTimeout = null;
+let bulkSearchController = null;
 
 const normalizeTitle = (value) => {
     return String(value || '')
@@ -175,6 +171,58 @@ const isValidUrl = (value) => {
         return false;
     }
 };
+
+watch(bulkQuery, (value) => {
+    clearTimeout(bulkSearchTimeout);
+    bulkSearchController?.abort();
+    bulkErrors.value = {};
+    bulkDuplicateNotice.value = '';
+
+    if (value.trim()) {
+        bulkSuccess.value = '';
+    }
+
+    if (!isSearchableTitle(value)) {
+        bulkSteamResults.value = [];
+        bulkIgdbResults.value = [];
+        bulkSearching.value = false;
+
+        return;
+    }
+
+    bulkSearchTimeout = setTimeout(async () => {
+        bulkSearchController = new AbortController();
+        bulkSearching.value = true;
+
+        try {
+            const query = encodeURIComponent(value.trim());
+            const [steamResponse, igdbResponse] = await Promise.all([
+                fetch(`/steam/search?q=${query}`, {
+                    signal: bulkSearchController.signal,
+                }),
+                fetch(`/igdb/search?q=${query}`, {
+                    signal: bulkSearchController.signal,
+                }),
+            ]);
+
+            bulkSteamResults.value = steamResponse.ok
+                ? await steamResponse.json()
+                : [];
+            bulkIgdbResults.value = igdbResponse.ok
+                ? await igdbResponse.json()
+                : [];
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                bulkErrors.value = {
+                    general: 'The game search could not be loaded.',
+                };
+            }
+        } finally {
+            bulkSearching.value = false;
+            bulkSearchController = null;
+        }
+    }, 350);
+});
 
 const duplicate = computed(() => {
     const current = normalizeTitle(title.value);
@@ -491,23 +539,35 @@ function submit() {
 }
 
 function submitBulk() {
-    if (!parsedBulkTitles.value.length || bulkSubmitting.value) {
+    if (!bulkSelectedGames.value.length || bulkSubmitting.value) {
         return;
     }
 
     bulkSubmitting.value = true;
     bulkErrors.value = {};
+    bulkSuccess.value = '';
+    bulkDuplicateNotice.value = '';
+    const submittedCount = bulkSelectedGames.value.length;
 
     router.post(
         '/games/bulk',
-        { titles: parsedBulkTitles.value },
+        { games: bulkSelectedGames.value },
         {
             preserveScroll: true,
             onError(serverErrors) {
-                bulkErrors.value = serverErrors;
+                bulkErrors.value = {
+                    ...serverErrors,
+                    general:
+                        Object.values(serverErrors)[0] ??
+                        'The games could not be added.',
+                };
             },
             onSuccess() {
-                bulkTitles.value = '';
+                bulkQuery.value = '';
+                bulkSelectedGames.value = [];
+                bulkSteamResults.value = [];
+                bulkIgdbResults.value = [];
+                bulkSuccess.value = `${submittedCount} ${submittedCount === 1 ? 'game was' : 'games were'} added successfully.`;
             },
             onFinish() {
                 bulkSubmitting.value = false;
@@ -516,8 +576,79 @@ function submitBulk() {
     );
 }
 
+function addBulkGame(game, selectedSource) {
+    const title = String(game.title ?? '').trim();
+    const normalized = normalizeTitle(title);
+
+    if (!normalized) {
+        return;
+    }
+
+    if (bulkSelectedGames.value.length >= 100) {
+        bulkErrors.value = { general: 'You can add up to 100 games at once.' };
+
+        return;
+    }
+
+    const alreadyInLibrary = props.games.some((existingGame) =>
+        normalizeTitle(existingGame.name ?? existingGame.title ?? '') ===
+        normalized,
+    );
+    const alreadySelected = bulkSelectedGames.value.some(
+        (selectedGame) => normalizeTitle(selectedGame.title) === normalized,
+    );
+
+    if (alreadyInLibrary || alreadySelected) {
+        bulkErrors.value = {};
+        bulkDuplicateNotice.value = alreadyInLibrary
+            ? `“${title}” is already in your library.`
+            : `“${title}” is already on your selected games list.`;
+
+        return;
+    }
+
+    bulkSelectedGames.value.push({
+        title,
+        igdb_id: selectedSource === 'igdb' ? game.igdb_id ?? null : null,
+        igdb_slug:
+            selectedSource === 'igdb'
+                ? game.slug ?? game.igdb_slug ?? null
+                : null,
+        igdb_url:
+            selectedSource === 'igdb'
+                ? game.igdb_url ??
+                  (game.slug
+                      ? `https://www.igdb.com/games/${game.slug}`
+                      : null)
+                : null,
+        publisher: game.publisher ?? null,
+        developer: game.developer ?? null,
+        description: game.description ?? null,
+        release_date: game.release_date ?? null,
+        cover_url: game.igdb_cover_url ?? game.cover_url ?? null,
+        header_image_url:
+            game.header_image_url ??
+            game.igdb_cover_url ??
+            game.cover_url ??
+            null,
+        source: selectedSource,
+    });
+    bulkErrors.value = {};
+    bulkSuccess.value = '';
+    bulkDuplicateNotice.value = '';
+    bulkQuery.value = '';
+    bulkSteamResults.value = [];
+    bulkIgdbResults.value = [];
+}
+
+function removeBulkGame(index) {
+    bulkSelectedGames.value.splice(index, 1);
+}
+
 async function startNintendoLogin() {
-    const loginWindow = window.open('', '_blank');
+    const loginWindow = Capacitor.isNativePlatform()
+        ? null
+        : window.open('', '_blank');
     nintendoError.value = '';
 
     try {
@@ -530,7 +661,9 @@ async function startNintendoLogin() {
             throw new Error();
         }
 
-        if (loginWindow) {
+        if (Capacitor.isNativePlatform()) {
+            await Browser.open({ url: payload.login_url });
+        } else if (loginWindow) {
             loginWindow.opener = null;
             loginWindow.location.href = payload.login_url;
         } else {
@@ -582,24 +715,27 @@ function disconnectNintendo() {
 
 async function loadNintendoCatalog(page = 1) {
     catalogLoading.value = true;
-    nintendoError.value = '';
+    catalogError.value = '';
 
     try {
         const response = await fetch(`/games/nintendo/catalog?page=${page}&platform=${catalogPlatform.value}`, {
             headers: { Accept: 'application/json' },
         });
-        const payload = response.ok ? await response.json() : null;
+        const payload = await response.json().catch(() => null);
 
-        if (!payload?.games) {
-            throw new Error();
+        if (!response.ok || !payload?.games) {
+            throw new Error(payload?.message ?? 'Could not load the Nintendo catalog.');
         }
 
         catalogGames.value = payload.games;
         catalogPage.value = payload.pagination?.page ?? page;
         catalogTotalPages.value = payload.pagination?.totalPages ?? 1;
         catalogOpen.value = true;
-    } catch {
-        nintendoError.value = 'Could not load the Nintendo catalog.';
+    } catch (error) {
+        catalogError.value =
+            error instanceof Error
+                ? error.message
+                : 'Could not load the Nintendo catalog.';
     } finally {
         catalogLoading.value = false;
     }
@@ -636,6 +772,7 @@ function selectNintendoCatalogGame(game) {
             <main class="mx-auto w-full max-w-7xl flex-1 p-8">
                 <GameAddHeader />
 
+                <!-- Nintendo integration temporarily disabled.
                 <section class="mb-8 rounded-3xl border border-red-950/70 bg-gradient-to-br from-red-950/30 to-zinc-900/60 p-5 sm:p-6">
                     <div class="flex flex-wrap items-start justify-between gap-5">
                         <div class="flex gap-3">
@@ -712,7 +849,11 @@ function selectNintendoCatalogGame(game) {
                             <button type="button" :disabled="catalogPage >= catalogTotalPages || catalogLoading" class="rounded-lg border border-zinc-700 px-3 py-2 text-xs font-bold text-zinc-300 disabled:opacity-30" @click="loadNintendoCatalog(catalogPage + 1)">Next</button>
                         </div>
                     </div>
+                    <p v-if="catalogError" class="border-t border-red-950/60 bg-red-950/20 px-5 py-3 text-sm text-red-300 sm:px-6">
+                        {{ catalogError }}
+                    </p>
                 </section>
+                -->
 
                 <section
                     class="mb-8 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/60"
@@ -731,8 +872,8 @@ function selectNintendoCatalogGame(game) {
                                 ><strong class="block text-white"
                                     >Add multiple custom games</strong
                                 ><small class="text-zinc-500"
-                                    >Paste up to 100 titles, one per
-                                    line.</small
+                                    >Build a list by selecting games from
+                                    search.</small
                                 ></span
                             >
                         </span>
@@ -743,44 +884,93 @@ function selectNintendoCatalogGame(game) {
 
                     <form
                         v-if="bulkOpen"
-                        class="border-t border-zinc-800 p-5 sm:p-6"
+                        class="space-y-5 border-t border-zinc-800 p-5 sm:p-6"
                         @submit.prevent="submitBulk"
                     >
-                        <textarea
-                            v-model="bulkTitles"
-                            rows="9"
-                            maxlength="25600"
-                            placeholder="Baldur's Gate 3&#10;Hades&#10;Disco Elysium"
-                            class="w-full resize-y rounded-2xl border border-zinc-700 bg-zinc-950 p-4 leading-7 text-white outline-none placeholder:text-zinc-600 focus:border-indigo-400"
+                        <div>
+                            <label for="bulk-game-search" class="mb-2 block text-sm font-semibold text-zinc-200">
+                                Search for a game
+                            </label>
+                            <input
+                                id="bulk-game-search"
+                                v-model="bulkQuery"
+                                type="search"
+                                maxlength="255"
+                                autocomplete="off"
+                                placeholder="Start typing a game title..."
+                                class="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none placeholder:text-zinc-600 focus:border-indigo-400"
+                            />
+                        </div>
+
+                        <GameSearchResults
+                            :steam-results="bulkSteamResults"
+                            :igdb-results="bulkIgdbResults"
+                            :loading="bulkSearching"
+                            :duplicate="false"
+                            compact
+                            @select-steam="addBulkGame($event, 'steam')"
+                            @select-igdb="addBulkGame($event, 'igdb')"
                         />
+
+                        <div v-if="bulkSelectedGames.length" class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <strong class="text-sm text-white">Selected games</strong>
+                                <span class="text-xs text-zinc-500">{{ bulkSelectedGames.length }}/100</span>
+                            </div>
+                            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                <div
+                                    v-for="(game, index) in bulkSelectedGames"
+                                    :key="`${game.source}-${game.igdb_id || game.title}`"
+                                    class="flex min-w-0 items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3"
+                                >
+                                    <img
+                                        v-if="game.cover_url"
+                                        :src="game.cover_url"
+                                        :alt="game.title"
+                                        class="h-14 w-14 shrink-0 rounded-xl object-cover"
+                                    />
+                                    <div v-else class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-[10px] font-bold uppercase text-zinc-500">
+                                        {{ game.source }}
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="truncate text-sm font-semibold text-white">{{ game.title }}</p>
+                                        <p class="mt-1 text-xs uppercase text-zinc-500">{{ game.source }}</p>
+                                    </div>
+                                    <button type="button" :aria-label="`Remove ${game.title}`" class="shrink-0 rounded-lg p-2 text-zinc-500 hover:bg-red-500/10 hover:text-red-400" @click="removeBulkGame(index)">
+                                        <Trash2 class="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <div
-                            class="mt-2 flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-500"
+                            v-if="bulkDuplicateNotice"
+                            role="status"
+                            class="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-200"
                         >
-                            <span
-                                >{{ parsedBulkTitles.length }}/100 unique titles
-                                ready</span
-                            >
-                            <span
-                                v-if="
-                                    bulkErrors.titles || bulkErrors['titles.0']
-                                "
-                                class="text-red-400"
-                                >{{
-                                    bulkErrors.titles || bulkErrors['titles.0']
-                                }}</span
-                            >
+                            {{ bulkDuplicateNotice }}
+                        </div>
+                        <div
+                            v-if="bulkErrors.general || bulkErrors.games"
+                            role="alert"
+                            class="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-300"
+                        >
+                            {{ bulkErrors.general || bulkErrors.games }}
+                        </div>
+                        <div v-if="bulkSuccess" role="status" class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-300">
+                            {{ bulkSuccess }}
                         </div>
                         <button
                             type="submit"
                             :disabled="
-                                !parsedBulkTitles.length || bulkSubmitting
+                                !bulkSelectedGames.length || bulkSubmitting
                             "
-                            class="mt-4 rounded-xl bg-white px-5 py-3 text-sm font-black text-zinc-950 disabled:opacity-40"
+                            class="rounded-xl bg-white px-5 py-3 text-sm font-black text-zinc-950 disabled:opacity-40"
                         >
                             {{
                                 bulkSubmitting
                                     ? 'Adding games...'
-                                    : `Add ${parsedBulkTitles.length} games`
+                                    : `Add ${bulkSelectedGames.length} games`
                             }}
                         </button>
                     </form>

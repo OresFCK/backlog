@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use Throwable;
 
 class NintendoAccountController extends Controller
 {
@@ -29,17 +30,34 @@ class NintendoAccountController extends Controller
             $query['platform'] = $validated['platform'];
         }
 
-        $response = Http::acceptJson()->timeout(20)->get(
-            'https://partnerzy.cenograj.pl/v1/nintendo/games',
-            $query
-        );
+        try {
+            $payload = Cache::remember(
+                'nintendo:catalog:'.md5(json_encode($query)),
+                now()->addMinutes(10),
+                function () use ($query) {
+                    $response = Http::acceptJson()
+                        ->connectTimeout(5)
+                        ->timeout(20)
+                        ->retry(2, 250)
+                        ->get('https://partnerzy.cenograj.pl/v1/nintendo/games', $query);
 
-        if (! $response->successful() || ! $response->json('success')) {
-            return response()->json(['message' => 'Nintendo catalog is unavailable.'], 502);
+                    if (! $response->successful() || ! $response->json('success')) {
+                        throw new RuntimeException('Nintendo catalog returned an invalid response.');
+                    }
+
+                    return $response->json('data');
+                }
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'message' => 'Nintendo catalog is temporarily unavailable. Try again in a moment.',
+            ], 502);
         }
 
         return response()->json([
-            'games' => collect($response->json('data.games', []))->map(fn (array $game) => [
+            'games' => collect($payload['games'] ?? [])->map(fn (array $game) => [
                 'nintendo_title_id' => $game['nsuid'] ?? $game['applicationId'] ?? null,
                 'title' => $game['title'] ?? null,
                 'publisher' => $game['publisher'] ?? null,
@@ -53,7 +71,7 @@ class NintendoAccountController extends Controller
                     ? 'Nintendo Switch 2'
                     : 'Nintendo Switch',
             ])->values(),
-            'pagination' => $response->json('data.pagination'),
+            'pagination' => $payload['pagination'] ?? null,
         ]);
     }
 
@@ -89,8 +107,14 @@ class NintendoAccountController extends Controller
             $result = $this->import($request, $nintendo);
 
             return back()->with('success', "Nintendo connected. Added {$result['created']} games and updated {$result['updated']}.");
-        } catch (RuntimeException $exception) {
-            return back()->withErrors(['callback_url' => $exception->getMessage()]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->withErrors([
+                'callback_url' => $exception instanceof RuntimeException
+                    ? $exception->getMessage()
+                    : 'Nintendo connection failed. Please try again.',
+            ]);
         }
     }
 
@@ -102,8 +126,14 @@ class NintendoAccountController extends Controller
 
         try {
             $result = $this->import($request, $nintendo);
-        } catch (RuntimeException $exception) {
-            return back()->withErrors(['nintendo' => $exception->getMessage()]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->withErrors([
+                'nintendo' => $exception instanceof RuntimeException
+                    ? $exception->getMessage()
+                    : 'Nintendo sync failed. Please try again.',
+            ]);
         }
 
         return back()->with('success', "Nintendo sync complete. Added {$result['created']} games and updated {$result['updated']}.");
@@ -111,7 +141,7 @@ class NintendoAccountController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
-        $request->user()->nintendoAccount()?->delete();
+        $request->user()->nintendoAccount?->delete();
 
         return back()->with('success', 'Nintendo account disconnected. Imported games were kept.');
     }
