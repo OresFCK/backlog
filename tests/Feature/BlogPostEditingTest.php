@@ -99,7 +99,10 @@ class BlogPostEditingTest extends TestCase
         $this->get(route('blog.index'))
             ->assertOk()
             ->assertSee('id="seo-fallback"', false)
-            ->assertSee('Community Blog')
+            ->assertSee('<html lang="pl-PL">', false)
+            ->assertSee('Blog społeczności Curator.gg')
+            ->assertSee('hreflang="pl-PL"', false)
+            ->assertSee('ItemList')
             ->assertSee($post->title)
             ->assertSee(route('blog.show', $post), false);
     }

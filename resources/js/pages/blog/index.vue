@@ -50,7 +50,7 @@ const clearSearch = () => {
 </script>
 
 <template>
-    <Head :title="seo.title || 'Community Blog | Curator.gg'">
+    <Head :title="seo.title || 'Blog społeczności | Curator.gg'">
         <meta
             head-key="description"
             name="description"
@@ -71,14 +71,14 @@ const clearSearch = () => {
                     <p
                         class="text-xs font-black tracking-[0.2em] text-indigo-400 uppercase"
                     >
-                        From players
+                        Od graczy
                     </p>
                     <h1 class="mt-3 text-4xl font-black sm:text-6xl">
-                        Community blog
+                        Blog społeczności
                     </h1>
                     <p class="mt-4 max-w-2xl text-zinc-400">
-                        Guides, opinions, discoveries and stories written by the
-                        Curator.gg community.
+                        Wiadomości, poradniki, opinie i historie przygotowane
+                        przez społeczność Curator.gg.
                     </p>
                 </div>
                 <a
@@ -89,7 +89,7 @@ const clearSearch = () => {
                     "
                     class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-black text-zinc-950"
                 >
-                    <PenLine class="h-4 w-4" /> Write a post
+                    <PenLine class="h-4 w-4" /> Napisz artykuł
                 </a>
             </header>
 
@@ -105,14 +105,14 @@ const clearSearch = () => {
                     v-model="searchQuery"
                     type="search"
                     maxlength="100"
-                    placeholder="Search articles..."
+                    placeholder="Szukaj artykułów..."
                     class="w-full rounded-2xl border border-zinc-700 bg-zinc-900 py-3.5 pr-24 pl-12 text-white outline-none placeholder:text-zinc-500 focus:border-indigo-400"
                 />
                 <button
                     v-if="searchQuery"
                     type="button"
                     class="absolute top-1/2 right-16 -translate-y-1/2 p-2 text-zinc-500 hover:text-white"
-                    aria-label="Clear search"
+                    aria-label="Wyczyść wyszukiwanie"
                     @click="clearSearch"
                 >
                     <X class="h-4 w-4" />
@@ -121,11 +121,11 @@ const clearSearch = () => {
                     type="submit"
                     class="absolute top-1/2 right-2 -translate-y-1/2 rounded-xl bg-white px-3 py-2 text-xs font-black text-zinc-950"
                 >
-                    Search
+                    Szukaj
                 </button>
             </form>
 
-            <nav class="mt-8 flex flex-wrap gap-2" aria-label="Blog categories">
+            <nav class="mt-8 flex flex-wrap gap-2" aria-label="Kategorie bloga">
                 <button
                     type="button"
                     class="rounded-full border px-4 py-2 text-sm font-bold"
@@ -136,7 +136,7 @@ const clearSearch = () => {
                     "
                     @click="filterCategory(null)"
                 >
-                    All
+                    Wszystkie
                 </button>
                 <button
                     v-for="(label, value) in categories"

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ data_get($page ?? [], 'props.seo.language', 'en') }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,6 +11,7 @@
         $metaImage = data_get($shareSeo, 'image', asset('og-image.jpg'));
         $metaImageAlt = data_get($shareSeo, 'image_alt', 'Curator.gg');
         $metaType = data_get($shareSeo, 'type', 'website');
+        $metaLanguage = data_get($shareSeo, 'language', 'en');
         $structuredData = data_get($shareSeo, 'schema');
     @endphp
 
@@ -21,8 +22,14 @@
     <meta name="theme-color" content="#09090b">
 
     <link rel="canonical" href="{{ url()->current() }}">
+    @if ($shareSeo && data_get($shareSeo, 'language'))
+        <link rel="alternate" hreflang="{{ $metaLanguage }}" href="{{ data_get($shareSeo, 'url', url()->current()) }}">
+    @endif
 
     <meta property="og:type" content="{{ $metaType }}">
+    @if ($shareSeo && data_get($shareSeo, 'language'))
+        <meta property="og:locale" content="{{ str_replace('-', '_', $metaLanguage) }}">
+    @endif
     <meta property="og:site_name" content="Curator.gg">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:title" content="{{ $metaTitle }}">

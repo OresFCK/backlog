@@ -31,29 +31,41 @@ class BlogPostController extends Controller
         $escapedSearch = addcslashes($search, '%_\\');
 
         $seoTitle = array_key_exists($category, self::CATEGORIES)
-            ? self::CATEGORIES[$category].' articles | Curator.gg Community Blog'
-            : 'Gaming News, Reviews & Guides | Curator.gg Community Blog';
-        $seoDescription = 'Read gaming news, reviews, guides and opinions written by the Curator.gg community.';
+            ? self::CATEGORIES[$category].' — artykuły | Blog Curator.gg'
+            : 'Wiadomości, recenzje i poradniki o grach | Blog Curator.gg';
+        $seoDescription = 'Wiadomości, recenzje, poradniki i opinie o grach przygotowane przez społeczność Curator.gg.';
+
+        $posts = BlogPost::query()
+            ->where('is_published', true)
+            ->when(
+                array_key_exists($category, self::CATEGORIES),
+                fn ($query) => $query->where('category', $category)
+            )
+            ->when(filled($search), fn ($query) => $query->where(
+                fn ($query) => $query
+                    ->where('title', 'like', "%{$escapedSearch}%")
+                    ->orWhere('excerpt', 'like', "%{$escapedSearch}%")
+                    ->orWhere('body', 'like', "%{$escapedSearch}%")
+            ))
+            ->with('user')
+            ->withSum('votes', 'value')
+            ->latest('published_at')
+            ->paginate(12)
+            ->withQueryString()
+            ->through(fn (BlogPost $post) => $this->summary($post));
+
+        $itemList = $posts->getCollection()
+            ->values()
+            ->map(fn (array $post, int $index) => [
+                '@type' => 'ListItem',
+                'position' => $posts->firstItem() + $index,
+                'url' => $post['url'],
+                'name' => $post['title'],
+            ])
+            ->all();
 
         return Inertia::render('blog/index', [
-            'posts' => BlogPost::query()
-                ->where('is_published', true)
-                ->when(
-                    array_key_exists($category, self::CATEGORIES),
-                    fn ($query) => $query->where('category', $category)
-                )
-                ->when(filled($search), fn ($query) => $query->where(
-                    fn ($query) => $query
-                        ->where('title', 'like', "%{$escapedSearch}%")
-                        ->orWhere('excerpt', 'like', "%{$escapedSearch}%")
-                        ->orWhere('body', 'like', "%{$escapedSearch}%")
-                ))
-                ->with('user')
-                ->withSum('votes', 'value')
-                ->latest('published_at')
-                ->paginate(12)
-                ->withQueryString()
-                ->through(fn (BlogPost $post) => $this->summary($post)),
+            'posts' => $posts,
             'categories' => self::CATEGORIES,
             'activeCategory' => array_key_exists($category, self::CATEGORIES)
                 ? $category
@@ -65,17 +77,30 @@ class BlogPostController extends Controller
                 'description' => $seoDescription,
                 'url' => route('blog.index'),
                 'image' => asset('og-image.jpg'),
-                'image_alt' => 'Curator.gg Community Blog',
+                'image_alt' => 'Blog społeczności Curator.gg',
+                'language' => 'pl-PL',
                 'schema' => [
                     '@context' => 'https://schema.org',
-                    '@type' => 'Blog',
-                    'name' => 'Curator.gg Community Blog',
-                    'description' => $seoDescription,
-                    'url' => route('blog.index'),
-                    'publisher' => [
-                        '@type' => 'Organization',
-                        'name' => 'Curator.gg',
-                        'url' => url('/'),
+                    '@graph' => [
+                        [
+                            '@type' => 'Blog',
+                            '@id' => route('blog.index').'#blog',
+                            'name' => 'Blog Curator.gg',
+                            'description' => $seoDescription,
+                            'url' => route('blog.index'),
+                            'inLanguage' => 'pl-PL',
+                            'publisher' => [
+                                '@type' => 'Organization',
+                                'name' => 'Curator.gg',
+                                'url' => url('/'),
+                            ],
+                        ],
+                        [
+                            '@type' => 'ItemList',
+                            'name' => 'Najnowsze artykuły na blogu Curator.gg',
+                            'numberOfItems' => $posts->total(),
+                            'itemListElement' => $itemList,
+                        ],
                     ],
                 ],
             ],
@@ -148,6 +173,7 @@ class BlogPostController extends Controller
                 'image' => $this->imageUrls($post)[0]
                     ?? asset('og-image.jpg'),
                 'image_alt' => $post->title,
+                'language' => 'pl-PL',
                 'schema' => [
                     '@context' => 'https://schema.org',
                     '@type' => 'BlogPosting',
@@ -161,6 +187,7 @@ class BlogPostController extends Controller
                         ?? asset('og-image.jpg'),
                     'articleSection' => self::CATEGORIES[$post->category ?: 'other']
                         ?? self::CATEGORIES['other'],
+                    'inLanguage' => 'pl-PL',
                     'author' => [
                         '@type' => 'Person',
                         'name' => $post->user?->visible_name ?: 'Curator.gg player',

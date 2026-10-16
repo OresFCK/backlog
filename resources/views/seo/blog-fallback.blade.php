@@ -7,18 +7,18 @@
     <main id="seo-fallback" class="seo-fallback">
         <header>
             <p>Curator.gg</p>
-            <h1>Community Blog</h1>
-            <p>Gaming news, reviews, guides and opinions written by the Curator.gg community.</p>
+            <h1>Blog społeczności Curator.gg</h1>
+            <p>Wiadomości, recenzje, poradniki i opinie o grach przygotowane przez społeczność Curator.gg.</p>
         </header>
 
-        <nav aria-label="Blog categories">
-            <a href="{{ route('blog.index') }}">All articles</a>
+        <nav aria-label="Kategorie bloga">
+            <a href="{{ route('blog.index') }}">Wszystkie artykuły</a>
 @foreach (data_get($props, 'categories', []) as $value => $label)
             <a href="{{ route('blog.index', ['category' => $value]) }}">{{ $label }}</a>
 @endforeach
         </nav>
 
-        <section aria-label="Latest articles">
+        <section aria-label="Najnowsze artykuły">
 @forelse (data_get($props, 'posts.data', []) as $post)
             <article>
                 <h2><a href="{{ data_get($post, 'url') }}">{{ data_get($post, 'title') }}</a></h2>
@@ -29,7 +29,7 @@
 @endif
             </article>
 @empty
-            <p>No published articles yet.</p>
+            <p>Nie opublikowano jeszcze żadnych artykułów.</p>
 @endforelse
         </section>
     </main>

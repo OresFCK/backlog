@@ -181,12 +181,18 @@ class SitemapController extends Controller
 
     public function blog(): StreamedResponse
     {
+        $latestBlogPost = BlogPost::query()
+            ->where('is_published', true)
+            ->latest('updated_at')
+            ->first(['updated_at']);
+
         return response()->stream(
-            function () {
+            function () use ($latestBlogPost) {
                 $this->startUrlSet();
 
                 $this->writeUrl(
                     loc: route('blog.index'),
+                    lastmod: $latestBlogPost?->updated_at?->toAtomString(),
                     changefreq: 'daily',
                     priority: '0.8'
                 );

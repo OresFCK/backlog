@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\BlogPost;
 use App\Models\Game;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase;
 
@@ -31,6 +33,27 @@ class SitemapTest extends TestCase
 
         $this->assertStringNotContainsString('<loc>'.url('/privacy').'</loc>', $xml);
         $this->assertStringContainsString('<loc>'.url('/a-real-game').'</loc>', $xml);
+    }
+
+    public function test_blog_index_url_uses_latest_post_update_as_last_modified_date(): void
+    {
+        $post = BlogPost::create([
+            'user_id' => User::factory()->create()->id,
+            'title' => 'Indexed article',
+            'slug' => 'indexed-article',
+            'body' => 'A sufficiently long article body for sitemap testing.',
+            'is_published' => true,
+            'published_at' => now(),
+        ]);
+
+        $xml = $this->get(route('sitemap.blog'))
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertMatchesRegularExpression(
+            '#<loc>'.preg_quote(route('blog.index'), '#').'</loc>\s*<lastmod>'.preg_quote($post->updated_at->toAtomString(), '#').'</lastmod>#',
+            $xml,
+        );
     }
 
     public function test_sitemap_index_is_publicly_cacheable_without_fake_last_modified_dates(): void
