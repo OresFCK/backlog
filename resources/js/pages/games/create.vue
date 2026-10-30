@@ -73,6 +73,7 @@ const nintendoClipboardStatus = ref('');
 const nintendoError = ref('');
 const nintendoProcessing = ref(false);
 const nintendoResultOpen = ref(false);
+const showNintendoCatalog = false;
 const catalogOpen = ref(false);
 const catalogLoading = ref(false);
 const catalogGames = ref([]);
@@ -966,7 +967,7 @@ function selectNintendoCatalogGame(game) {
                     </section>
                 </div>
 
-                <section class="mb-8 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/60">
+                <section v-if="showNintendoCatalog" class="mb-8 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/60">
                     <div class="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
                         <div>
                             <strong class="block text-white">Add from Nintendo catalog</strong>
