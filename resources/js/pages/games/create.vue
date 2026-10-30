@@ -703,7 +703,7 @@ async function pasteNintendoLink() {
         const value = (await navigator.clipboard.readText()).trim();
         if (!value) throw new Error('The clipboard is empty.');
         nintendoCallbackUrl.value = value;
-        nintendoClipboardStatus.value = 'Link odczytany ze schowka. Łączenie konta…';
+        nintendoClipboardStatus.value = 'Link copied from clipboard. Connecting your account…';
         finishNintendoLogin();
     } catch (error) {
         nintendoClipboardStatus.value = error instanceof Error
@@ -857,59 +857,59 @@ function selectNintendoCatalogGame(game) {
                             @click="nintendoDialogOpen = false"
                         ><X class="h-5 w-5" /></button>
 
-                        <h2 id="nintendo-dialog-title" class="pr-10 text-xl font-black text-white sm:text-2xl">Połącz konto Nintendo</h2>
-                        <p class="mt-1 text-sm text-zinc-400">Zaloguj się na oficjalnej stronie Nintendo i skopiuj link z czerwonego przycisku.</p>
-                        <p class="mt-4 max-w-3xl text-sm leading-6 text-zinc-400">Przy pierwszym połączeniu zaimportujemy historię gier do Twojej biblioteki Curatora. Możesz odłączyć konto w dowolnym momencie. Curator nie otrzymuje Twojego hasła do Nintendo.</p>
+                        <h2 id="nintendo-dialog-title" class="pr-10 text-xl font-black text-white sm:text-2xl">Connect your Nintendo account</h2>
+                        <p class="mt-1 text-sm text-zinc-400">Sign in on Nintendo’s official site and copy the link from the red button.</p>
+                        <p class="mt-4 max-w-3xl text-sm leading-6 text-zinc-400">When you connect for the first time, we’ll import your play history into your Curator library. You can disconnect at any time. Curator never receives your Nintendo password.</p>
 
                         <div class="mt-6 grid gap-3 md:grid-cols-3">
                             <article class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
                                 <div class="flex h-28 flex-col items-center justify-center gap-2 border-b border-zinc-800 bg-zinc-950 px-4 text-center">
                                     <span class="grid h-9 w-9 place-items-center rounded-full bg-sky-500 text-sm font-black text-white">1</span>
-                                    <span class="text-xs font-semibold text-zinc-300">Oficjalne logowanie Nintendo</span>
+                                    <span class="text-xs font-semibold text-zinc-300">Official Nintendo sign-in</span>
                                 </div>
                                 <div class="p-4">
-                                    <h3 class="font-bold text-white">Otwórz stronę Nintendo</h3>
-                                    <p class="mt-2 min-h-12 text-sm leading-5 text-zinc-400">Zaloguj się i przejdź do ekranu z czerwonym przyciskiem „Select this person”.</p>
+                                    <h3 class="font-bold text-white">Open Nintendo</h3>
+                                    <p class="mt-2 min-h-12 text-sm leading-5 text-zinc-400">Sign in and continue until you see the red “Select this person” button.</p>
                                     <button type="button" :disabled="!nintendoLoginUrl" class="mt-4 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-sky-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-sky-400 disabled:cursor-wait disabled:opacity-50" @click="openNintendoLogin">
-                                        Otwórz Nintendo <ExternalLink class="h-4 w-4" />
+                                        Open Nintendo <ExternalLink class="h-4 w-4" />
                                     </button>
-                                    <p v-if="!nintendoLoginUrl && !nintendoError" class="mt-2 text-center text-xs text-zinc-500">Przygotowuję bezpieczne logowanie…</p>
+                                    <p v-if="!nintendoLoginUrl && !nintendoError" class="mt-2 text-center text-xs text-zinc-500">Preparing secure sign-in…</p>
                                 </div>
                             </article>
 
                             <article class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
                                 <div class="flex h-28 flex-col items-center justify-center gap-2 border-b border-zinc-800 bg-zinc-950 px-4 text-center">
                                     <span class="grid h-9 w-9 place-items-center rounded-full bg-sky-500 text-sm font-black text-white">2</span>
-                                    <span class="text-xs font-semibold text-zinc-300">Menu czerwonego przycisku</span>
+                                    <span class="text-xs font-semibold text-zinc-300">Red-button menu</span>
                                 </div>
                                 <div class="p-4">
-                                    <h3 class="font-bold text-white">Skopiuj adres przycisku</h3>
-                                    <p class="mt-2 min-h-12 text-sm leading-5 text-zinc-400">Kliknij prawym przyciskiem „Select this person” i wybierz <strong class="text-zinc-200">Kopiuj adres linku</strong>. Na telefonie przytrzymaj przycisk.</p>
-                                    <div class="mt-4 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-3 text-center text-xs text-zinc-500">Skopiuj adres linku — nie sam tekst przycisku</div>
+                                    <h3 class="font-bold text-white">Copy the button link</h3>
+                                    <p class="mt-2 min-h-12 text-sm leading-5 text-zinc-400">Right-click “Select this person” and choose <strong class="text-zinc-200">Copy link address</strong>. On mobile, press and hold the button.</p>
+                                    <div class="mt-4 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-3 text-center text-xs text-zinc-500">Copy the link address, not the button text</div>
                                 </div>
                             </article>
 
                             <article class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
                                 <div class="flex h-28 flex-col items-center justify-center gap-2 border-b border-zinc-800 bg-zinc-950 px-4 text-center">
                                     <span class="grid h-9 w-9 place-items-center rounded-full bg-sky-500 text-sm font-black text-white">3</span>
-                                    <span class="text-xs font-semibold text-zinc-300">Powrót do Curatora</span>
+                                    <span class="text-xs font-semibold text-zinc-300">Back to Curator</span>
                                 </div>
                                 <div class="p-4">
-                                    <h3 class="font-bold text-white">Wróć i połącz konto</h3>
-                                    <p class="mt-2 min-h-12 text-sm leading-5 text-zinc-400">Odczytamy skopiowany link i rozpoczniemy pobieranie historii gier.</p>
+                                    <h3 class="font-bold text-white">Return and connect</h3>
+                                    <p class="mt-2 min-h-12 text-sm leading-5 text-zinc-400">We’ll read the copied link and start importing your play history.</p>
                                     <button type="button" :disabled="!nintendoLoginUrl || nintendoProcessing" class="mt-4 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-sky-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-sky-400 disabled:cursor-wait disabled:opacity-50" @click="pasteNintendoLink">
-                                        <Clipboard class="h-4 w-4" /> Połącz konto ze schowka
+                                        <Clipboard class="h-4 w-4" /> Connect from clipboard
                                     </button>
                                 </div>
                             </article>
                         </div>
 
                         <form class="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4" @submit.prevent="finishNintendoLogin">
-                            <label for="nintendo-callback" class="block text-sm font-bold text-zinc-200">Wklej link ręcznie</label>
-                            <p class="mt-1 text-xs text-zinc-500">Użyj tej opcji, jeśli przeglądarka nie pozwala odczytać schowka.</p>
+                            <label for="nintendo-callback" class="block text-sm font-bold text-zinc-200">Paste the link manually</label>
+                            <p class="mt-1 text-xs text-zinc-500">Use this if your browser doesn’t allow clipboard access.</p>
                             <div class="mt-3 flex flex-col gap-2 sm:flex-row">
                                 <input id="nintendo-callback" v-model="nintendoCallbackUrl" type="text" autocomplete="off" placeholder="npf5c38e31cd085304b://auth#session_token_code=…" class="min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-3 text-sm text-white outline-none focus:border-sky-400" />
-                                <button type="submit" :disabled="!nintendoLoginUrl || !nintendoCallbackUrl.trim() || nintendoProcessing" class="cursor-pointer rounded-xl bg-sky-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-40">{{ nintendoProcessing ? 'Łączenie…' : 'Połącz konto' }}</button>
+                                <button type="submit" :disabled="!nintendoLoginUrl || !nintendoCallbackUrl.trim() || nintendoProcessing" class="cursor-pointer rounded-xl bg-sky-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-40">{{ nintendoProcessing ? 'Connecting…' : 'Connect account' }}</button>
                             </div>
                             <p v-if="nintendoClipboardStatus" class="mt-2 text-xs text-zinc-400">{{ nintendoClipboardStatus }}</p>
                             <p v-if="nintendoError" class="mt-2 text-sm text-red-400">{{ nintendoError }}</p>
@@ -937,13 +937,13 @@ function selectNintendoCatalogGame(game) {
                         ><X class="h-5 w-5" /></button>
                         <div class="pr-10">
                             <span class="inline-flex rounded-full bg-sky-500/10 px-3 py-1 text-xs font-bold text-sky-300">Nintendo Switch</span>
-                            <h2 id="nintendo-import-title" class="mt-3 text-xl font-black text-white sm:text-2xl">Biblioteka została zsynchronizowana</h2>
+                            <h2 id="nintendo-import-title" class="mt-3 text-xl font-black text-white sm:text-2xl">Your library is synced</h2>
                             <p class="mt-2 text-sm text-zinc-400">
-                                Dodano gier: {{ nintendoImport.created }}<template v-if="nintendoImport.updated"> · zaktualizowano: {{ nintendoImport.updated }}</template>.
+                                Games added: {{ nintendoImport.created }}<template v-if="nintendoImport.updated"> · updated: {{ nintendoImport.updated }}</template>.
                             </p>
                         </div>
                         <div v-if="nintendoImport.games?.length" class="mt-5">
-                            <h3 class="text-sm font-bold text-zinc-200">Gry dodane do biblioteki</h3>
+                            <h3 class="text-sm font-bold text-zinc-200">Games added to your library</h3>
                             <ul class="mt-3 max-h-72 space-y-2 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900/70 p-3">
                                 <li
                                     v-for="(game, index) in nintendoImport.games"
@@ -956,13 +956,13 @@ function selectNintendoCatalogGame(game) {
                             </ul>
                         </div>
                         <p v-else class="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4 text-sm leading-6 text-zinc-300">
-                            Nie dodano nowych gier — pozycje z biblioteki Curatora zostały zachowane lub zaktualizowane.
+                            No new games were added. Existing Curator library entries were kept or updated.
                         </p>
                         <button
                             type="button"
                             class="mt-5 w-full cursor-pointer rounded-xl bg-sky-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-sky-400"
                             @click="nintendoResultOpen = false"
-                        >Gotowe</button>
+                        >Done</button>
                     </section>
                 </div>
 
