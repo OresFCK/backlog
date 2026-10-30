@@ -7,6 +7,7 @@ use App\Models\Game;
 use App\Helpers\CacheKeys;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class GameDetailsService
@@ -33,7 +34,7 @@ class GameDetailsService
         $user = Auth::user();
 
         return Cache::remember(
-            "user:{$user->id}:game-details:v3:{$gameId}",
+            "user:{$user->id}:game-details:v4:{$gameId}",
             now()->addMinutes(30),
             function () use ($user, $gameId) {
                 $customGame = $user
@@ -109,6 +110,18 @@ class GameDetailsService
                     'playtime_hours' => $customGame->playtime_minutes !== null
                         ? round($customGame->playtime_minutes / 60, 1)
                         : null,
+                    'daily_playtimes' => $customGame->source === 'nintendo'
+                        ? DB::table('nintendo_daily_playtimes')
+                            ->where('custom_game_id', $customGame->id)
+                            ->orderByDesc('played_on')
+                            ->limit(30)
+                            ->get(['played_on', 'playtime_minutes'])
+                            ->map(fn ($entry) => [
+                                'date' => $entry->played_on,
+                                'minutes' => (int) $entry->playtime_minutes,
+                            ])
+                            ->all()
+                        : [],
 
                     'achievements_unlocked' => $achievementsUnlocked,
                     'achievements_total' => $achievementsTotal,

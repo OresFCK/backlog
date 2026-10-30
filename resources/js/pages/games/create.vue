@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
-import { Gamepad2, ListPlus, RefreshCw, Trash2, Unplug } from 'lucide-vue-next';
+import { Clipboard, ExternalLink, Gamepad2, ListPlus, RefreshCw, Trash2, Unplug, X } from 'lucide-vue-next';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 
@@ -65,8 +65,10 @@ const bulkSubmitting = ref(false);
 const bulkErrors = ref({});
 const bulkSuccess = ref('');
 const bulkDuplicateNotice = ref('');
-const nintendoLoginOpen = ref(false);
+const nintendoDialogOpen = ref(false);
 const nintendoCallbackUrl = ref('');
+const nintendoLoginUrl = ref('');
+const nintendoClipboardStatus = ref('');
 const nintendoError = ref('');
 const nintendoProcessing = ref(false);
 const catalogOpen = ref(false);
@@ -645,11 +647,11 @@ function removeBulkGame(index) {
     bulkSelectedGames.value.splice(index, 1);
 }
 
-async function startNintendoLogin() {
-    const loginWindow = Capacitor.isNativePlatform()
-        ? null
-        : window.open('', '_blank');
+async function openNintendoDialog() {
+    nintendoDialogOpen.value = true;
     nintendoError.value = '';
+    nintendoClipboardStatus.value = '';
+    nintendoLoginUrl.value = '';
 
     try {
         const response = await fetch('/games/nintendo/connect', {
@@ -661,19 +663,44 @@ async function startNintendoLogin() {
             throw new Error();
         }
 
-        if (Capacitor.isNativePlatform()) {
-            await Browser.open({ url: payload.login_url });
-        } else if (loginWindow) {
-            loginWindow.opener = null;
-            loginWindow.location.href = payload.login_url;
-        } else {
-            window.location.href = payload.login_url;
-        }
-
-        nintendoLoginOpen.value = true;
+        nintendoLoginUrl.value = payload.login_url;
     } catch {
-        loginWindow?.close();
         nintendoError.value = 'Could not start Nintendo login. Try again.';
+    }
+}
+
+async function openNintendoLogin() {
+    if (!nintendoLoginUrl.value) {
+        await openNintendoDialog();
+    }
+
+    if (!nintendoLoginUrl.value) return;
+
+    try {
+        if (Capacitor.isNativePlatform()) {
+            await Browser.open({ url: nintendoLoginUrl.value });
+        } else {
+            window.open(nintendoLoginUrl.value, '_blank', 'noopener,noreferrer');
+        }
+    } catch {
+        nintendoError.value = 'Could not open Nintendo. Copy the link manually or try another browser.';
+    }
+}
+
+async function pasteNintendoLink() {
+    nintendoError.value = '';
+
+    try {
+        if (!navigator.clipboard?.readText) throw new Error('Clipboard access is unavailable.');
+        const value = (await navigator.clipboard.readText()).trim();
+        if (!value) throw new Error('The clipboard is empty.');
+        nintendoCallbackUrl.value = value;
+        nintendoClipboardStatus.value = 'Link odczytany ze schowka. Łączenie konta…';
+        finishNintendoLogin();
+    } catch (error) {
+        nintendoClipboardStatus.value = error instanceof Error
+            ? `${error.message} Paste the link in the field below instead.`
+            : 'Clipboard access is unavailable. Paste the link in the field below instead.';
     }
 }
 
@@ -691,6 +718,10 @@ function finishNintendoLogin() {
             preserveScroll: true,
             onError: (serverErrors) => {
                 nintendoError.value = serverErrors.callback_url ?? 'Nintendo connection failed.';
+            },
+            onSuccess: () => {
+                nintendoDialogOpen.value = false;
+                nintendoCallbackUrl.value = '';
             },
             onFinish: () => (nintendoProcessing.value = false),
         },
@@ -772,7 +803,6 @@ function selectNintendoCatalogGame(game) {
             <main class="mx-auto w-full max-w-7xl flex-1 p-8">
                 <GameAddHeader />
 
-                <!-- Nintendo integration temporarily disabled.
                 <section class="mb-8 rounded-3xl border border-red-950/70 bg-gradient-to-br from-red-950/30 to-zinc-900/60 p-5 sm:p-6">
                     <div class="flex flex-wrap items-start justify-between gap-5">
                         <div class="flex gap-3">
@@ -794,19 +824,90 @@ function selectNintendoCatalogGame(game) {
                                 <Unplug class="h-4 w-4" /> Disconnect
                             </button>
                         </div>
-                        <button v-else type="button" class="rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white" @click="startNintendoLogin">Connect Nintendo</button>
+                        <button v-else type="button" class="rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white" @click="openNintendoDialog">Connect Nintendo</button>
                     </div>
 
-                    <form v-if="nintendoLoginOpen && !nintendo.connected" class="mt-5 border-t border-zinc-800 pt-5" @submit.prevent="finishNintendoLogin">
-                        <label for="nintendo-callback" class="block text-sm font-semibold text-zinc-200">Paste the “Select this person” link</label>
-                        <p class="mt-1 text-xs leading-5 text-zinc-500">After signing in, right-click or hold the red button on Nintendo's page, copy its link address, and paste the complete <code>npf...://auth</code> URL here.</p>
-                        <div class="mt-3 flex flex-col gap-3 sm:flex-row">
-                            <input id="nintendo-callback" v-model="nintendoCallbackUrl" type="text" autocomplete="off" placeholder="npf5c38e31cd085304b://auth#..." class="min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-sm text-white outline-none focus:border-red-400" />
-                            <button type="submit" :disabled="!nintendoCallbackUrl.trim() || nintendoProcessing" class="rounded-xl bg-white px-5 py-3 text-sm font-black text-zinc-950 disabled:opacity-40">{{ nintendoProcessing ? 'Importing...' : 'Finish and import' }}</button>
-                        </div>
-                    </form>
                     <p v-if="nintendoError" class="mt-3 text-sm text-red-400">{{ nintendoError }}</p>
                 </section>
+
+                <div
+                    v-if="nintendoDialogOpen && !nintendo.connected"
+                    class="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/80 p-3 backdrop-blur-sm sm:p-6"
+                    role="presentation"
+                    @click.self="nintendoDialogOpen = false"
+                >
+                    <section
+                        class="relative my-auto w-full max-w-5xl rounded-2xl border border-zinc-700 bg-zinc-950 p-5 shadow-2xl sm:p-7"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="nintendo-dialog-title"
+                    >
+                        <button
+                            type="button"
+                            aria-label="Close"
+                            class="absolute right-4 top-4 rounded-lg p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                            @click="nintendoDialogOpen = false"
+                        ><X class="h-5 w-5" /></button>
+
+                        <h2 id="nintendo-dialog-title" class="pr-10 text-xl font-black text-white sm:text-2xl">Połącz konto Nintendo</h2>
+                        <p class="mt-1 text-sm text-zinc-400">Zaloguj się na oficjalnej stronie Nintendo i skopiuj link z czerwonego przycisku.</p>
+                        <p class="mt-4 max-w-3xl text-sm leading-6 text-zinc-400">Przy pierwszym połączeniu zaimportujemy historię gier do Twojej biblioteki Curatora. Możesz odłączyć konto w dowolnym momencie. Curator nie otrzymuje Twojego hasła do Nintendo.</p>
+
+                        <div class="mt-6 grid gap-3 md:grid-cols-3">
+                            <article class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+                                <div class="flex h-28 flex-col items-center justify-center gap-2 border-b border-zinc-800 bg-zinc-950 px-4 text-center">
+                                    <span class="grid h-9 w-9 place-items-center rounded-full bg-orange-500 text-sm font-black text-white">1</span>
+                                    <span class="text-xs font-semibold text-zinc-300">Oficjalne logowanie Nintendo</span>
+                                </div>
+                                <div class="p-4">
+                                    <h3 class="font-bold text-white">Otwórz stronę Nintendo</h3>
+                                    <p class="mt-2 min-h-12 text-sm leading-5 text-zinc-400">Zaloguj się i przejdź do ekranu z czerwonym przyciskiem „Select this person”.</p>
+                                    <button type="button" :disabled="!nintendoLoginUrl" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-50" @click="openNintendoLogin">
+                                        Otwórz Nintendo <ExternalLink class="h-4 w-4" />
+                                    </button>
+                                    <p v-if="!nintendoLoginUrl && !nintendoError" class="mt-2 text-center text-xs text-zinc-500">Przygotowuję bezpieczne logowanie…</p>
+                                </div>
+                            </article>
+
+                            <article class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+                                <div class="flex h-28 flex-col items-center justify-center gap-2 border-b border-zinc-800 bg-zinc-950 px-4 text-center">
+                                    <span class="grid h-9 w-9 place-items-center rounded-full bg-orange-500 text-sm font-black text-white">2</span>
+                                    <span class="text-xs font-semibold text-zinc-300">Menu czerwonego przycisku</span>
+                                </div>
+                                <div class="p-4">
+                                    <h3 class="font-bold text-white">Skopiuj adres przycisku</h3>
+                                    <p class="mt-2 min-h-12 text-sm leading-5 text-zinc-400">Kliknij prawym przyciskiem „Select this person” i wybierz <strong class="text-zinc-200">Kopiuj adres linku</strong>. Na telefonie przytrzymaj przycisk.</p>
+                                    <div class="mt-4 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-3 text-center text-xs text-zinc-500">Skopiuj adres linku — nie sam tekst przycisku</div>
+                                </div>
+                            </article>
+
+                            <article class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+                                <div class="flex h-28 flex-col items-center justify-center gap-2 border-b border-zinc-800 bg-zinc-950 px-4 text-center">
+                                    <span class="grid h-9 w-9 place-items-center rounded-full bg-orange-500 text-sm font-black text-white">3</span>
+                                    <span class="text-xs font-semibold text-zinc-300">Powrót do Curatora</span>
+                                </div>
+                                <div class="p-4">
+                                    <h3 class="font-bold text-white">Wróć i połącz konto</h3>
+                                    <p class="mt-2 min-h-12 text-sm leading-5 text-zinc-400">Odczytamy skopiowany link i rozpoczniemy pobieranie historii gier.</p>
+                                    <button type="button" :disabled="!nintendoLoginUrl || nintendoProcessing" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white hover:bg-orange-400 disabled:cursor-wait disabled:opacity-50" @click="pasteNintendoLink">
+                                        <Clipboard class="h-4 w-4" /> Połącz konto ze schowka
+                                    </button>
+                                </div>
+                            </article>
+                        </div>
+
+                        <form class="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4" @submit.prevent="finishNintendoLogin">
+                            <label for="nintendo-callback" class="block text-sm font-bold text-zinc-200">Wklej link ręcznie</label>
+                            <p class="mt-1 text-xs text-zinc-500">Użyj tej opcji, jeśli przeglądarka nie pozwala odczytać schowka.</p>
+                            <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+                                <input id="nintendo-callback" v-model="nintendoCallbackUrl" type="text" autocomplete="off" placeholder="npf5c38e31cd085304b://auth#session_token_code=…" class="min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-3 text-sm text-white outline-none focus:border-orange-400" />
+                                <button type="submit" :disabled="!nintendoLoginUrl || !nintendoCallbackUrl.trim() || nintendoProcessing" class="rounded-xl bg-orange-500 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{{ nintendoProcessing ? 'Łączenie…' : 'Połącz konto' }}</button>
+                            </div>
+                            <p v-if="nintendoClipboardStatus" class="mt-2 text-xs text-zinc-400">{{ nintendoClipboardStatus }}</p>
+                            <p v-if="nintendoError" class="mt-2 text-sm text-red-400">{{ nintendoError }}</p>
+                        </form>
+                    </section>
+                </div>
 
                 <section class="mb-8 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/60">
                     <div class="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
@@ -853,7 +954,6 @@ function selectNintendoCatalogGame(game) {
                         {{ catalogError }}
                     </p>
                 </section>
-                -->
 
                 <section
                     class="mb-8 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900/60"

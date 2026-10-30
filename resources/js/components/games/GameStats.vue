@@ -60,6 +60,21 @@ const achievementPercent = computed(() => {
 
     return Math.round((unlocked / total) * 100);
 });
+
+const dailyPlaytimes = computed(() => props.game.daily_playtimes ?? []);
+
+const dailyDate = (value) =>
+    new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(
+        new Date(`${value}T12:00:00`),
+    );
+
+const dailyDuration = (minutes) => {
+    const value = Number(minutes) || 0;
+    if (value < 60) return `${value} min`;
+    const hours = Math.floor(value / 60);
+    const remaining = value % 60;
+    return remaining ? `${hours} h ${remaining} min` : `${hours} h`;
+};
 </script>
 
 <template>
@@ -111,4 +126,21 @@ const achievementPercent = computed(() => {
             <p class="mt-1 text-xs text-zinc-500">Release</p>
         </div>
     </div>
+    <section
+        v-if="dailyPlaytimes.length"
+        class="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5"
+    >
+        <h3 class="text-sm font-bold text-white">Nintendo daily playtime</h3>
+        <p class="mt-1 text-xs text-zinc-500">Recent days reported by Nintendo</p>
+        <ul class="mt-4 divide-y divide-zinc-800">
+            <li
+                v-for="entry in dailyPlaytimes"
+                :key="entry.date"
+                class="flex items-center justify-between gap-4 py-2.5 text-sm"
+            >
+                <time class="text-zinc-300">{{ dailyDate(entry.date) }}</time>
+                <span class="font-semibold text-white">{{ dailyDuration(entry.minutes) }}</span>
+            </li>
+        </ul>
+    </section>
 </template>

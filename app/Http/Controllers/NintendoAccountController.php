@@ -150,7 +150,9 @@ class NintendoAccountController extends Controller
     {
         $user = $request->user();
         $account = $user->nintendoAccount;
-        $history = collect($nintendo->playHistory($account->session_token));
+        $accessToken = $nintendo->accessToken($account->session_token);
+        $history = collect($nintendo->playHistory($accessToken))
+            ->filter(fn ($item) => is_array($item));
         $knownTitles = CustomGame::query()->where('user_id', $user->id)->pluck('normalized_title')
             ->merge(UserSteamGame::query()->where('user_id', $user->id)->pluck('name')->map(fn ($title) => GameTitleNormalizer::normalize($title)))
             ->filter()->flip();
@@ -183,8 +185,8 @@ class NintendoAccountController extends Controller
                     'cover_url' => $item['imageUrl'] ?? null,
                     'header_image_url' => $item['imageUrl'] ?? null,
                     'playtime_minutes' => max(0, (int) ($item['totalPlayedMinutes'] ?? 0)),
-                    'first_played_at' => $item['firstPlayedAt'] ?? null,
-                    'last_played_at' => $item['lastPlayedAt'] ?? null,
+                    'first_played_at' => $this->historyTimestamp($item['firstPlayedAt'] ?? null),
+                    'last_played_at' => $this->historyTimestamp($item['lastPlayedAt'] ?? null),
                 ];
 
                 if ($game) {
@@ -197,6 +199,51 @@ class NintendoAccountController extends Controller
                 }
             }
         });
+
+        $titleIds = $history
+            ->map(fn (array $item) => trim((string) ($item['titleId'] ?? '')))
+            ->filter()
+            ->unique()
+            ->values();
+        $nintendoGames = CustomGame::query()
+            ->where('user_id', $user->id)
+            ->whereIn('nintendo_title_id', $titleIds)
+            ->get(['id', 'nintendo_title_id']);
+
+        foreach ($nintendoGames as $game) {
+            $offset = 0;
+
+            do {
+                $dailyRows = $nintendo->dailyPlayHistory($accessToken, $game->nintendo_title_id, $offset);
+                $records = collect($dailyRows)->filter(fn ($row) => is_array($row))
+                    ->map(function (array $row) use ($game) {
+                        $date = $row['playedDate'] ?? $row['date'] ?? $row['playedAt'] ?? null;
+                        $minutes = $row['totalPlayedMinutes'] ?? $row['playtimeMinutes'] ?? $row['playedMinutes'] ?? null;
+
+                        if (! is_string($date) || ! preg_match('/^\d{4}-\d{2}-\d{2}/', $date) || ! is_numeric($minutes)) {
+                            return null;
+                        }
+
+                        return [
+                            'custom_game_id' => $game->id,
+                            'played_on' => substr($date, 0, 10),
+                            'playtime_minutes' => max(0, (int) $minutes),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    })->filter()->values()->all();
+
+                if ($records !== []) {
+                    DB::table('nintendo_daily_playtimes')->upsert(
+                        $records,
+                        ['custom_game_id', 'played_on'],
+                        ['playtime_minutes', 'updated_at']
+                    );
+                }
+
+                $offset += 100;
+            } while (count($dailyRows) === 100 && $offset < 100000);
+        }
 
         $account->update(['last_synced_at' => now()]);
         Cache::forget("user:{$user->id}:library:custom");
@@ -211,5 +258,18 @@ class NintendoAccountController extends Controller
         return str_contains(strtolower((string) $platform), '2')
             ? 'Nintendo Switch 2'
             : 'Nintendo Switch';
+    }
+
+    private function historyTimestamp(mixed $value): ?string
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        try {
+            return now()->parse($value)->toDateTimeString();
+        } catch (Throwable) {
+            return null;
+        }
     }
 }

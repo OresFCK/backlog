@@ -83,7 +83,7 @@ class NintendoService
         return $token;
     }
 
-    public function playHistory(string $sessionToken): array
+    public function accessToken(string $sessionToken): string
     {
         $tokenResponse = $this->http()->post(
             'https://accounts.nintendo.com/connect/1.0.0/api/token',
@@ -102,9 +102,12 @@ class NintendoService
             throw new RuntimeException('The Nintendo connection has expired. Connect the account again.');
         }
 
-        $historyResponse = $this->http()
-            ->withToken($accessToken)
-            ->withHeader('gentry-locale', 'en-US')
+        return $accessToken;
+    }
+
+    public function playHistory(string $accessToken): array
+    {
+        $historyResponse = $this->historyRequest($accessToken)
             ->get('https://app-api.znej.nintendo.com/api/v2.0/users/me/play_histories');
 
         if (! $historyResponse->successful()) {
@@ -112,6 +115,44 @@ class NintendoService
         }
 
         return $historyResponse->json('playHistories') ?? [];
+    }
+
+    public function dailyPlayHistory(string $accessToken, string $titleId, int $offset = 0): array
+    {
+        $response = $this->historyRequest($accessToken)
+            ->get('https://app-api.znej.nintendo.com/api/v2.0/users/me/play_histories/game_titles/'.rawurlencode($titleId), [
+                'offset' => $offset,
+                'limit' => 100,
+            ]);
+
+        if (! $response->successful()) {
+            throw new RuntimeException('Nintendo daily play history is temporarily unavailable.');
+        }
+
+        $payload = $response->json();
+
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        if (array_is_list($payload)) {
+            return $payload;
+        }
+
+        foreach (['dailyPlayHistories', 'playHistories', 'histories', 'data'] as $key) {
+            if (isset($payload[$key]) && is_array($payload[$key])) {
+                return $payload[$key];
+            }
+        }
+
+        return [];
+    }
+
+    private function historyRequest(string $accessToken): PendingRequest
+    {
+        return $this->http()
+            ->withToken($accessToken)
+            ->withHeader('gentry-locale', 'en-US');
     }
 
     private function http(): PendingRequest
