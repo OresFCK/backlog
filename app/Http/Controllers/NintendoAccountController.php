@@ -106,7 +106,9 @@ class NintendoAccountController extends Controller
             $request->user()->nintendoAccount()->updateOrCreate([], ['session_token' => $token]);
             $result = $this->import($request, $nintendo);
 
-            return back()->with('success', "Nintendo connected. Added {$result['created']} games and updated {$result['updated']}.");
+            return back()
+                ->with('success', "Nintendo connected. Added {$result['created']} games and updated {$result['updated']}.")
+                ->with('nintendoImport', $result);
         } catch (Throwable $exception) {
             report($exception);
 
@@ -136,7 +138,9 @@ class NintendoAccountController extends Controller
             ]);
         }
 
-        return back()->with('success', "Nintendo sync complete. Added {$result['created']} games and updated {$result['updated']}.");
+        return back()
+            ->with('success', "Nintendo sync complete. Added {$result['created']} games and updated {$result['updated']}.")
+            ->with('nintendoImport', $result);
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -158,8 +162,9 @@ class NintendoAccountController extends Controller
             ->filter()->flip();
         $created = 0;
         $updated = 0;
+        $createdGames = [];
 
-        DB::transaction(function () use ($history, $user, $knownTitles, &$created, &$updated) {
+        DB::transaction(function () use ($history, $user, $knownTitles, &$created, &$updated, &$createdGames) {
             foreach ($history as $item) {
                 $title = trim((string) ($item['titleName'] ?? ''));
                 $titleId = trim((string) ($item['titleId'] ?? ''));
@@ -196,6 +201,7 @@ class NintendoAccountController extends Controller
                     $user->customGames()->create($values);
                     $knownTitles->put($normalized, true);
                     $created++;
+                    $createdGames[] = $title;
                 }
             }
         });
@@ -250,7 +256,11 @@ class NintendoAccountController extends Controller
         Cache::forget("user:{$user->id}:library:all");
         UserCache::flush((int) $user->id);
 
-        return compact('created', 'updated');
+        return [
+            'created' => $created,
+            'updated' => $updated,
+            'games' => array_values(array_unique($createdGames)),
+        ];
     }
 
     private function platform(?string $platform): string

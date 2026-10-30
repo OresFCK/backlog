@@ -71,9 +71,7 @@ const mappedGames = computed(() => {
                     Number(game.playtime_forever ?? 0),
 
                 platform:
-                    isCustom
-                        ? 'Custom'
-                        : 'Steam',
+                    game.platform || (isCustom ? 'Custom' : 'Steam'),
 
                 rating:
                     game.rating ?? null,

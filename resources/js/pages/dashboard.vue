@@ -124,7 +124,7 @@ const mappedGames = computed(() => {
 
             average_playtime_minutes: game.playtime_forever ?? 0,
 
-            platform: game.is_custom ? 'Custom' : 'Steam',
+            platform: game.platform || (game.is_custom ? 'Custom' : 'Steam'),
 
             rating: game.rating ?? null,
         };

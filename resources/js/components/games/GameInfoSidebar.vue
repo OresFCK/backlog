@@ -51,13 +51,13 @@ defineProps({
                     <dt class="text-zinc-500">Platform</dt>
 
                     <dd class="text-zinc-200">
-                        <span v-if="game.platforms?.windows"> Windows </span>
-
-                        <span v-if="game.platforms?.mac"> , Mac </span>
-
-                        <span v-if="game.platforms?.linux"> , Linux </span>
-
-                        <span v-if="game.is_custom"> Custom </span>
+                        <span v-if="game.platform">{{ game.platform }}</span>
+                        <template v-else>
+                            <span v-if="game.platforms?.windows">Windows</span>
+                            <span v-if="game.platforms?.mac">{{ game.platforms?.windows ? ', ' : '' }}Mac</span>
+                            <span v-if="game.platforms?.linux">{{ game.platforms?.windows || game.platforms?.mac ? ', ' : '' }}Linux</span>
+                            <span v-if="!game.platforms?.windows && !game.platforms?.mac && !game.platforms?.linux && game.is_custom">Custom</span>
+                        </template>
                     </dd>
                 </div>
             </dl>

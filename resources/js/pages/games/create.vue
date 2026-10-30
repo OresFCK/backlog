@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import { Clipboard, ExternalLink, Gamepad2, ListPlus, RefreshCw, Trash2, Unplug, X } from 'lucide-vue-next';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
@@ -26,6 +26,7 @@ const props = defineProps({
         default: () => ({ connected: false, last_synced_at: null }),
     },
 });
+const page = usePage();
 
 const title = ref('');
 const publisher = ref('');
@@ -71,6 +72,7 @@ const nintendoLoginUrl = ref('');
 const nintendoClipboardStatus = ref('');
 const nintendoError = ref('');
 const nintendoProcessing = ref(false);
+const nintendoResultOpen = ref(false);
 const catalogOpen = ref(false);
 const catalogLoading = ref(false);
 const catalogGames = ref([]);
@@ -104,6 +106,12 @@ const nintendoLastSynced = computed(() => {
         timeStyle: 'short',
     }).format(new Date(props.nintendo.last_synced_at));
 });
+
+const nintendoImport = computed(() => page.props.flash?.nintendoImport ?? null);
+
+watch(nintendoImport, (result) => {
+    if (result) nintendoResultOpen.value = true;
+}, { immediate: true });
 
 let searchTimeout = null;
 let searchController = null;
@@ -803,10 +811,10 @@ function selectNintendoCatalogGame(game) {
             <main class="mx-auto w-full max-w-7xl flex-1 p-8">
                 <GameAddHeader />
 
-                <section class="mb-8 rounded-3xl border border-red-950/70 bg-gradient-to-br from-red-950/30 to-zinc-900/60 p-5 sm:p-6">
+                <section class="mb-8 rounded-3xl border border-indigo-950/70 bg-gradient-to-br from-indigo-950/30 to-zinc-900/60 p-5 sm:p-6">
                     <div class="flex flex-wrap items-start justify-between gap-5">
                         <div class="flex gap-3">
-                            <span class="h-fit rounded-xl bg-red-500/10 p-2 text-red-300"><Gamepad2 class="h-5 w-5" /></span>
+                            <span class="h-fit rounded-xl bg-indigo-500/10 p-2 text-indigo-300"><Gamepad2 class="h-5 w-5" /></span>
                             <div>
                                 <strong class="block text-white">Nintendo Switch play history</strong>
                                 <p class="mt-1 max-w-2xl text-sm leading-6 text-zinc-400">
@@ -816,7 +824,7 @@ function selectNintendoCatalogGame(game) {
                             </div>
                         </div>
                         <div v-if="nintendo.connected" class="flex flex-wrap gap-2">
-                            <button type="button" :disabled="nintendoProcessing" class="inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50" @click="syncNintendo">
+                            <button type="button" :disabled="nintendoProcessing" class="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-400 disabled:opacity-50" @click="syncNintendo">
                                 <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': nintendoProcessing }" />
                                 {{ nintendoProcessing ? 'Syncing...' : 'Sync now' }}
                             </button>
@@ -824,7 +832,7 @@ function selectNintendoCatalogGame(game) {
                                 <Unplug class="h-4 w-4" /> Disconnect
                             </button>
                         </div>
-                        <button v-else type="button" class="rounded-xl bg-red-500 px-4 py-2.5 text-sm font-bold text-white" @click="openNintendoDialog">Connect Nintendo</button>
+                        <button v-else type="button" class="rounded-xl bg-indigo-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-400" @click="openNintendoDialog">Connect Nintendo</button>
                     </div>
 
                     <p v-if="nintendoError" class="mt-3 text-sm text-red-400">{{ nintendoError }}</p>
@@ -856,13 +864,13 @@ function selectNintendoCatalogGame(game) {
                         <div class="mt-6 grid gap-3 md:grid-cols-3">
                             <article class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
                                 <div class="flex h-28 flex-col items-center justify-center gap-2 border-b border-zinc-800 bg-zinc-950 px-4 text-center">
-                                    <span class="grid h-9 w-9 place-items-center rounded-full bg-orange-500 text-sm font-black text-white">1</span>
+                                    <span class="grid h-9 w-9 place-items-center rounded-full bg-indigo-500 text-sm font-black text-white">1</span>
                                     <span class="text-xs font-semibold text-zinc-300">Oficjalne logowanie Nintendo</span>
                                 </div>
                                 <div class="p-4">
                                     <h3 class="font-bold text-white">Otwórz stronę Nintendo</h3>
                                     <p class="mt-2 min-h-12 text-sm leading-5 text-zinc-400">Zaloguj się i przejdź do ekranu z czerwonym przyciskiem „Select this person”.</p>
-                                    <button type="button" :disabled="!nintendoLoginUrl" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-50" @click="openNintendoLogin">
+                                    <button type="button" :disabled="!nintendoLoginUrl" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-indigo-400 disabled:cursor-wait disabled:opacity-50" @click="openNintendoLogin">
                                         Otwórz Nintendo <ExternalLink class="h-4 w-4" />
                                     </button>
                                     <p v-if="!nintendoLoginUrl && !nintendoError" class="mt-2 text-center text-xs text-zinc-500">Przygotowuję bezpieczne logowanie…</p>
@@ -871,7 +879,7 @@ function selectNintendoCatalogGame(game) {
 
                             <article class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
                                 <div class="flex h-28 flex-col items-center justify-center gap-2 border-b border-zinc-800 bg-zinc-950 px-4 text-center">
-                                    <span class="grid h-9 w-9 place-items-center rounded-full bg-orange-500 text-sm font-black text-white">2</span>
+                                    <span class="grid h-9 w-9 place-items-center rounded-full bg-indigo-500 text-sm font-black text-white">2</span>
                                     <span class="text-xs font-semibold text-zinc-300">Menu czerwonego przycisku</span>
                                 </div>
                                 <div class="p-4">
@@ -883,13 +891,13 @@ function selectNintendoCatalogGame(game) {
 
                             <article class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
                                 <div class="flex h-28 flex-col items-center justify-center gap-2 border-b border-zinc-800 bg-zinc-950 px-4 text-center">
-                                    <span class="grid h-9 w-9 place-items-center rounded-full bg-orange-500 text-sm font-black text-white">3</span>
+                                    <span class="grid h-9 w-9 place-items-center rounded-full bg-indigo-500 text-sm font-black text-white">3</span>
                                     <span class="text-xs font-semibold text-zinc-300">Powrót do Curatora</span>
                                 </div>
                                 <div class="p-4">
                                     <h3 class="font-bold text-white">Wróć i połącz konto</h3>
                                     <p class="mt-2 min-h-12 text-sm leading-5 text-zinc-400">Odczytamy skopiowany link i rozpoczniemy pobieranie historii gier.</p>
-                                    <button type="button" :disabled="!nintendoLoginUrl || nintendoProcessing" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white hover:bg-orange-400 disabled:cursor-wait disabled:opacity-50" @click="pasteNintendoLink">
+                                    <button type="button" :disabled="!nintendoLoginUrl || nintendoProcessing" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-indigo-400 disabled:cursor-wait disabled:opacity-50" @click="pasteNintendoLink">
                                         <Clipboard class="h-4 w-4" /> Połącz konto ze schowka
                                     </button>
                                 </div>
@@ -900,12 +908,61 @@ function selectNintendoCatalogGame(game) {
                             <label for="nintendo-callback" class="block text-sm font-bold text-zinc-200">Wklej link ręcznie</label>
                             <p class="mt-1 text-xs text-zinc-500">Użyj tej opcji, jeśli przeglądarka nie pozwala odczytać schowka.</p>
                             <div class="mt-3 flex flex-col gap-2 sm:flex-row">
-                                <input id="nintendo-callback" v-model="nintendoCallbackUrl" type="text" autocomplete="off" placeholder="npf5c38e31cd085304b://auth#session_token_code=…" class="min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-3 text-sm text-white outline-none focus:border-orange-400" />
-                                <button type="submit" :disabled="!nintendoLoginUrl || !nintendoCallbackUrl.trim() || nintendoProcessing" class="rounded-xl bg-orange-500 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">{{ nintendoProcessing ? 'Łączenie…' : 'Połącz konto' }}</button>
+                                <input id="nintendo-callback" v-model="nintendoCallbackUrl" type="text" autocomplete="off" placeholder="npf5c38e31cd085304b://auth#session_token_code=…" class="min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-3 text-sm text-white outline-none focus:border-indigo-400" />
+                                <button type="submit" :disabled="!nintendoLoginUrl || !nintendoCallbackUrl.trim() || nintendoProcessing" class="rounded-xl bg-indigo-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-40">{{ nintendoProcessing ? 'Łączenie…' : 'Połącz konto' }}</button>
                             </div>
                             <p v-if="nintendoClipboardStatus" class="mt-2 text-xs text-zinc-400">{{ nintendoClipboardStatus }}</p>
                             <p v-if="nintendoError" class="mt-2 text-sm text-red-400">{{ nintendoError }}</p>
                         </form>
+                    </section>
+                </div>
+
+                <div
+                    v-if="nintendoResultOpen && nintendoImport"
+                    class="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-black/80 p-3 backdrop-blur-sm sm:p-6"
+                    role="presentation"
+                    @click.self="nintendoResultOpen = false"
+                >
+                    <section
+                        class="relative my-auto w-full max-w-xl rounded-2xl border border-zinc-700 bg-zinc-950 p-5 shadow-2xl sm:p-7"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="nintendo-import-title"
+                    >
+                        <button
+                            type="button"
+                            aria-label="Close"
+                            class="absolute right-4 top-4 rounded-lg p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                            @click="nintendoResultOpen = false"
+                        ><X class="h-5 w-5" /></button>
+                        <div class="pr-10">
+                            <span class="inline-flex rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-bold text-indigo-300">Nintendo Switch</span>
+                            <h2 id="nintendo-import-title" class="mt-3 text-xl font-black text-white sm:text-2xl">Biblioteka została zsynchronizowana</h2>
+                            <p class="mt-2 text-sm text-zinc-400">
+                                Dodano gier: {{ nintendoImport.created }}<template v-if="nintendoImport.updated"> · zaktualizowano: {{ nintendoImport.updated }}</template>.
+                            </p>
+                        </div>
+                        <div v-if="nintendoImport.games?.length" class="mt-5">
+                            <h3 class="text-sm font-bold text-zinc-200">Gry dodane do biblioteki</h3>
+                            <ul class="mt-3 max-h-72 space-y-2 overflow-y-auto rounded-xl border border-zinc-800 bg-zinc-900/70 p-3">
+                                <li
+                                    v-for="(game, index) in nintendoImport.games"
+                                    :key="`${game}-${index}`"
+                                    class="flex items-start gap-3 rounded-lg px-2 py-2 text-sm text-zinc-200"
+                                >
+                                    <Gamepad2 class="mt-0.5 h-4 w-4 shrink-0 text-indigo-300" />
+                                    <span>{{ game }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <p v-else class="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4 text-sm leading-6 text-zinc-300">
+                            Nie dodano nowych gier — pozycje z biblioteki Curatora zostały zachowane lub zaktualizowane.
+                        </p>
+                        <button
+                            type="button"
+                            class="mt-5 w-full rounded-xl bg-indigo-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-indigo-400"
+                            @click="nintendoResultOpen = false"
+                        >Gotowe</button>
                     </section>
                 </div>
 

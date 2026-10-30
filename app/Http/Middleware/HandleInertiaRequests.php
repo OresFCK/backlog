@@ -47,6 +47,7 @@ class HandleInertiaRequests extends Middleware
 
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
+                'nintendoImport' => fn () => $request->session()->get('nintendoImport'),
                 'error' => fn () => $request->session()->get('error'),
                 'igdbDump' => fn () => $request->session()->get('igdbDump'),
                 'no_product_card' => fn () => $request->session()->get('no_product_card'),
