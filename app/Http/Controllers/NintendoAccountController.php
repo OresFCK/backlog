@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\GameTitleNormalizer;
+use App\Helpers\CacheKeys;
 use App\Helpers\UserCache;
 use App\Models\CustomGame;
+use App\Models\UserGameMeta;
 use App\Models\UserSteamGame;
+use App\Services\IgdbDumpService;
 use App\Services\NintendoService;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -86,7 +90,7 @@ class NintendoAccountController extends Controller
         return response()->json(['login_url' => $login['url']]);
     }
 
-    public function connect(Request $request, NintendoService $nintendo): RedirectResponse
+    public function connect(Request $request, NintendoService $nintendo, IgdbDumpService $igdb): RedirectResponse
     {
         $data = $request->validate(['callback_url' => ['required', 'string', 'max:4000']]);
         $oauth = $request->session()->pull('nintendo_oauth');
@@ -104,7 +108,7 @@ class NintendoAccountController extends Controller
 
             $token = $nintendo->exchangeSessionToken($callback['code'], $oauth['verifier']);
             $request->user()->nintendoAccount()->updateOrCreate([], ['session_token' => $token]);
-            $result = $this->import($request, $nintendo);
+            $result = $this->import($request, $nintendo, $igdb);
 
             return back()
                 ->with('success', "Nintendo connected. Added {$result['created']} games and updated {$result['updated']}.")
@@ -120,14 +124,14 @@ class NintendoAccountController extends Controller
         }
     }
 
-    public function sync(Request $request, NintendoService $nintendo): RedirectResponse
+    public function sync(Request $request, NintendoService $nintendo, IgdbDumpService $igdb): RedirectResponse
     {
         if (! $request->user()->nintendoAccount) {
             return back()->withErrors(['nintendo' => 'Connect a Nintendo account first.']);
         }
 
         try {
-            $result = $this->import($request, $nintendo);
+            $result = $this->import($request, $nintendo, $igdb);
         } catch (Throwable $exception) {
             report($exception);
 
@@ -150,7 +154,7 @@ class NintendoAccountController extends Controller
         return back()->with('success', 'Nintendo account disconnected. Imported games were kept.');
     }
 
-    private function import(Request $request, NintendoService $nintendo): array
+    private function import(Request $request, NintendoService $nintendo, IgdbDumpService $igdb): array
     {
         $user = $request->user();
         $account = $user->nintendoAccount;
@@ -160,11 +164,34 @@ class NintendoAccountController extends Controller
         $knownTitles = CustomGame::query()->where('user_id', $user->id)->pluck('normalized_title')
             ->merge(UserSteamGame::query()->where('user_id', $user->id)->pluck('name')->map(fn ($title) => GameTitleNormalizer::normalize($title)))
             ->filter()->flip();
+        $metadataByTitleId = $history
+            ->filter(fn (array $item) => filled($item['titleId'] ?? null) && filled($item['titleName'] ?? null))
+            ->unique('titleId')
+            ->mapWithKeys(function (array $item) use ($user, $knownTitles, $igdb) {
+                $titleId = (string) $item['titleId'];
+                $title = (string) $item['titleName'];
+                $existingNintendoGame = CustomGame::query()
+                    ->where('user_id', $user->id)
+                    ->where('nintendo_title_id', $titleId)
+                    ->first(['id', 'developer', 'publisher', 'release_date']);
+
+                if (
+                    ($existingNintendoGame
+                        && filled($existingNintendoGame->developer)
+                        && filled($existingNintendoGame->publisher)
+                        && $existingNintendoGame->release_date)
+                    || (! $existingNintendoGame && $knownTitles->has(GameTitleNormalizer::normalize($title)))
+                ) {
+                    return [$titleId => []];
+                }
+
+                return [$titleId => $this->nintendoTitleMetadata($igdb, $title)];
+            });
         $created = 0;
         $updated = 0;
         $createdGames = [];
 
-        DB::transaction(function () use ($history, $user, $knownTitles, &$created, &$updated, &$createdGames) {
+        DB::transaction(function () use ($history, $user, $knownTitles, $metadataByTitleId, &$created, &$updated, &$createdGames) {
             foreach ($history as $item) {
                 $title = trim((string) ($item['titleName'] ?? ''));
                 $titleId = trim((string) ($item['titleId'] ?? ''));
@@ -176,6 +203,7 @@ class NintendoAccountController extends Controller
 
                 $game = CustomGame::query()->where('user_id', $user->id)
                     ->where('nintendo_title_id', $titleId)->first();
+                $metadata = $metadataByTitleId->get($titleId, []);
 
                 if (! $game && $knownTitles->has($normalized)) {
                     continue;
@@ -187,8 +215,15 @@ class NintendoAccountController extends Controller
                     'nintendo_title_id' => $titleId,
                     'source' => 'nintendo',
                     'platform' => $this->platform($item['platform'] ?? $item['deviceType'] ?? null),
-                    'cover_url' => $item['imageUrl'] ?? null,
-                    'header_image_url' => $item['imageUrl'] ?? null,
+                    'igdb_id' => $metadata['igdb_id'] ?? $game?->igdb_id,
+                    'igdb_slug' => $metadata['igdb_slug'] ?? $game?->igdb_slug,
+                    'igdb_url' => $metadata['igdb_url'] ?? $game?->igdb_url,
+                    'publisher' => $game?->publisher ?: ($metadata['publisher'] ?? null),
+                    'developer' => $game?->developer ?: ($metadata['developer'] ?? null),
+                    'description' => $game?->description ?: ($metadata['description'] ?? null),
+                    'release_date' => $game?->release_date ?: ($metadata['release_date'] ?? null),
+                    'cover_url' => $item['imageUrl'] ?? $game?->cover_url ?? ($metadata['cover_url'] ?? null),
+                    'header_image_url' => $item['imageUrl'] ?? $game?->header_image_url ?? ($metadata['header_image_url'] ?? null),
                     'playtime_minutes' => max(0, (int) ($item['totalPlayedMinutes'] ?? 0)),
                     'first_played_at' => $this->historyTimestamp($item['firstPlayedAt'] ?? null),
                     'last_played_at' => $this->historyTimestamp($item['lastPlayedAt'] ?? null),
@@ -198,10 +233,25 @@ class NintendoAccountController extends Controller
                     $game->update($values);
                     $updated++;
                 } else {
-                    $user->customGames()->create($values);
+                    $game = $user->customGames()->create($values);
                     $knownTitles->put($normalized, true);
                     $created++;
                     $createdGames[] = $title;
+                }
+
+                if ((int) ($item['totalPlayedMinutes'] ?? 0) > 0) {
+                    $gameId = 'custom-'.$game->id;
+                    $gameMeta = UserGameMeta::query()->firstOrNew([
+                        'user_id' => $user->id,
+                        'game_id' => $gameId,
+                    ]);
+
+                    if (blank($gameMeta->status) || strtolower(trim($gameMeta->status)) === 'backlog') {
+                        $gameMeta->status = 'Playing';
+                        $gameMeta->save();
+                    }
+
+                    Cache::forget(CacheKeys::userMeta((int) $user->id, $gameId));
                 }
             }
         });
@@ -281,5 +331,53 @@ class NintendoAccountController extends Controller
         } catch (Throwable) {
             return null;
         }
+    }
+
+    private function nintendoTitleMetadata(IgdbDumpService $igdb, string $title): array
+    {
+        $normalizedTitle = GameTitleNormalizer::normalize($title);
+
+        if ($normalizedTitle === '') {
+            return [];
+        }
+
+        return Cache::remember(
+            'nintendo:igdb-metadata:'.$normalizedTitle,
+            now()->addDays(30),
+            function () use ($igdb, $title, $normalizedTitle) {
+                try {
+                    $match = collect($igdb->searchGames($title, 10))->first(
+                        fn (array $candidate) => GameTitleNormalizer::normalize((string) ($candidate['name'] ?? '')) === $normalizedTitle
+                    );
+
+                    if (! $match) {
+                        return [];
+                    }
+
+                    $companies = collect($match['involved_companies'] ?? []);
+                    $coverId = data_get($match, 'cover.image_id');
+                    $screenshotId = data_get($match, 'screenshots.0.image_id');
+                    $releaseDate = isset($match['first_release_date'])
+                        ? CarbonImmutable::createFromTimestampUTC((int) $match['first_release_date'])->toDateString()
+                        : null;
+
+                    return [
+                        'igdb_id' => $match['id'] ?? null,
+                        'igdb_slug' => $match['slug'] ?? null,
+                        'igdb_url' => filled($match['slug'] ?? null) ? 'https://www.igdb.com/games/'.$match['slug'] : null,
+                        'publisher' => data_get($companies->firstWhere('publisher', true), 'company.name'),
+                        'developer' => data_get($companies->firstWhere('developer', true), 'company.name'),
+                        'description' => $match['summary'] ?? null,
+                        'release_date' => $releaseDate,
+                        'cover_url' => $coverId ? "https://images.igdb.com/igdb/image/upload/t_cover_big/{$coverId}.jpg" : null,
+                        'header_image_url' => $screenshotId ? "https://images.igdb.com/igdb/image/upload/t_screenshot_big/{$screenshotId}.jpg" : null,
+                    ];
+                } catch (Throwable $exception) {
+                    report($exception);
+
+                    return [];
+                }
+            }
+        );
     }
 }
