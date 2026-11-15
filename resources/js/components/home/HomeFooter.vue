@@ -41,6 +41,9 @@ defineProps({
                         <Link href="/tier-lists" class="hover:text-white">
                             Community Tier Lists
                         </Link>
+                        <Link href="/plebiscite" class="hover:text-white">
+                            Community Awards
+                        </Link>
                         <Link href="/blog" class="hover:text-white">
                             Community Blog
                         </Link>

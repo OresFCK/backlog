@@ -21,6 +21,7 @@ import {
     Tags,
     Users,
     Trophy,
+    Vote,
     MessageSquareText,
     NotebookPen,
     ShoppingBag,
@@ -73,7 +74,7 @@ const initialSection = computed(() => {
     }
 
     if (
-        ['/reviews', '/blog', '/challenges', '/people'].some((route) =>
+        ['/reviews', '/blog', '/challenges', '/people', '/plebiscite'].some((route) =>
             page.url.startsWith(route),
         )
     ) {
@@ -262,6 +263,11 @@ const communityItems = [
         label: 'Challenges',
         href: '/challenges',
         icon: Trophy,
+    },
+    {
+        label: 'Community Awards',
+        href: '/plebiscite',
+        icon: Vote,
     },
     {
         label: 'People',

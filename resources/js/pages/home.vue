@@ -8,6 +8,7 @@ import FeaturesSection from '@/components/home/FeaturesSection.vue';
 import HeroSection from '@/components/home/HeroSection.vue';
 import HomeFooter from '@/components/home/HomeFooter.vue';
 import HomeHeader from '@/components/home/HomeHeader.vue';
+import PlebisciteBanner from '@/components/home/PlebisciteBanner.vue';
 import HowItWorksSection from '@/components/home/HowItWorksSection.vue';
 import ShowcaseSection from '@/components/home/ShowcaseSection.vue';
 import SupportSection from '@/components/home/SupportSection.vue';
@@ -36,6 +37,7 @@ onMounted(() => track('homepage_viewed', { funnel: 'next_three_games' }));
 
         <main>
             <HeroSection :auth="auth" />
+            <PlebisciteBanner />
             <FeaturesSection />
             <HowItWorksSection />
             <ShowcaseSection />

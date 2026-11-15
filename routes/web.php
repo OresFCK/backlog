@@ -22,6 +22,7 @@ use App\Http\Controllers\IgdbGameSearchController;
 use App\Http\Controllers\MiniCuratorController;
 use App\Http\Controllers\NintendoAccountController;
 use App\Http\Controllers\PremiereController;
+use App\Http\Controllers\PlebisciteController;
 use App\Http\Controllers\PublicGameController;
 use App\Http\Controllers\PublicGameSearchController;
 use App\Http\Controllers\PublicReviewController;
@@ -85,6 +86,11 @@ Route::get('/home', function () {
         'tierLists' => $tierLists,
     ]);
 })->name('home');
+Route::get('/plebiscite', [PlebisciteController::class, 'index'])
+    ->name('plebiscite.index');
+Route::post('/plebiscite/vote', [PlebisciteController::class, 'vote'])
+    ->middleware('auth')
+    ->name('plebiscite.vote');
 Route::inertia('/login', 'auth/login')->name('login');
 
 Route::inertia('/terms', 'terms')->name('terms');

@@ -10,6 +10,7 @@ import {
     PlusCircle,
     Search,
     Menu,
+    Vote,
 } from 'lucide-vue-next';
 
 import { Link, router } from '@inertiajs/vue3';
@@ -234,6 +235,14 @@ onMounted(() => {
             </div>
 
             <div class="ml-auto flex items-center gap-2 sm:gap-3 lg:gap-4">
+                <Link
+                    href="/plebiscite"
+                    class="inline-flex h-11 items-center gap-2 rounded-xl border border-cyan-300/50 bg-cyan-300/10 px-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-300 hover:bg-cyan-300 hover:text-zinc-950 sm:px-4 lg:h-14 lg:rounded-2xl"
+                >
+                    <Vote class="h-5 w-5" />
+                    <span class="hidden xl:block">Awards</span>
+                </Link>
+
                 <a
                     href="https://buymeacoffee.com/curatorgg"
                     target="_blank"

@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { Link } from '@inertiajs/vue3';
-import { Gamepad2, Menu, X } from 'lucide-vue-next';
+import { Gamepad2, Menu, Trophy, X } from 'lucide-vue-next';
 import GameSearch from '@/components/home/GameSearch.vue';
 
 defineProps({
@@ -56,6 +56,9 @@ const closeMenu = () => {
                 </Link>
                 <Link href="/tier-lists" class="transition hover:text-white">
                     Tier Lists
+                </Link>
+                <Link href="/plebiscite" class="transition hover:text-white">
+                    Awards
                 </Link>
                 <Link
                     href="/tier-list-maker"
@@ -125,6 +128,13 @@ const closeMenu = () => {
                     @click="closeMenu"
                 >
                     Tier Lists
+                </Link>
+                <Link
+                    href="/plebiscite"
+                    class="flex items-center gap-2 rounded-xl px-3 py-3 hover:bg-zinc-900"
+                    @click="closeMenu"
+                >
+                    <Trophy class="h-4 w-4" /> Plebiscite
                 </Link>
                 <Link
                     href="/tier-list-maker"
