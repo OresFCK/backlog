@@ -47,48 +47,48 @@ const share = async () => {
 
 <template>
     <Head title="The Great Giereczkowy Plebiscite" />
-    <div class="min-h-screen bg-[#0b0b0d] text-white">
-        <header class="border-b-4 border-zinc-800 bg-[#111117]">
-            <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
+    <div class="plebiscite-page relative min-h-screen overflow-hidden bg-[#0b0b0d] text-white">
+        <div class="plebiscite-background-grid" aria-hidden="true" />
+        <header class="relative z-10 border-b-2 border-zinc-800 bg-[#111117]/95">
+            <div class="mx-auto flex max-w-[1800px] items-center justify-between px-4 py-2 sm:px-6">
                 <Link href="/home" class="flex items-center gap-3 font-mono font-black">
-                    <span class="flex h-10 w-10 items-center justify-center border-2 border-cyan-300 bg-cyan-300 text-zinc-950 shadow-[3px_3px_0_#fff]"><Gamepad2 class="h-5 w-5" /></span>
+                    <span class="flex h-8 w-8 items-center justify-center border-2 border-cyan-300 bg-cyan-300 text-zinc-950 shadow-[2px_2px_0_#fff]"><Gamepad2 class="h-4 w-4" /></span>
                     CURATOR.GG
                 </Link>
-                <Link href="/home" class="inline-flex items-center gap-2 font-mono text-sm text-zinc-400 hover:text-white"><ArrowLeft class="h-4 w-4" /> Home</Link>
+                <Link href="/home" class="inline-flex items-center gap-2 font-mono text-xs text-zinc-400 hover:text-white"><ArrowLeft class="h-4 w-4" /> Home</Link>
             </div>
         </header>
 
-        <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
-            <section class="relative overflow-hidden border-4 border-zinc-700 bg-[#171823] p-6 shadow-[7px_7px_0_#050506] sm:p-10">
-                <div class="pointer-events-none absolute inset-0 opacity-10 [background-image:linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] [background-size:20px_20px]" />
-                <div class="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <main class="relative z-10 mx-auto max-w-[1800px] px-3 py-3 sm:px-6 sm:py-4">
+            <section class="relative overflow-hidden border-2 border-zinc-700 bg-[#171823]/95 px-4 py-3 shadow-[4px_4px_0_#050506] sm:px-6 sm:py-4">
+                <div class="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <p class="font-mono text-xs font-black tracking-[.25em] text-amber-300 uppercase">Curator.gg community awards · 2026</p>
-                        <h1 class="mt-3 max-w-3xl font-mono text-3xl leading-tight font-black sm:text-5xl">THE GREAT<br /><span class="text-cyan-300">GIERECZKOWY</span> PLEBISCITE</h1>
-                        <p class="mt-4 max-w-2xl text-sm leading-6 text-zinc-300">Wybierz swoich faworytów. Jeden głos w każdej kategorii — możesz go później zmienić. Wyniki na żywo.</p>
+                        <p class="font-mono text-[10px] font-black tracking-[.22em] text-amber-300 uppercase">Curator.gg community awards · 2026</p>
+                        <h1 class="mt-1 font-mono text-2xl leading-tight font-black sm:text-3xl"><span class="text-cyan-300">GIERECZKOWY</span> PLEBISCITE</h1>
+                        <p class="mt-1 max-w-2xl text-xs leading-5 text-zinc-300 sm:text-sm">Wybierz faworytów. Jeden głos w każdej kategorii — możesz go później zmienić. Wyniki na żywo.</p>
                     </div>
-                    <button type="button" class="shrink-0 border-2 border-white bg-amber-300 px-4 py-3 font-mono text-sm font-black text-zinc-950 shadow-[3px_3px_0_#fff] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_#fff]" @click="share">SHARE THE VOTE ↗</button>
+                    <button type="button" class="shrink-0 self-start border-2 border-white bg-amber-300 px-3 py-2 font-mono text-xs font-black text-zinc-950 shadow-[2px_2px_0_#fff] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0_#fff] sm:self-center" @click="share">SHARE THE VOTE ↗</button>
                 </div>
-                <div class="relative mt-7 flex flex-wrap gap-2 font-mono text-xs font-bold text-zinc-300">
-                    <span class="border border-zinc-600 bg-zinc-950/70 px-3 py-2">{{ categories.length }} CATEGORIES</span>
-                    <span class="border border-zinc-600 bg-zinc-950/70 px-3 py-2">6 NOMINEES EACH</span>
-                    <span class="border border-zinc-600 bg-zinc-950/70 px-3 py-2">{{ categories.reduce((sum, category) => sum + category.total_votes, 0) }} TOTAL VOTES</span>
+                <div class="relative mt-2 flex flex-wrap gap-2 font-mono text-[10px] font-bold text-zinc-300">
+                    <span class="border border-zinc-600 bg-zinc-950/70 px-2 py-1">{{ categories.length }} CATEGORIES</span>
+                    <span class="border border-zinc-600 bg-zinc-950/70 px-2 py-1">6 NOMINEES EACH</span>
+                    <span class="border border-zinc-600 bg-zinc-950/70 px-2 py-1">{{ categories.reduce((sum, category) => sum + category.total_votes, 0) }} TOTAL VOTES</span>
                 </div>
             </section>
 
-            <div class="mt-8 grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-                <aside class="h-fit border-2 border-zinc-800 bg-[#111117] p-3 lg:sticky lg:top-5">
-                    <p class="px-3 py-2 font-mono text-xs font-black tracking-widest text-zinc-500 uppercase">Pick a category</p>
-                    <nav class="grid max-h-[70vh] gap-1 overflow-y-auto">
-                        <button v-for="(category, index) in categories" :key="category.key" type="button" class="flex items-start gap-3 border px-3 py-3 text-left text-sm transition" :class="activeKey === category.key ? 'border-cyan-300 bg-cyan-300 text-zinc-950 shadow-[3px_3px_0_#fff]' : 'border-transparent text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'" @click="activeKey = category.key">
+            <div class="mt-3 grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[290px_minmax(0,1fr)]">
+                <aside class="h-fit border-2 border-zinc-800 bg-[#111117]/95 p-2 lg:sticky lg:top-3">
+                    <p class="px-2 py-1.5 font-mono text-[10px] font-black tracking-widest text-zinc-500 uppercase">Pick a category</p>
+                    <nav class="plebiscite-scroll grid max-h-[calc(100dvh-330px)] gap-0.5 overflow-y-auto pr-1">
+                        <button v-for="(category, index) in categories" :key="category.key" type="button" class="flex items-start gap-2 border px-2 py-2 text-left text-xs transition" :class="activeKey === category.key ? 'border-cyan-300 bg-cyan-300 text-zinc-950 shadow-[2px_2px_0_#fff]' : 'border-transparent text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'" @click="activeKey = category.key">
                             <span class="font-mono text-xs font-black opacity-60">{{ String(index + 1).padStart(2, '0') }}</span>
-                            <span class="font-bold leading-5">{{ category.title }}</span>
+                            <span class="font-bold leading-4">{{ category.title }}</span>
                         </button>
                     </nav>
                 </aside>
 
                 <section v-if="activeCategory" class="min-w-0">
-                    <header class="mb-5 flex items-end justify-between gap-4 border-b-2 border-zinc-800 pb-4">
+                    <header class="mb-3 flex items-end justify-between gap-4 border-b-2 border-zinc-800 pb-2">
                         <div>
                             <p class="font-mono text-xs font-bold tracking-widest text-cyan-300 uppercase">Category {{ String(categories.findIndex((category) => category.key === activeCategory.key) + 1).padStart(2, '0') }}</p>
                             <h2 class="mt-2 text-2xl font-black sm:text-3xl">{{ activeCategory.title }}</h2>
@@ -129,3 +129,46 @@ const share = async () => {
         </main>
     </div>
 </template>
+
+<style scoped>
+.plebiscite-background-grid {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.15;
+    background-image:
+        linear-gradient(rgba(148, 163, 184, 0.24) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.24) 1px, transparent 1px);
+    background-size: 22px 22px;
+}
+
+.plebiscite-scroll {
+    scrollbar-color: #67e8f9 #18181b;
+    scrollbar-width: thin;
+}
+
+.plebiscite-scroll::-webkit-scrollbar {
+    width: 10px;
+}
+
+.plebiscite-scroll::-webkit-scrollbar-track {
+    background: #18181b;
+    border-left: 1px solid #3f3f46;
+}
+
+.plebiscite-scroll::-webkit-scrollbar-thumb {
+    background: #67e8f9;
+    border: 2px solid #18181b;
+}
+
+.plebiscite-scroll::-webkit-scrollbar-thumb:hover {
+    background: #a5f3fc;
+}
+
+@media (max-height: 700px) and (min-width: 1024px) {
+    .plebiscite-scroll {
+        max-height: calc(100dvh - 270px);
+    }
+}
+</style>
