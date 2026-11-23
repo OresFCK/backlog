@@ -10,6 +10,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminUserSubmissionController;
 use App\Http\Controllers\AnticipatedGameController;
 use App\Http\Controllers\Auth\SteamAuthController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\BlogPostController;
 use App\Http\Controllers\BlogPostReportController;
 use App\Http\Controllers\BlogPostVoteController;
@@ -91,7 +92,14 @@ Route::get('/plebiscite', [PlebisciteController::class, 'index'])
 Route::post('/plebiscite/vote', [PlebisciteController::class, 'vote'])
     ->middleware('auth')
     ->name('plebiscite.vote');
-Route::inertia('/login', 'auth/login')->name('login');
+Route::inertia('/login', 'auth/Login')->name('login');
+Route::prefix('/auth/{provider}')
+    ->where(['provider' => 'google|discord|x'])
+    ->controller(SocialAuthController::class)
+    ->group(function () {
+        Route::get('/', 'redirect')->name('social.redirect');
+        Route::get('/callback', 'callback')->name('social.callback');
+    });
 
 Route::inertia('/terms', 'terms')->name('terms');
 Route::inertia('/privacy', 'privacy')->name('privacy');

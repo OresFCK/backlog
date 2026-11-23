@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowLeft, Check, Gamepad2, Trophy } from 'lucide-vue-next';
+import VoteCardModal from '@/components/plebiscite/VoteCardModal.vue';
 
 type Candidate = { key: string; title: string; image: string; votes: number };
 type Category = {
@@ -16,9 +17,13 @@ const props = defineProps<{
     categories: Category[];
     isAuthenticated: boolean;
     signInUrl: string;
+    userName: string | null;
 }>();
 
 const activeKey = ref(props.categories[0]?.key ?? '');
+const imageErrors = ref<Record<string, boolean>>({});
+const voteCardOpen = ref(false);
+const hasVotes = computed(() => props.categories.some((category) => category.my_vote));
 const activeCategory = computed(
     () => props.categories.find((category) => category.key === activeKey.value) ?? props.categories[0],
 );
@@ -38,7 +43,7 @@ const voteFor = (candidate: Candidate) => {
 
 const share = async () => {
     if (navigator.share) {
-        await navigator.share({ title: 'The Great Giereczkowy Plebiscite', url: window.location.href });
+        await navigator.share({ title: 'Złote NIKTniepytał', url: window.location.href });
         return;
     }
     await navigator.clipboard.writeText(window.location.href);
@@ -46,7 +51,7 @@ const share = async () => {
 </script>
 
 <template>
-    <Head title="The Great Giereczkowy Plebiscite" />
+    <Head title="Złote NIKTniepytał" />
     <div class="plebiscite-page relative min-h-screen overflow-hidden bg-[#0b0b0d] text-white">
         <div class="plebiscite-background-grid" aria-hidden="true" />
         <header class="relative z-10 border-b-2 border-zinc-800 bg-[#111117]/95">
@@ -64,10 +69,13 @@ const share = async () => {
                 <div class="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p class="font-mono text-[10px] font-black tracking-[.22em] text-amber-300 uppercase">Curator.gg community awards · 2026</p>
-                        <h1 class="mt-1 font-mono text-2xl leading-tight font-black sm:text-3xl"><span class="text-cyan-300">GIERECZKOWY</span> PLEBISCITE</h1>
+                        <h1 class="mt-1 font-mono text-2xl leading-tight font-black sm:text-3xl"><span class="text-cyan-300">ZŁOTE</span> NIKTniepytał</h1>
                         <p class="mt-1 max-w-2xl text-xs leading-5 text-zinc-300 sm:text-sm">Wybierz faworytów. Jeden głos w każdej kategorii — możesz go później zmienić. Wyniki na żywo.</p>
                     </div>
-                    <button type="button" class="shrink-0 self-start border-2 border-white bg-amber-300 px-3 py-2 font-mono text-xs font-black text-zinc-950 shadow-[2px_2px_0_#fff] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0_#fff] sm:self-center" @click="share">SHARE THE VOTE ↗</button>
+                    <div class="flex shrink-0 flex-wrap gap-2 sm:self-center">
+                        <button v-if="isAuthenticated && hasVotes" type="button" class="border-2 border-cyan-300 bg-cyan-300 px-3 py-2 font-mono text-xs font-black text-zinc-950 shadow-[2px_2px_0_#fff] hover:translate-x-0.5 hover:translate-y-0.5" @click="voteCardOpen = true">MAKE MY VOTE CARD</button>
+                        <button type="button" class="border-2 border-white bg-amber-300 px-3 py-2 font-mono text-xs font-black text-zinc-950 shadow-[2px_2px_0_#fff] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0_#fff]" @click="share">SHARE THE VOTE ↗</button>
+                    </div>
                 </div>
                 <div class="relative mt-2 flex flex-wrap gap-2 font-mono text-[10px] font-bold text-zinc-300">
                     <span class="border border-zinc-600 bg-zinc-950/70 px-2 py-1">{{ categories.length }} CATEGORIES</span>
@@ -97,15 +105,19 @@ const share = async () => {
                     </header>
 
                     <p v-if="!isAuthenticated" class="mb-5 border-2 border-amber-300/40 bg-amber-300/10 p-4 text-sm text-amber-100">
-                        Zaloguj się przez Steam, aby zagłosować. Głosowanie zapisze jeden wybór w tej kategorii.
+                        Zaloguj się, aby zagłosować. Głosowanie zapisze jeden wybór w tej kategorii.
                         <a :href="signInUrl" class="ml-2 inline-flex items-center gap-1 font-black underline underline-offset-4">Sign in <ArrowLeft class="h-3 w-3 rotate-180" /></a>
                     </p>
                     <p v-else-if="activeCategory.my_vote" class="mb-5 border-2 border-emerald-400/40 bg-emerald-400/10 p-4 text-sm text-emerald-100">Twój głos: <strong>{{ activeCategory.candidates.find((candidate) => candidate.key === activeCategory.my_vote)?.title }}</strong>. Możesz wybrać innego nominowanego, aby zmienić głos.</p>
 
                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         <article v-for="(candidate, index) in rankedCandidates" :key="candidate.key" class="group overflow-hidden border-2 bg-[#17171c] transition" :class="activeCategory.my_vote === candidate.key ? 'border-cyan-300 shadow-[4px_4px_0_#67e8f9]' : 'border-zinc-800 hover:border-zinc-500'">
-                            <div class="relative aspect-[4/3] overflow-hidden bg-zinc-900">
-                                <img :src="candidate.image" :alt="candidate.title" class="h-full w-full object-cover transition duration-300 group-hover:scale-105 [image-rendering:pixelated]" loading="lazy" />
+                            <div class="relative aspect-video overflow-hidden bg-zinc-900">
+                                <img v-if="candidate.image && !imageErrors[candidate.key]" :src="candidate.image" :alt="candidate.title" class="h-full w-full object-cover transition duration-300 group-hover:scale-105" loading="lazy" @error="imageErrors[candidate.key] = true" />
+                                <div v-else class="plebiscite-game-placeholder flex h-full w-full flex-col items-center justify-center bg-[#171823] font-mono text-cyan-200">
+                                    <span class="text-5xl font-black text-cyan-300">{{ candidate.title.slice(0, 1) }}</span>
+                                    <span class="mt-2 text-[10px] font-bold tracking-[.25em]">WISHLIST PICK</span>
+                                </div>
                                 <span class="absolute top-3 left-3 border-2 border-white bg-zinc-950 px-2 py-1 font-mono text-xs font-black">#{{ String(index + 1).padStart(2, '0') }}</span>
                                 <span v-if="activeCategory.my_vote === candidate.key" class="absolute top-3 right-3 flex h-8 w-8 items-center justify-center border-2 border-zinc-950 bg-cyan-300 text-zinc-950"><Check class="h-5 w-5" /></span>
                             </div>
@@ -127,6 +139,7 @@ const share = async () => {
                 </section>
             </div>
         </main>
+        <VoteCardModal :open="voteCardOpen" :categories="categories" :user-name="userName ?? ''" @close="voteCardOpen = false" />
     </div>
 </template>
 
@@ -136,11 +149,20 @@ const share = async () => {
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    opacity: 0.15;
+    opacity: 0.32;
     background-image:
         linear-gradient(rgba(148, 163, 184, 0.24) 1px, transparent 1px),
         linear-gradient(90deg, rgba(148, 163, 184, 0.24) 1px, transparent 1px);
     background-size: 22px 22px;
+}
+
+.plebiscite-game-placeholder {
+    background-image:
+        linear-gradient(rgba(103, 232, 249, 0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(103, 232, 249, 0.12) 1px, transparent 1px),
+        linear-gradient(135deg, #1f2937, #111117 65%);
+    background-size: 10px 10px, 10px 10px, auto;
+    image-rendering: pixelated;
 }
 
 .plebiscite-scroll {

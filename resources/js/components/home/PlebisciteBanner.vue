@@ -28,9 +28,8 @@ const covers = [
                 <h2
                     class="mt-6 max-w-2xl font-mono text-3xl leading-tight font-black text-white sm:text-5xl"
                 >
-                    THE GREAT<br />
-                    <span class="text-cyan-300">GIERECZKOWY</span><br />
-                    PLEBISCITE
+                    <span class="text-cyan-300">ZŁOTE</span><br />
+                    NIKTniepytał
                 </h2>
                 <p class="mt-5 max-w-xl text-sm leading-6 text-zinc-300 sm:text-base">
                     Choose your champions across 22 very serious categories.

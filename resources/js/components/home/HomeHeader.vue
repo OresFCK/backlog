@@ -68,10 +68,10 @@ const closeMenu = () => {
                 </Link>
                 <a href="/home#faq" class="transition hover:text-white">FAQ</a>
                 <a
-                    :href="auth.user ? '/dashboard' : '/auth/steam'"
+                    :href="auth.user ? '/dashboard' : '/login'"
                     class="rounded-xl bg-white px-4 py-2 font-black text-black hover:bg-zinc-200"
                 >
-                    {{ auth.user ? 'Open dashboard' : 'Join with Steam' }}
+                    {{ auth.user ? 'Open dashboard' : 'Sign in / Join' }}
                 </a>
             </nav>
 
@@ -150,11 +150,11 @@ const closeMenu = () => {
                     >FAQ</a
                 >
                 <a
-                    :href="auth.user ? '/dashboard' : '/auth/steam'"
+                    :href="auth.user ? '/dashboard' : '/login'"
                     class="mt-2 rounded-xl bg-white px-4 py-3 text-center text-black"
                     @click="closeMenu"
                 >
-                    {{ auth.user ? 'Open dashboard' : 'Join with Steam' }}
+                    {{ auth.user ? 'Open dashboard' : 'Sign in / Join' }}
                 </a>
             </nav>
         </div>

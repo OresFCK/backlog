@@ -48,13 +48,13 @@ defineProps({
                             Community Blog
                         </Link>
                         <a
-                            :href="auth.user ? '/dashboard' : '/auth/steam'"
+                            :href="auth.user ? '/dashboard' : '/login'"
                             class="hover:text-white"
                         >
                             {{
                                 auth.user
                                     ? 'Open dashboard'
-                                    : 'Sign in with Steam'
+                                    : 'Sign in / Join'
                             }}
                         </a>
                     </nav>

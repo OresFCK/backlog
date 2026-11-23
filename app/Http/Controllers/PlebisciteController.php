@@ -36,7 +36,8 @@ class PlebisciteController extends Controller
         return Inertia::render('plebiscite/index', [
             'categories' => $categories,
             'isAuthenticated' => $request->user() !== null,
-            'signInUrl' => '/auth/steam?intended='.urlencode('/plebiscite'),
+            'signInUrl' => '/login?intended='.urlencode('/plebiscite'),
+            'userName' => $request->user()?->visible_name,
         ]);
     }
 

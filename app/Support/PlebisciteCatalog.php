@@ -15,7 +15,7 @@ class PlebisciteCatalog
         ['undertale', 'Undertale', 391540], ['bg3', 'Baldur’s Gate 3', 1086940],
         ['it-takes-two', 'It Takes Two', 1426210], ['deep-rock-galactic', 'Deep Rock Galactic', 548430],
         ['animal-well', 'Animal Well', 813230], ['silksong', 'Hollow Knight: Silksong', 1030300],
-        ['half-life-3', 'Half-Life 3', 70], ['bloodborne', 'Bloodborne (PC)', 1245620],
+        ['half-life-3', 'Half-Life 3', null], ['bloodborne', 'Bloodborne (PC)', null],
         ['death-stranding', 'Death Stranding', 1190460], ['goat-simulator-3', 'Goat Simulator 3', 850190],
     ];
 
@@ -60,7 +60,9 @@ class PlebisciteCatalog
                     return [
                         'key' => $game[0],
                         'title' => $game[1],
-                        'image' => "https://cdn.cloudflare.steamstatic.com/steam/apps/{$game[2]}/library_600x900.jpg",
+                        'image' => $game[2]
+                            ? "https://cdn.cloudflare.steamstatic.com/steam/apps/{$game[2]}/header.jpg"
+                            : null,
                     ];
                 })->values()->all(),
             ];
